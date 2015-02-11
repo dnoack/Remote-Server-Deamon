@@ -4,13 +4,25 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../src/System.cpp 
+../src/JsonRPC.cpp \
+../src/RSD.cpp \
+../src/TcpWorker.cpp \
+../src/UdsClient.cpp \
+../src/UdsWorker.cpp 
 
 OBJS += \
-./src/System.o 
+./src/JsonRPC.o \
+./src/RSD.o \
+./src/TcpWorker.o \
+./src/UdsClient.o \
+./src/UdsWorker.o 
 
 CPP_DEPS += \
-./src/System.d 
+./src/JsonRPC.d \
+./src/RSD.d \
+./src/TcpWorker.d \
+./src/UdsClient.d \
+./src/UdsWorker.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
