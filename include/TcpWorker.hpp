@@ -20,7 +20,8 @@
 
 #include "JsonRPC.hpp"
 #include <pthread.h>
-#include <TcpWorkerThreads.hpp>
+#include "WorkerInterface.hpp"
+#include <WorkerThreads.hpp>
 #include "signal.h"
 
 
@@ -35,7 +36,7 @@ class UdsClient;
 #define WORKER_GETSTATUS 2
 
 
-class TcpWorker : public TcpWorkerThreads{
+class TcpWorker : public WorkerInterface, WorkerThreads{
 
 	public:
 		TcpWorker(int socket);
@@ -61,79 +62,16 @@ class TcpWorker : public TcpWorkerThreads{
 		string* jsonReturn;
 
 
-		//shared variables
-		pthread_mutex_t wBusyMutex;
-		bool workerBusy;
-		//receivequeue
-		list<string*> receiveQueue;
-		pthread_mutex_t rQmutex;
-
-
 		//not shared, more common
 		pthread_t lthread;
 		JsonRPC* json;
-		int optionflag;
-		struct sockaddr_un address;
-		int currentSocket;
-
-		socklen_t addrlen;
-		sigset_t sigmask;
-		struct sigaction action;
-		struct sigaction pipehandler;
-		int currentSig;
-
 		UdsClient* udsClient;
-
-
+		int currentSocket;
 
 
 		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);
 
 		virtual void thread_work(int socket);
-
-
-		static void dummy_handler(int){};
-
-		bool workerStatus(int status);
-
-		//data + add = new msg , data = NULL + add=false = remove oldest
-		void editReceiveQueue(string* data, bool add)
-		{
-			pthread_mutex_lock(&rQmutex);
-			if(data != NULL)
-			{
-
-				if(add)
-				{
-					receiveQueue.push_front(data);
-				}
-			}
-			else
-			{
-				if(!add)
-				{
-					receiveQueue.pop_back();
-				}
-			}
-			pthread_mutex_unlock(&rQmutex);
-		}
-
-
-
-		void configSignals()
-		{
-			sigfillset(&sigmask);
-			pthread_sigmask(SIG_UNBLOCK, &sigmask, (sigset_t*)0);
-
-			action.sa_flags = 0;
-			action.sa_handler = dummy_handler;
-			sigaction(SIGUSR1, &action, (struct sigaction*)0);
-			sigaction(SIGUSR2, &action, (struct sigaction*)0);
-			sigaction(SIGPOLL, &action, (struct sigaction*)0);
-			sigaction(SIGPIPE, &action, (struct sigaction*)0);
-		}
-
-
 
 
 };

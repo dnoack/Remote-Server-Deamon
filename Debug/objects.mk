@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lzmq -lCppUTest -lCppUTestExt -laardvark -ldl -lpthread
+LIBS := -laardvark -ldl -lpthread
 

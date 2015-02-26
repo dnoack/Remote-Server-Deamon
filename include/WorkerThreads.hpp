@@ -5,19 +5,19 @@
  *      Author: dnoack
  */
 
-#ifndef INCLUDE_TCPWORKERTHREADS_HPP_
-#define INCLUDE_TCPWORKERTHREADS_HPP_
+#ifndef INCLUDE_WORKERTHREADS_HPP_
+#define INCLUDE_WORKERTHREADS_HPP_
 
 
 
 #include <pthread.h>
 #include <stdlib.h>
 
-class TcpWorkerThreads;
+class WorkerThreads;
 
 struct argStruct
 {
-	TcpWorkerThreads* th_id;
+	WorkerThreads* th_id;
 	int socket;
 	char* buffer;
 };
@@ -38,19 +38,19 @@ classes who inherit from MyThreadClass. The class got two internal variables for
 - As long as the worker is busy, the listener can receive commands, but they will not be executed.
 - After finishing a computation, the worker will get ready again and can handler further commands from the listener.
 */
-class TcpWorkerThreads
+class WorkerThreads
 {
 public:
 
 	/**Constructor*/
-   TcpWorkerThreads()
+   WorkerThreads()
    {
 	   _worker = 0;
 	   _listener = 0;
 
    }
    /**Destructor*/
-   virtual ~TcpWorkerThreads() {/* empty */}
+   virtual ~WorkerThreads() {/* empty */}
 
    /**
    Starts the worker thread, which start executing the thread_work() function.
@@ -109,7 +109,7 @@ private:
 	/** Creates a new worker thread and starts executing thread_work within it.*/
    static void* thread_workEntryFunc(void * This)
    {
-	   TcpWorkerThreads* mtc = ((argStruct*)This)->th_id;
+	   WorkerThreads* mtc = ((argStruct*)This)->th_id;
 	   int socket =  ((argStruct*)This)->socket;
 
 	   mtc->thread_work(socket);
@@ -118,7 +118,7 @@ private:
    /** Creates a new listener thread and starts executing thread_listen within it.*/
    static void* thread_listenerEntryFunc(void* This)
    {
-	   TcpWorkerThreads* mtc = ((argStruct*)This)->th_id;
+	   WorkerThreads* mtc = ((argStruct*)This)->th_id;
 	   int socket =  ((argStruct*)This)->socket;
 	   char* buffer = ((argStruct*)This)->buffer;
 
@@ -141,4 +141,4 @@ private:
 
 
 
-#endif /* INCLUDE_TCPWORKERTHREADS_HPP_ */
+#endif /* INCLUDE_WORKERTHREADS_HPP_ */

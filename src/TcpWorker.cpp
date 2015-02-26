@@ -11,23 +11,23 @@
 
 TcpWorker::TcpWorker(int socket)
 {
+	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	this->listen_thread_active = false;
+	this->worker_thread_active = false;
 	this->recvSize = 0;
 	this->lthread = 0;
-	this->worker_thread_active = false;
 	this->bufferOut = NULL;
-	this->workerBusy = false;
-	this->currentSig = 0;
-	this->optionflag = 1;
+	this->jsonReturn = NULL;
+	this->jsonInput = NULL;
+	this->identity = NULL;
 	this->currentSocket = socket;
 	this->udsClient = new UdsClient(this);
-	memset(receiveBuffer, '\0', BUFFER_SIZE);
-
+	this->json = NULL;
 
 	pthread_mutex_init(&rQmutex, NULL);
 	pthread_mutex_init(&wBusyMutex, NULL);
-	configSignals();
 
+	configSignals();
 	StartWorkerThread(currentSocket);
 }
 
@@ -38,6 +38,8 @@ TcpWorker::~TcpWorker()
 {
 	pthread_mutex_destroy(&rQmutex);
 	pthread_mutex_destroy(&wBusyMutex);
+
+	delete udsClient;
 }
 
 
@@ -131,29 +133,6 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 }
 
 
-
-
-bool TcpWorker::workerStatus(int status)
-{
-	bool rValue = false;
-	pthread_mutex_lock(&wBusyMutex);
-	switch(status)
-	{
-		case WORKER_FREE:
-			workerBusy = false;
-			break;
-		case WORKER_BUSY:
-			workerBusy = true;
-			break;
-		case WORKER_GETSTATUS:
-			rValue = workerBusy;
-			break;
-		default:
-			break;
-	}
-	pthread_mutex_unlock(&wBusyMutex);
-	return rValue;
-}
 
 int TcpWorker::tcp_send(string* data)
 {

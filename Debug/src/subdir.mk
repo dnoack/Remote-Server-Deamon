@@ -29,7 +29,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -I/home/dnoack/libs/zeromq-4.0.5/include -I/home/dnoack/cpputest/include/CppUTest -I/home/dnoack/cpputest/include/CppUTestExt -I"/home/dnoack/workspace/Remote-Server-Daemon/include" -I/home/dnoack/libs/rapidjson/include/rapidjson -I/home/dnoack/libs/aardvark-api-linux-i686-v5.15/c -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	g++ -O0 -g3 -Wall -c -fmessage-length=0 -I../include -I"/home/Dave/workspace/Plugin-Server/include/rapidjson" -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
