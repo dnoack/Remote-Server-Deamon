@@ -1,47 +1,43 @@
 /*
- * UdsWorker.cpp
+ * UdsComWorker.cpp
  *
  *  Created on: 09.02.2015
  *      Author: dnoack
  */
 
-#include "UdsWorker.hpp"
+
+#include "UdsRegWorker.hpp"
+#include "UdsRegServer.hpp"
 
 
-UdsWorker::UdsWorker(int socket, TcpWorker* tcpworker)
+
+UdsRegWorker::UdsRegWorker(int socket)
 {
-	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	this->listen_thread_active = false;
 	this->worker_thread_active = false;
 	this->recvSize = 0;
 	this->lthread = 0;
-	this->bufferOut = NULL;
-	this->jsonReturn = NULL;
-	this->jsonInput = NULL;
-	this->identity = NULL;
-	this->tcpWorker = tcpworker;
+	this->request = 0;
+	this->response = 0;
 	this->currentSocket = socket;
 
-
-	pthread_mutex_init(&rQmutex, NULL);
-	pthread_mutex_init(&wBusyMutex, NULL);
-
-	configSignals();
+	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	StartWorkerThread(currentSocket);
 }
 
 
 
-
-UdsWorker::~UdsWorker()
+UdsRegWorker::~UdsRegWorker()
 {
-	pthread_mutex_destroy(&rQmutex);
-	pthread_mutex_destroy(&wBusyMutex);
+	worker_thread_active = false;
+	listen_thread_active = false;
+	WaitForWorkerThreadToExit();
 }
 
 
 
-void UdsWorker::thread_work(int socket)
+
+void UdsRegWorker::thread_work(int socket)
 {
 
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
@@ -61,14 +57,10 @@ void UdsWorker::thread_work(int socket)
 			case SIGUSR1:
 				while(receiveQueue.size() > 0)
 				{
-
-					//send(currentSocket, jsonReturn->c_str(), jsonReturn->size(), 0);
-					//3 remove data from queue
-					tcpWorker->tcp_send(receiveQueue.back());
+					//sigusr1 = there is data for work e.g. parsing json rpc
+					printf("Da war doch ein Plugin.\n");
 					editReceiveQueue(NULL, false);
 
-					//4 check for further data, if there is goto step 1
-					delete jsonReturn;
 				}
 				break;
 
@@ -79,8 +71,8 @@ void UdsWorker::thread_work(int socket)
 				break;
 
 			case SIGPIPE:
-				worker_thread_active = false;
 				listen_thread_active = false;
+				worker_thread_active = false;
 				break;
 			default:
 				worker_thread_active = false;
@@ -92,21 +84,24 @@ void UdsWorker::thread_work(int socket)
 	close(currentSocket);
 	printf("Worker Thread beendet.\n");
 	WaitForListenerThreadToExit();
-
+	//destroy this UdsWorker and delete it from workerList in Uds::Server
+	UdsRegServer::editWorkerList(this, DELETE_WORKER);
 
 }
 
 
 
-void UdsWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffer)
+void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffer)
 {
+
 	listen_thread_active = true;
 
 	while(listen_thread_active)
 	{
 		memset(receiveBuffer, '\0', BUFFER_SIZE);
 
-		recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, 0);
+		//TODO:msg_dontwait lets us cancel the client with listen_thread_active flag but not with sigpipe (disco at clientside)
+		recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, MSG_DONTWAIT);
 		if(recvSize > 0)
 		{
 			//add received data in buffer to queue
@@ -120,10 +115,11 @@ void UdsWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 				pthread_kill(parent_th, SIGUSR1);
 			}
 		}
-		else
-			pthread_kill(parent_th, SIGPOLL);
+
 	}
 	printf("Listener beendet.\n");
-
+	pthread_kill(parent_th, SIGPOLL);
 }
+
+
 

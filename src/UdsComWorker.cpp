@@ -1,15 +1,14 @@
 /*
- * UdsWorker.cpp
+ * UdsComWorker.cpp
  *
  *  Created on: 09.02.2015
  *      Author: dnoack
  */
 
-#include <TcpWorker.hpp>
+#include "UdsComWorker.hpp"
 
-#include "UdsComClient.hpp"
 
-TcpWorker::TcpWorker(int socket)
+UdsComWorker::UdsComWorker(int socket, TcpWorker* tcpworker)
 {
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	this->listen_thread_active = false;
@@ -20,9 +19,9 @@ TcpWorker::TcpWorker(int socket)
 	this->jsonReturn = NULL;
 	this->jsonInput = NULL;
 	this->identity = NULL;
+	this->tcpWorker = tcpworker;
 	this->currentSocket = socket;
-	this->comClient = new UdsComClient(this);
-	this->json = NULL;
+
 
 	pthread_mutex_init(&rQmutex, NULL);
 	pthread_mutex_init(&wBusyMutex, NULL);
@@ -34,18 +33,19 @@ TcpWorker::TcpWorker(int socket)
 
 
 
-TcpWorker::~TcpWorker()
+UdsComWorker::~UdsComWorker()
 {
 	pthread_mutex_destroy(&rQmutex);
 	pthread_mutex_destroy(&wBusyMutex);
 
-	delete comClient;
+	worker_thread_active = false;
+	listen_thread_active = false;
+
 }
 
 
 
-
-void TcpWorker::thread_work(int socket)
+void UdsComWorker::thread_work(int socket)
 {
 
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
@@ -65,15 +65,14 @@ void TcpWorker::thread_work(int socket)
 			case SIGUSR1:
 				while(receiveQueue.size() > 0)
 				{
-					printf("We received something and worker received a signal\n");
-					//parse to dom with jsonrpc
 
-					//method ? namespace ? send to correct plugin via uds
-					//sending will be done by a uds client
-
-					//delete msg from queue
-					comClient->sendData(receiveQueue.back());
+					//send(currentSocket, jsonReturn->c_str(), jsonReturn->size(), 0);
+					//3 remove data from queue
+					tcpWorker->tcp_send(receiveQueue.back());
 					editReceiveQueue(NULL, false);
+
+					//4 check for further data, if there is goto step 1
+					delete jsonReturn;
 				}
 				break;
 
@@ -103,7 +102,7 @@ void TcpWorker::thread_work(int socket)
 
 
 
-void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffer)
+void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffer)
 {
 	listen_thread_active = true;
 
@@ -132,9 +131,3 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 
 }
 
-
-
-int TcpWorker::tcp_send(string* data)
-{
-	send(currentSocket, data->c_str(), data->size(), 0);
-}

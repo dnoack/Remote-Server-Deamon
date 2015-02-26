@@ -1,12 +1,12 @@
 /*
- * UdsClient.hpp
+ * UdsComClient.hpp
  *
  *  Created on: 11.02.2015
  *      Author: dnoack
  */
 
-#ifndef INCLUDE_UDSCLIENT_HPP_
-#define INCLUDE_UDSCLIENT_HPP_
+#ifndef INCLUDE_UDSCOMCLIENT_HPP_
+#define INCLUDE_UDSCOMCLIENT_HPP_
 
 #include <sys/un.h>
 #include <sys/socket.h>
@@ -19,23 +19,22 @@
 #include "signal.h"
 #include <string>
 
-#include "UdsClient.hpp"
-#include "UdsWorker.hpp"
+#include "UdsComClient.hpp"
+#include "UdsComWorker.hpp"
 
 using namespace std;
 
 
 class TcpWorker;
 
-#define UDS_COM_PATH "/tmp/RsdRegister.uds"
+#define UDS_COM_PATH "/tmp/AardvarkPlugin.uds"
 
-
-class UdsClient{
+class UdsComClient{
 
 
 	public:
-		UdsClient(TcpWorker* tcpworker);
-		~UdsClient();
+		UdsComClient(TcpWorker* tcpworker);
+		~UdsComClient();
 
 		int sendData(string* data);
 		int sendResponse(string* data);
@@ -43,7 +42,7 @@ class UdsClient{
 	private:
 
 	TcpWorker* tcpWorker;
-	UdsWorker* udsWorker;
+	UdsComWorker* comWorker;
 
 	static struct sockaddr_un address;
 	static socklen_t addrlen;

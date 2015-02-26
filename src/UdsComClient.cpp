@@ -6,13 +6,13 @@
  */
 
 
-#include "UdsClient.hpp"
+#include "UdsComClient.hpp"
 
-struct sockaddr_un UdsClient::address;
-socklen_t UdsClient::addrlen;
+struct sockaddr_un UdsComClient::address;
+socklen_t UdsComClient::addrlen;
 
 
-UdsClient::UdsClient(TcpWorker* tcpWorker)
+UdsComClient::UdsComClient(TcpWorker* tcpWorker)
 {
 	optionflag = 1;
 	this->tcpWorker = tcpWorker;
@@ -22,21 +22,21 @@ UdsClient::UdsClient(TcpWorker* tcpWorker)
 	strncpy(address.sun_path, UDS_COM_PATH, sizeof(UDS_COM_PATH));
 	addrlen = sizeof(address);
 
-	udsWorker = new UdsWorker(currentSocket, tcpWorker);
+	comWorker = new UdsComWorker(currentSocket, tcpWorker);
 	connect(currentSocket, (struct sockaddr*)&address, addrlen);
 
 
 }
 
 
-UdsClient::~UdsClient()
+UdsComClient::~UdsComClient()
 {
-
+	delete comWorker;
 
 }
 
 
-int UdsClient::sendData(string* data)
+int UdsComClient::sendData(string* data)
 {
 	return send(currentSocket, data->c_str(), data->size(), 0);
 }

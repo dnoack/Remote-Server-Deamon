@@ -20,6 +20,10 @@
 #include <pthread.h>
 
 #include "TcpWorker.hpp"
+#include "UdsRegServer.hpp"
+
+
+#define REGISTRY_PATH "/tmp/RsdRegister.uds"
 
 class RSD{
 
@@ -34,6 +38,8 @@ class RSD{
 		 static socklen_t addrlen;
 		 int optionflag;
 		 pthread_t accepter;
+
+		 UdsRegServer* regServer;
 
 		 static void* accept_connections(void*);
 };

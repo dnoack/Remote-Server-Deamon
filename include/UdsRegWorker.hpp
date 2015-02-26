@@ -1,12 +1,12 @@
 /*
- * TCPWorker.hpp
+ * UdsWorker.hpp
  *
  *  Created on: 09.02.2015
  *      Author: dnoack
  */
 
-#ifndef INCLUDE_TCPWORKER_HPP_
-#define INCLUDE_TCPWORKER_HPP_
+#ifndef INCLUDE_UDSCOMWORKER_HPP_
+#define INCLUDE_UDSCOMWORKER_HPP_
 
 //unix domain socket definition
 #include <sys/un.h>
@@ -15,34 +15,28 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <cstdio>
-#include <list>
+#include <cstring>
 
 
 #include "JsonRPC.hpp"
-#include <pthread.h>
 #include "WorkerInterface.hpp"
-#include <WorkerThreads.hpp>
-#include "signal.h"
+#include "WorkerThreads.hpp"
 
 
-class UdsComClient;
+class UdsRegServer;
 
 
 #define BUFFER_SIZE 1024
 #define ADD_WORKER true
 #define DELETE_WORKER false
-#define WORKER_FREE 0
-#define WORKER_BUSY 1
-#define WORKER_GETSTATUS 2
 
 
-class TcpWorker : public WorkerInterface, WorkerThreads{
+
+class UdsRegWorker : public WorkerInterface, WorkerThreads{
 
 	public:
-		TcpWorker(int socket);
-		~TcpWorker();
-
-		int tcp_send(string* data);
+		UdsRegWorker(int socket);
+		~UdsRegWorker();
 
 
 	private:
@@ -56,16 +50,12 @@ class TcpWorker : public WorkerInterface, WorkerThreads{
 
 		//variables for worker
 		bool worker_thread_active;
-		char* bufferOut;
-		string* jsonInput;
-		string* identity;
-		string* jsonReturn;
+		string* request;
+		string* response;
 
 
 		//not shared, more common
 		pthread_t lthread;
-		JsonRPC* json;
-		UdsComClient* comClient;
 		int currentSocket;
 
 

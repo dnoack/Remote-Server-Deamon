@@ -26,6 +26,10 @@ RSD::RSD()
 	setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag));
 	bind(connection_socket, (struct sockaddr*)&address, sizeof(address));
 
+	//create Registry Server
+	regServer = new UdsRegServer(REGISTRY_PATH, sizeof(REGISTRY_PATH));
+	regServer->start();
+
 	pthread_create(&accepter, NULL, accept_connections, NULL);
 }
 
@@ -33,7 +37,9 @@ RSD::RSD()
 
 RSD::~RSD()
 {
+	delete regServer;
 	close(connection_socket);
+
 }
 
 
@@ -42,7 +48,7 @@ void* RSD::accept_connections(void* data)
 	listen(connection_socket, 5);
 	bool accept_thread_active = true;
 	int new_socket = 0;
-	TcpWorker* worker;
+	TcpWorker* worker = NULL;
 
 
 	while(accept_thread_active)
@@ -52,7 +58,7 @@ void* RSD::accept_connections(void* data)
 		{
 			printf("Client connected\n");
 			worker = new TcpWorker(new_socket);
-			//add to worker list, like in uds server from plugin
+			//TODO: add to worker list, like in uds server from plugin
 		}
 	}
 	return 0;
@@ -64,6 +70,8 @@ int main(int argc, char** argv)
 	RSD* rsd = new RSD();
 	while(1)
 		sleep(3);
+
+	delete rsd;
 }
 
 
