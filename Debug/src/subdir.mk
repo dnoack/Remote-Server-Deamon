@@ -7,22 +7,28 @@ CPP_SRCS += \
 ../src/JsonRPC.cpp \
 ../src/RSD.cpp \
 ../src/TcpWorker.cpp \
-../src/UdsClient.cpp \
-../src/UdsWorker.cpp 
+../src/UdsComClient.cpp \
+../src/UdsComWorker.cpp \
+../src/UdsRegServer.cpp \
+../src/UdsRegWorker.cpp 
 
 OBJS += \
 ./src/JsonRPC.o \
 ./src/RSD.o \
 ./src/TcpWorker.o \
-./src/UdsClient.o \
-./src/UdsWorker.o 
+./src/UdsComClient.o \
+./src/UdsComWorker.o \
+./src/UdsRegServer.o \
+./src/UdsRegWorker.o 
 
 CPP_DEPS += \
 ./src/JsonRPC.d \
 ./src/RSD.d \
 ./src/TcpWorker.d \
-./src/UdsClient.d \
-./src/UdsWorker.d 
+./src/UdsComClient.d \
+./src/UdsComWorker.d \
+./src/UdsRegServer.d \
+./src/UdsRegWorker.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

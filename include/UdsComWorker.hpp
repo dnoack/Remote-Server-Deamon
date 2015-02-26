@@ -1,12 +1,12 @@
 /*
- * UdsWorker.hpp
+ * UdsComWorker.hpp
  *
  *  Created on: 09.02.2015
  *      Author: dnoack
  */
 
-#ifndef INCLUDE_UDSWORKER_HPP_
-#define INCLUDE_UDSWORKER_HPP_
+#ifndef INCLUDE_UDSCOMWORKER_HPP_
+#define INCLUDE_UDSCOMWORKER_HPP_
 
 //unix domain socket definition
 #include <sys/un.h>
@@ -34,11 +34,11 @@
 #define WORKER_GETSTATUS 2
 
 
-class UdsWorker : public WorkerInterface, WorkerThreads{
+class UdsComWorker : public WorkerInterface, WorkerThreads{
 
 	public:
-		UdsWorker(int socket, TcpWorker* tcpWorker);
-		~UdsWorker();
+		UdsComWorker(int socket, TcpWorker* tcpWorker);
+		~UdsComWorker();
 
 
 	private:
