@@ -6,47 +6,37 @@
  */
 
 #include <JsonRPC.hpp>
-#include "stdio.h"
 #include "Plugin_Error.h"
+#include "stdio.h"
 
 
 
 
-char* JsonRPC::handle(string* request, string* identity)
+Document* JsonRPC::parse(string* msg)
 {
-	char* responseMsg;
+	Document* result = NULL;
+	Value nullId;
 
-
-	try
-	{
-		requestDOM->Parse(request->c_str());
-
-		if(!requestDOM->HasParseError())
+		inputDOM->Parse(msg->c_str());
+		if(!inputDOM->HasParseError())
+			result = inputDOM;
+		else
 		{
 
-			if(checkJsonRpc_RequestFormat(*requestDOM))
-			{
-				if(isRequest(*requestDOM)) //request
-					responseMsg =  processRequest((*requestDOM)["method"], (*requestDOM)["params"], (*requestDOM)["id"], identity);
-				else
-					responseMsg = NULL; //TODO: processNotification
-			}
+			error = generateResponseError(nullId, -32700, "Error while parsing json rpc.");
+			result = NULL;
+			throw PluginError(error);
 		}
-		else
-			throw PluginError("Error while parsing json rpc.");
-	}
-	catch(PluginError &errorMsg)
-	{
-		Value nullId;
-		responseMsg = generateResponseError(nullId, -32700, errorMsg.get());
-	}
 
-	return responseMsg;
+	return result;
 }
 
 
-bool JsonRPC::checkJsonRpc_RequestFormat(Document &dom)
+
+bool JsonRPC::checkJsonRpc_RequestFormat()
 {
+	Document &dom = *inputDOM;
+
 	if(!dom.HasMember("jsonrpc"))
 	{
 		throw PluginError("Inccorect Json RPC, member \"jsonrpc\" is missing.");
@@ -75,8 +65,10 @@ bool JsonRPC::checkJsonRpcVersion(Document &dom)
 }
 
 
-bool JsonRPC::isRequest(Document &dom)
+bool JsonRPC::isRequest()
 {
+	Document &dom = *inputDOM;
+
 	if(dom.HasMember("id"))
 	{
 		//TODO: check: normally not NULL, no fractional pars
@@ -87,21 +79,35 @@ bool JsonRPC::isRequest(Document &dom)
 }
 
 
-
-char* JsonRPC::processRequest(Value &method, Value &params, Value &id, string* identity)
+char* JsonRPC::generateRequest(Value &method, Value &params, Value &id)
 {
-	string* deviceIdentity = NULL;
-	char* responseMsg = NULL;
-	bool lockFlag= false;
+	Value* oldMethod;
 
+	sBuffer.Clear();
+	jsonWriter->Reset(sBuffer);
 
+	if(requestDOM->HasMember("params"))
+		requestDOM->RemoveMember("params");
 
-	return responseMsg;
+	//method swap
+	oldMethod = &((*requestDOM)["method"]);
+	oldMethod->Swap(method);
+
+	//params insert as object (params is optional)
+	if(params != NULL)
+		requestDOM->AddMember("params", params, requestDOM->GetAllocator());
+
+	//set id (simple int)
+	(*requestDOM)["id"] = id.GetInt();
+	requestDOM->Accept(*jsonWriter);
+
+	return (char*)sBuffer.GetString();
 }
 
 
 
-char* JsonRPC::generateResponse(Value &id)
+
+char* JsonRPC::generateResponse(Value &id, Value &response)
 {
 	//clear buffer
 	Value* oldResult;
@@ -110,7 +116,7 @@ char* JsonRPC::generateResponse(Value &id)
 
 	//swap current result value with the old one and get the corresponding id
 	oldResult = &((*responseDOM)["result"]);
-	oldResult->Swap(result);
+	oldResult->Swap(response);
 	(*responseDOM)["id"] = id.GetInt();
 
 	//write DOM to sBuffer
@@ -143,6 +149,19 @@ char* JsonRPC::generateResponseError(Value &id, int code, char* msg)
 	//printf("\nErrorMsg: %s\n", sBuffer.GetString());
 
 	return (char*)sBuffer.GetString();
+}
+
+
+void JsonRPC::generateRequestDOM(Document &dom)
+{
+	Value id;
+	id.SetInt(0);
+
+	dom.SetObject();
+	dom.AddMember("jsonrpc", JSON_PROTOCOL_VERSION, dom.GetAllocator());
+	dom.AddMember("method", "", dom.GetAllocator());
+	dom.AddMember("id", id, dom.GetAllocator());
+
 }
 
 

@@ -57,8 +57,9 @@ void UdsRegWorker::thread_work(int socket)
 			case SIGUSR1:
 				while(receiveQueue.size() > 0)
 				{
+					request = receiveQueue.back();
 					//sigusr1 = there is data for work e.g. parsing json rpc
-					printf("Da war doch ein Plugin.\n");
+					printf("Register service received: %s \n", request->c_str());
 					editReceiveQueue(NULL, false);
 
 				}

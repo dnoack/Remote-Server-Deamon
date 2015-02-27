@@ -26,8 +26,6 @@ using namespace rapidjson;
 
 
 
-
-
 class JsonRPC {
 
 	public:
@@ -36,16 +34,19 @@ class JsonRPC {
 		{
 			this->currentValue = NULL;
 			this->result = NULL;
+			this->error = NULL;
 
 
 			jsonWriter = new Writer<StringBuffer>(sBuffer);
+			inputDOM = new Document();
 			requestDOM = new Document();
 			responseDOM = new Document();
 			errorDOM = new Document();
 
+
+			generateRequestDOM(*requestDOM);
 			generateResponseDOM(*responseDOM);
 			generateErrorDOM(*errorDOM);
-
 		};
 
 
@@ -53,22 +54,19 @@ class JsonRPC {
 		~JsonRPC()
 		{
 			delete jsonWriter;
+			delete inputDOM;
 			delete requestDOM;
 			delete responseDOM;
 			delete errorDOM;
-
 		};
 
 
-		//receive json-rpc msg, check if it is a request, process
-		char* handle(string* request, string* identity);
 
 		/**
 		 * Checks if the json rpc msg has the mandatory members (jsonrpc and method).
 		 * It also calls checkJsonRpcVersion.
 		 */
-		bool checkJsonRpc_RequestFormat(Document &dom);
-
+		bool checkJsonRpc_RequestFormat();
 
 		/**
 		 * Checks if the json rpc msg member "jsonrpc" has the correct protocol version.
@@ -76,15 +74,28 @@ class JsonRPC {
 		bool checkJsonRpcVersion(Document &dom);
 
 
-
-	private:
-
 		/**
 		 * Checks if there is a member named "id". If not the msg is assumed to be
 		 * a notification. If "id" is existing, the msg is a request. For checking the other
 		 * mandatory request fields, you need to call checkJsonRpc_RequestFormat().
 		 */
-		bool isRequest(Document &dom);
+		bool isRequest();
+
+
+		Document* parse(string* msg);
+
+		char* generateRequest(Value &method, Value &params, Value &id);
+
+		char* generateResponse(Value &id, Value &response);
+
+		Document* getRequestDOM() { return this->inputDOM;}
+		Document* getResponseDOM() { return this->responseDOM;}
+		Document* getErrorDOM(){ return this->errorDOM;}
+
+
+	private:
+
+
 
 		//compare functor handels char* compare for the map
 		struct cmp_keys
@@ -100,6 +111,7 @@ class JsonRPC {
 
 
 		//represents the current jsonrpc msg as dom (document object model)
+		Document* inputDOM;
 		Document* requestDOM;
 		Document* responseDOM;
 		Document* errorDOM;
@@ -113,18 +125,18 @@ class JsonRPC {
 		char* error;
 
 
-		//lookup for function
-		char* processRequest(Value &method, Value &params, Value &id, string* identity);
-
-		char* generateResponse(Value &id);
 
 		char* generateResponseError(Value &id, int code, char* msg);
+
+		void generateRequestDOM(Document &dom);
 
 		void generateResponseDOM(Document &dom);
 
 		void generateErrorDOM(Document &dom);
 
+
 };
+
 
 
 #endif /* SRC_JSONRPC_H_ */
