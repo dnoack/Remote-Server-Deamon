@@ -81,6 +81,8 @@ class JsonRPC {
 		 */
 		bool isRequest();
 
+		Value* getParam(char* name);
+
 
 		Document* parse(string* msg);
 

@@ -8,6 +8,7 @@
 
 #include "UdsRegWorker.hpp"
 #include "UdsRegServer.hpp"
+#include "RSD.hpp"
 
 
 
@@ -20,6 +21,8 @@ UdsRegWorker::UdsRegWorker(int socket)
 	this->request = 0;
 	this->response = 0;
 	this->currentSocket = socket;
+	this->state = NOT_ACTIVE;
+	this->json = new JsonRPC();
 
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	StartWorkerThread(currentSocket);
@@ -31,6 +34,7 @@ UdsRegWorker::~UdsRegWorker()
 {
 	worker_thread_active = false;
 	listen_thread_active = false;
+	delete json;
 	WaitForWorkerThreadToExit();
 }
 
@@ -39,9 +43,14 @@ UdsRegWorker::~UdsRegWorker()
 
 void UdsRegWorker::thread_work(int socket)
 {
+	Plugin* nextPlugin = NULL;
+	char* name = NULL;
+	char* udsFilePath = NULL;
+	Value* currentParam = NULL;
 
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	worker_thread_active = true;
+
 
 	//start the listenerthread and remember the theadId of it
 	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
@@ -60,6 +69,39 @@ void UdsRegWorker::thread_work(int socket)
 					request = receiveQueue.back();
 					//sigusr1 = there is data for work e.g. parsing json rpc
 					printf("Register service received: %s \n", request->c_str());
+
+					switch(state)
+					{
+						case NOT_ACTIVE:
+							//check for announce msg, create a plugin object in RSD central list
+							json->parse(request);
+							currentParam = json->getParam("pluginName");
+							name = (char*)currentParam->GetString();
+							currentParam = json->getParam("udsFilePath");
+							udsFilePath = (char*)currentParam->GetString();
+							nextPlugin = new Plugin(name, udsFilePath);
+							send(currentSocket, "OK", 2, 0);
+							delete nextPlugin;
+
+							break;
+						case ANNOUNCED:
+							//check for register msg, add all method names from msg to plugin object in central RSD list
+							break;
+
+						case REGISTERED:
+							break;
+
+						case ACTIVE:
+
+							break;
+						case BROKEN:
+							//should not occur
+							break;
+						default:
+							//something went completely wrong
+							state = BROKEN;
+							break;
+					}
 					editReceiveQueue(NULL, false);
 
 				}

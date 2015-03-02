@@ -32,6 +32,24 @@ Document* JsonRPC::parse(string* msg)
 }
 
 
+Value* JsonRPC::getParam(char* name)
+{
+	Value* params = NULL;
+	Value* result = NULL;
+
+	if(checkJsonRpcVersion(*inputDOM))
+	{
+		if(checkJsonRpc_RequestFormat())
+			if(isRequest())
+			{
+				params = &((*inputDOM)["params"]);
+				result = &((*params)[name]);
+			}
+	}
+	return result;
+}
+
+
 
 bool JsonRPC::checkJsonRpc_RequestFormat()
 {
