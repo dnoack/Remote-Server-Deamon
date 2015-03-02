@@ -25,12 +25,42 @@
 
 #define REGISTRY_PATH "/tmp/RsdRegister.uds"
 
+class Plugin{
+
+	public:
+		Plugin(char* name, char* udsFilePath)
+		{
+			this->name = new string(name);
+			this->udsFilePath = new string(udsFilePath);
+		}
+		~Plugin()
+		{
+			delete name;
+			delete udsFilePath;
+		}
+
+		string* getName(){return name;}
+		string* getUdsFilePath(){return udsFilePath;}
+
+	private:
+		string* name;
+		string* udsFilePath;
+		vector<string*> methods;
+
+};
+
+
 class RSD{
 
 
 	public:
 		RSD();
 		~RSD();
+
+		static bool addPlugin(char* name, char* udsFilePath);
+		static bool deletePlugin(char* name);
+		static Plugin* getPlugin(char* name);
+		static int getPluginPos(char* name);
 
 	private:
 		 static int connection_socket;
@@ -41,8 +71,13 @@ class RSD{
 
 		 UdsRegServer* regServer;
 
+		 static vector<Plugin*> plugins;
+		 static pthread_mutex_t pLmutex;
+
 		 static void* accept_connections(void*);
 };
+
+
 
 
 

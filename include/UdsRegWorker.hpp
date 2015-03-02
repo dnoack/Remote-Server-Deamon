@@ -26,6 +26,7 @@
 class UdsRegServer;
 
 
+
 #define BUFFER_SIZE 1024
 #define ADD_WORKER true
 #define DELETE_WORKER false
@@ -40,6 +41,8 @@ class UdsRegWorker : public WorkerInterface, WorkerThreads{
 
 
 	private:
+
+		JsonRPC* json;
 
 
 		//variables for listener
@@ -57,6 +60,9 @@ class UdsRegWorker : public WorkerInterface, WorkerThreads{
 		//not shared, more common
 		pthread_t lthread;
 		int currentSocket;
+
+		enum REG_STATE{NOT_ACTIVE, ANNOUNCED, REGISTERED, ACTIVE, BROKEN};
+		unsigned int state;
 
 
 		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);
