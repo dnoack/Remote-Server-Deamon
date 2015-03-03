@@ -28,15 +28,20 @@
 class Plugin{
 
 	public:
-		Plugin(char* name, char* udsFilePath)
+		Plugin(const char* name, const char* path)
 		{
 			this->name = new string(name);
-			this->udsFilePath = new string(udsFilePath);
+			this->udsFilePath = new string(path);
 		}
 		~Plugin()
 		{
 			delete name;
 			delete udsFilePath;
+		}
+
+		void addMethod(string* methodName)
+		{
+			methods.push_back(methodName);
 		}
 
 		string* getName(){return name;}

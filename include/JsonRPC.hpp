@@ -81,7 +81,9 @@ class JsonRPC {
 		 */
 		bool isRequest();
 
-		Value* getParam(char* name);
+		Value* getParam(const char* name);
+
+		const char* getResult();
 
 
 		Document* parse(string* msg);
@@ -89,6 +91,7 @@ class JsonRPC {
 		char* generateRequest(Value &method, Value &params, Value &id);
 
 		char* generateResponse(Value &id, Value &response);
+
 
 		Document* getRequestDOM() { return this->inputDOM;}
 		Document* getResponseDOM() { return this->responseDOM;}

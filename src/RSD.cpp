@@ -35,7 +35,7 @@ RSD::RSD()
 	regServer = new UdsRegServer(REGISTRY_PATH, sizeof(REGISTRY_PATH));
 	regServer->start();
 
-	pthread_create(&accepter, NULL, accept_connections, NULL);
+	//pthread_create(&accepter, NULL, accept_connections, NULL);
 }
 
 

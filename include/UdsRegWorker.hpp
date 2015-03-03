@@ -23,7 +23,9 @@
 #include "WorkerThreads.hpp"
 
 
+
 class UdsRegServer;
+class Plugin;
 
 
 
@@ -43,7 +45,7 @@ class UdsRegWorker : public WorkerInterface, WorkerThreads{
 	private:
 
 		JsonRPC* json;
-
+		Plugin* nextPlugin;
 
 		//variables for listener
 		bool listen_thread_active;
@@ -68,6 +70,18 @@ class UdsRegWorker : public WorkerInterface, WorkerThreads{
 		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);
 
 		virtual void thread_work(int socket);
+
+		//following methods are part of the registration process (in this order)
+
+		char* handleAnnounceMsg(string* request);
+
+		//TODO: create announceACK, currently handled by handleAnnounceMsg
+
+		bool handleRegisterMsg(string* request);
+
+		char* createRegisterACKMsg();
+
+		char* handleActiveMsg(string* request);
 
 
 };

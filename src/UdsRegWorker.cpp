@@ -5,10 +5,13 @@
  *      Author: dnoack
  */
 
-
+#include "RSD.hpp"
 #include "UdsRegWorker.hpp"
 #include "UdsRegServer.hpp"
-#include "RSD.hpp"
+#include "Plugin_Error.h"
+#include "document.h"
+
+using namespace rapidjson;
 
 
 
@@ -21,6 +24,7 @@ UdsRegWorker::UdsRegWorker(int socket)
 	this->request = 0;
 	this->response = 0;
 	this->currentSocket = socket;
+	this->nextPlugin = NULL;
 	this->state = NOT_ACTIVE;
 	this->json = new JsonRPC();
 
@@ -43,10 +47,7 @@ UdsRegWorker::~UdsRegWorker()
 
 void UdsRegWorker::thread_work(int socket)
 {
-	Plugin* nextPlugin = NULL;
-	char* name = NULL;
-	char* udsFilePath = NULL;
-	Value* currentParam = NULL;
+	char* response = NULL;
 
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	worker_thread_active = true;
@@ -74,18 +75,20 @@ void UdsRegWorker::thread_work(int socket)
 					{
 						case NOT_ACTIVE:
 							//check for announce msg, create a plugin object in RSD central list
-							json->parse(request);
-							currentParam = json->getParam("pluginName");
-							name = (char*)currentParam->GetString();
-							currentParam = json->getParam("udsFilePath");
-							udsFilePath = (char*)currentParam->GetString();
-							nextPlugin = new Plugin(name, udsFilePath);
-							send(currentSocket, "OK", 2, 0);
-							delete nextPlugin;
-
+							response = handleAnnounceMsg(request);
+							send(currentSocket, response,  strlen(response), 0);
+							state = ANNOUNCED;
 							break;
+
 						case ANNOUNCED:
 							//check for register msg, add all method names from msg to plugin object in central RSD list
+							if(handleRegisterMsg(request))
+							{
+								state = REGISTERED;
+								response = createRegisterACKMsg();
+								send(currentSocket, response, strlen(response), 0);
+							}
+							//send registerACK
 							break;
 
 						case REGISTERED:
@@ -95,7 +98,7 @@ void UdsRegWorker::thread_work(int socket)
 
 							break;
 						case BROKEN:
-							//should not occur
+
 							break;
 						default:
 							//something went completely wrong
@@ -138,13 +141,13 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 {
 
 	listen_thread_active = true;
+	memset(receiveBuffer, '\0', BUFFER_SIZE);
 
 	while(listen_thread_active)
 	{
-		memset(receiveBuffer, '\0', BUFFER_SIZE);
 
 		//TODO:msg_dontwait lets us cancel the client with listen_thread_active flag but not with sigpipe (disco at clientside)
-		recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, MSG_DONTWAIT);
+		recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, 0); //MSG_DONTWAIT for nonblocking
 		if(recvSize > 0)
 		{
 			//add received data in buffer to queue
@@ -157,12 +160,74 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 				//signal the worker
 				pthread_kill(parent_th, SIGUSR1);
 			}
+			memset(receiveBuffer, '\0', BUFFER_SIZE);
 		}
+		if(recvSize == 0)
+			listen_thread_active = false;
+
 
 	}
 	printf("Listener beendet.\n");
 	pthread_kill(parent_th, SIGPOLL);
 }
+
+
+char* UdsRegWorker::handleAnnounceMsg(string* request)
+{
+	Value* currentParam = NULL;
+	Value result;
+	Value id;
+	const char* name = NULL;
+	const char* udsFilePath = NULL;
+
+	json->parse(request);
+	currentParam = json->getParam("pluginName");
+	name = currentParam->GetString();
+	currentParam = json->getParam("udsFilePath");
+	udsFilePath = currentParam->GetString();
+	nextPlugin = new Plugin(name, udsFilePath);
+
+	result.SetString("announceACK");
+	id.SetInt(1);//TODO: read id from requestmsg
+
+	return json->generateResponse(id, result);
+
+}
+
+bool UdsRegWorker::handleRegisterMsg(string* request)
+{
+	Document* dom;
+	string* methodName = NULL;
+	bool result = false;
+
+	try
+	{
+		dom = json->parse(request);
+		for(Value::ConstMemberIterator i = (*dom)["params"].MemberBegin(); i != (*dom)["params"].MemberEnd(); ++i)
+		{
+			methodName = new string(i->value.GetString());
+			nextPlugin->addMethod(methodName);
+		}
+		result = true;
+	}
+	catch(PluginError &e)
+	{
+		printf("%s\n",e.get());
+		result = false;
+	}
+	return result;
+}
+
+
+char* UdsRegWorker::createRegisterACKMsg()
+{
+	Value result;
+	Value id;
+	result.SetString("registerACK");
+	id.SetInt(2);//TODO: read id from requestmsg
+	return json->generateResponse(id, result);
+}
+
 
 
 

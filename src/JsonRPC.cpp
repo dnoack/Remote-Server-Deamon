@@ -32,7 +32,7 @@ Document* JsonRPC::parse(string* msg)
 }
 
 
-Value* JsonRPC::getParam(char* name)
+Value* JsonRPC::getParam(const char* name)
 {
 	Value* params = NULL;
 	Value* result = NULL;
@@ -45,6 +45,20 @@ Value* JsonRPC::getParam(char* name)
 				params = &((*inputDOM)["params"]);
 				result = &((*params)[name]);
 			}
+	}
+	return result;
+}
+
+
+const char* JsonRPC::getResult()
+{
+	Value* params = NULL;
+	const char* result = NULL;
+
+	if(checkJsonRpcVersion(*inputDOM))
+	{
+		params = &((*inputDOM)["result"]);
+		result = params->GetString();
 	}
 	return result;
 }
@@ -107,16 +121,22 @@ char* JsonRPC::generateRequest(Value &method, Value &params, Value &id)
 	if(requestDOM->HasMember("params"))
 		requestDOM->RemoveMember("params");
 
+	if(requestDOM->HasMember("id"))
+		requestDOM->RemoveMember("id");
+
 	//method swap
 	oldMethod = &((*requestDOM)["method"]);
 	oldMethod->Swap(method);
 
 	//params insert as object (params is optional)
-	if(params != NULL)
+	if(&params != NULL)
 		requestDOM->AddMember("params", params, requestDOM->GetAllocator());
 
-	//set id (simple int)
-	(*requestDOM)["id"] = id.GetInt();
+	//if this is a request notification, id is NULL
+	if(&id != NULL)
+		requestDOM->AddMember("id", id, requestDOM->GetAllocator());
+
+
 	requestDOM->Accept(*jsonWriter);
 
 	return (char*)sBuffer.GetString();
@@ -143,6 +163,7 @@ char* JsonRPC::generateResponse(Value &id, Value &response)
 
 	return (char*)sBuffer.GetString();
 }
+
 
 
 char* JsonRPC::generateResponseError(Value &id, int code, char* msg)
