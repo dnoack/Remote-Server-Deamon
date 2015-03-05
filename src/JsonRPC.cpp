@@ -166,7 +166,7 @@ char* JsonRPC::generateResponse(Value &id, Value &response)
 
 
 
-char* JsonRPC::generateResponseError(Value &id, int code, char* msg)
+char* JsonRPC::generateResponseError(Value &id, int code, const char* msg)
 {
 	Value data;
 

@@ -131,7 +131,7 @@ class JsonRPC {
 
 
 
-		char* generateResponseError(Value &id, int code, char* msg);
+		char* generateResponseError(Value &id, int code, const char* msg);
 
 		void generateRequestDOM(Document &dom);
 

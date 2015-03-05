@@ -25,8 +25,8 @@ UdsComClient::UdsComClient(TcpWorker* tcpWorker)
 	comWorker = new UdsComWorker(currentSocket, tcpWorker);
 	connect(currentSocket, (struct sockaddr*)&address, addrlen);
 
-
 }
+
 
 
 UdsComClient::~UdsComClient()
@@ -34,6 +34,7 @@ UdsComClient::~UdsComClient()
 	delete comWorker;
 
 }
+
 
 
 int UdsComClient::sendData(string* data)

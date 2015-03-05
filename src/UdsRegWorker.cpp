@@ -10,6 +10,7 @@
 #include "UdsRegServer.hpp"
 #include "Plugin_Error.h"
 #include "document.h"
+#include "errno.h"
 
 using namespace rapidjson;
 
@@ -17,6 +18,7 @@ using namespace rapidjson;
 
 UdsRegWorker::UdsRegWorker(int socket)
 {
+	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	this->listen_thread_active = false;
 	this->worker_thread_active = false;
 	this->recvSize = 0;
@@ -28,7 +30,6 @@ UdsRegWorker::UdsRegWorker(int socket)
 	this->state = NOT_ACTIVE;
 	this->json = new JsonRPC();
 
-	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	StartWorkerThread(currentSocket);
 }
 
@@ -38,6 +39,8 @@ UdsRegWorker::~UdsRegWorker()
 {
 	worker_thread_active = false;
 	listen_thread_active = false;
+	pthread_kill(lthread, SIGUSR2);
+
 	delete json;
 	WaitForWorkerThreadToExit();
 }
@@ -52,20 +55,17 @@ void UdsRegWorker::thread_work(int socket)
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	worker_thread_active = true;
 
-
 	//start the listenerthread and remember the theadId of it
 	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
-
 
 	while(worker_thread_active)
 	{
 		//wait for signals from listenerthread
-
 		sigwait(&sigmask, &currentSig);
 		switch(currentSig)
 		{
 			case SIGUSR1:
-				while(receiveQueue.size() > 0)
+				while(getReceiveQueueSize() > 0)
 				{
 					request = receiveQueue.back();
 					//sigusr1 = there is data for work e.g. parsing json rpc
@@ -109,26 +109,20 @@ void UdsRegWorker::thread_work(int socket)
 
 				}
 				break;
-
 			case SIGUSR2:
 				//sigusr2 = time to exit
-				worker_thread_active = false;
-				listen_thread_active = false;
 				break;
-
 			case SIGPIPE:
-				listen_thread_active = false;
-				worker_thread_active = false;
+				printf("UdsComWorker: SIGPIPE\n");
 				break;
 			default:
-				worker_thread_active = false;
-				listen_thread_active = false;
+				printf("UdsComWorker: unkown signal \n");
 				break;
 		}
-		workerStatus(WORKER_FREE);
 	}
+
 	close(currentSocket);
-	printf("Worker Thread beendet.\n");
+	printf("Uds Reg Worker Thread beendet.\n");
 	WaitForListenerThreadToExit();
 	//destroy this UdsWorker and delete it from workerList in Uds::Server
 	UdsRegServer::editWorkerList(this, DELETE_WORKER);
@@ -141,34 +135,47 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 {
 
 	listen_thread_active = true;
-	memset(receiveBuffer, '\0', BUFFER_SIZE);
 
 	while(listen_thread_active)
 	{
 
-		//TODO:msg_dontwait lets us cancel the client with listen_thread_active flag but not with sigpipe (disco at clientside)
+		memset(receiveBuffer, '\0', BUFFER_SIZE);
+
 		recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, 0); //MSG_DONTWAIT for nonblocking
+		//data received
 		if(recvSize > 0)
 		{
 			//add received data in buffer to queue
 			editReceiveQueue(new string(receiveBuffer, recvSize), true);
-
-			//worker is doing nothing, wake him up
-			if(!workerStatus(WORKER_GETSTATUS))
-			{
-				workerStatus(WORKER_BUSY);
-				//signal the worker
-				pthread_kill(parent_th, SIGUSR1);
-			}
-			memset(receiveBuffer, '\0', BUFFER_SIZE);
+			//signal the worker
+			pthread_kill(parent_th, SIGUSR1);
 		}
-		if(recvSize == 0)
-			listen_thread_active = false;
-
+		//no data, either udsComClient or plugin invoked a shutdown of this UdsComWorker
+		else
+		{
+			//udsComClient invoked shutdown
+			if(errno == EINTR)
+			{
+				pthread_kill(parent_th, SIGUSR2);
+			}
+			//plugin invoked shutdown
+			else
+			{
+				worker_thread_active = false;
+				listen_thread_active = false;
+				pthread_kill(parent_th, SIGUSR2);
+			}
+			listenerDown = true;
+		}
 
 	}
-	printf("Listener beendet.\n");
-	pthread_kill(parent_th, SIGPOLL);
+	if(!listenerDown)
+	{
+		worker_thread_active = false;
+		listen_thread_active = false;
+		pthread_kill(parent_th, SIGUSR2);
+	}
+	printf("Uds Reg Listener beendet.\n");
 }
 
 

@@ -8,6 +8,7 @@
 #include <TcpWorker.hpp>
 
 #include "UdsComClient.hpp"
+#include "errno.h"
 
 TcpWorker::TcpWorker(int socket)
 {
@@ -25,7 +26,6 @@ TcpWorker::TcpWorker(int socket)
 	this->json = NULL;
 
 	pthread_mutex_init(&rQmutex, NULL);
-	pthread_mutex_init(&wBusyMutex, NULL);
 
 	configSignals();
 	StartWorkerThread(currentSocket);
@@ -36,10 +36,13 @@ TcpWorker::TcpWorker(int socket)
 
 TcpWorker::~TcpWorker()
 {
-	pthread_mutex_destroy(&rQmutex);
-	pthread_mutex_destroy(&wBusyMutex);
+	listen_thread_active = false;
+	worker_thread_active = false;
+	pthread_kill(lthread, SIGUSR2);
 
-	delete comClient;
+	WaitForWorkerThreadToExit();
+
+	pthread_mutex_destroy(&rQmutex);
 }
 
 
@@ -63,7 +66,7 @@ void TcpWorker::thread_work(int socket)
 		switch(currentSig)
 		{
 			case SIGUSR1:
-				while(receiveQueue.size() > 0)
+				while(getReceiveQueueSize() > 0)
 				{
 					printf("We received something and worker received a signal\n");
 					//parse to dom with jsonrpc
@@ -78,26 +81,24 @@ void TcpWorker::thread_work(int socket)
 				break;
 
 			case SIGUSR2:
-				//sigusr2 = time to exit
-				worker_thread_active = false;
-				listen_thread_active = false;
+				printf("TcpComWorker: SIGUSR2\n");
+				delete comClient;
 				break;
 
 			case SIGPIPE:
-				worker_thread_active = false;
-				listen_thread_active = false;
+				printf("TcpComWorker: SIGPIPE\n");
+				delete comClient;
 				break;
+
 			default:
-				worker_thread_active = false;
-				listen_thread_active = false;
+				printf("TcpComWorker: unkown signal \n");
+				delete comClient;
 				break;
 		}
-		workerStatus(WORKER_FREE);
 	}
 	close(currentSocket);
-	printf("Worker Thread beendet.\n");
+	printf("TCP Worker Thread beendet.\n");
 	WaitForListenerThreadToExit();
-
 
 }
 
@@ -117,24 +118,41 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 			//add received data in buffer to queue
 			editReceiveQueue(new string(receiveBuffer, recvSize), true);
 
-			//worker is doing nothing, wake him up
-			if(!workerStatus(WORKER_GETSTATUS))
-			{
-				workerStatus(WORKER_BUSY);
-				//signal the worker
-				pthread_kill(parent_th, SIGUSR1);
-			}
+			//signal the worker
+			pthread_kill(parent_th, SIGUSR1);
 		}
+		//no data, either udsComClient or plugin invoked a shutdown of this UdsComWorker
 		else
-			pthread_kill(parent_th, SIGPOLL);
-	}
-	printf("Listener beendet.\n");
+		{
+			//udsComClient invoked shutdown
+			if(errno == EINTR)
+			{
+				pthread_kill(parent_th, SIGUSR2);
+			}
+			//plugin invoked shutdown
+			else
+			{
+				worker_thread_active = false;
+				listen_thread_active = false;
+				pthread_kill(parent_th, SIGUSR2);
+			}
 
+			listenerDown = true;
+		}
+
+	}
+	if(!listenerDown)
+	{
+		worker_thread_active = false;
+		listen_thread_active = false;
+		pthread_kill(parent_th, SIGUSR2);
+	}
+	printf("TCP Listener beendet.\n");
 }
 
 
 
 int TcpWorker::tcp_send(string* data)
 {
-	send(currentSocket, data->c_str(), data->size(), 0);
+	return send(currentSocket, data->c_str(), data->size(), 0);
 }

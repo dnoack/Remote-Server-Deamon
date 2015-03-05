@@ -35,7 +35,7 @@ RSD::RSD()
 	regServer = new UdsRegServer(REGISTRY_PATH, sizeof(REGISTRY_PATH));
 	regServer->start();
 
-	//pthread_create(&accepter, NULL, accept_connections, NULL);
+	pthread_create(&accepter, NULL, accept_connections, NULL);
 }
 
 
@@ -132,9 +132,11 @@ Plugin* RSD::getPlugin(char* name)
 
 int main(int argc, char** argv)
 {
+
 	RSD* rsd = new RSD();
 	while(1)
-		sleep(3);
+		sleep(5);
+	//TODO: check tcp worker (marked for delete ?) maybe tell the client that the connection was aborted
 
 	delete rsd;
 }
