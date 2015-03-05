@@ -49,34 +49,30 @@ class WorkerInterface{
 		sigset_t sigmask;
 		int currentSig;
 
-		//test 050315
 		bool listenerDown;
 
 		static void dummy_handler(int){};
 
 
 
-		//data + add = new msg , data = NULL + add=false = remove oldest
-		void editReceiveQueue(string* data, bool add)
+		void popReceiveQueue()
 		{
+			string* lastElement = NULL;
 			pthread_mutex_lock(&rQmutex);
-			if(data != NULL)
-			{
-
-				if(add)
-				{
-					receiveQueue.push_front(data);
-				}
-			}
-			else
-			{
-				if(!add)
-				{
-					receiveQueue.pop_back();
-				}
-			}
+				lastElement = receiveQueue.back();
+				delete lastElement;
+				receiveQueue.pop_back();
 			pthread_mutex_unlock(&rQmutex);
 		}
+
+
+		void pushReceiveQueue(string* data)
+		{
+			pthread_mutex_lock(&rQmutex);
+				receiveQueue.push_front(data);
+			pthread_mutex_unlock(&rQmutex);
+		}
+
 
 		int getReceiveQueueSize()
 		{
