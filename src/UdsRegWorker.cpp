@@ -105,7 +105,7 @@ void UdsRegWorker::thread_work(int socket)
 							state = BROKEN;
 							break;
 					}
-					editReceiveQueue(NULL, false);
+					popReceiveQueue();
 
 				}
 				break;
@@ -146,7 +146,7 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 		if(recvSize > 0)
 		{
 			//add received data in buffer to queue
-			editReceiveQueue(new string(receiveBuffer, recvSize), true);
+			pushReceiveQueue(new string(receiveBuffer, recvSize));
 			//signal the worker
 			pthread_kill(parent_th, SIGUSR1);
 		}

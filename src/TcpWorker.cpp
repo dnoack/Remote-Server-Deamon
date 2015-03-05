@@ -68,7 +68,7 @@ void TcpWorker::thread_work(int socket)
 			case SIGUSR1:
 				while(getReceiveQueueSize() > 0)
 				{
-					printf("We received something and worker received a signal\n");
+					printf("%s\n", receiveQueue.back()->c_str());
 					//parse to dom with jsonrpc
 
 					//method ? namespace ? send to correct plugin via uds
@@ -76,7 +76,7 @@ void TcpWorker::thread_work(int socket)
 
 					//delete msg from queue
 					comClient->sendData(receiveQueue.back());
-					editReceiveQueue(NULL, false);
+					popReceiveQueue();
 				}
 				break;
 
@@ -116,7 +116,7 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 		if(recvSize > 0)
 		{
 			//add received data in buffer to queue
-			editReceiveQueue(new string(receiveBuffer, recvSize), true);
+			pushReceiveQueue(new string(receiveBuffer, recvSize));
 
 			//signal the worker
 			pthread_kill(parent_th, SIGUSR1);
