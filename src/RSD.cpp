@@ -12,15 +12,21 @@
 int RSD::connection_socket;
 struct sockaddr_in RSD::address;
 socklen_t RSD::addrlen;
+
 vector<Plugin*> RSD::plugins;
 pthread_mutex_t RSD::pLmutex;
+
+vector<TcpWorker*> RSD::tcpWorkerList;
+pthread_mutex_t RSD::tcpWorkerListmutex;
 
 
 
 RSD::RSD()
 {
 	pthread_mutex_init(&pLmutex, NULL);
+	pthread_mutex_init(&tcpWorkerListmutex, NULL);
 
+	rsdActive = true;
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
 	address.sin_port = htons(1234);
@@ -42,10 +48,10 @@ RSD::RSD()
 
 RSD::~RSD()
 {
-	pthread_mutex_destroy(&pLmutex);
 	delete regServer;
 	close(connection_socket);
-
+	pthread_mutex_destroy(&pLmutex);
+	pthread_mutex_destroy(&tcpWorkerListmutex);
 }
 
 
@@ -54,7 +60,7 @@ void* RSD::accept_connections(void* data)
 	listen(connection_socket, 5);
 	bool accept_thread_active = true;
 	int new_socket = 0;
-	TcpWorker* worker = NULL;
+	TcpWorker* newWorker = NULL;
 
 
 	while(accept_thread_active)
@@ -63,8 +69,8 @@ void* RSD::accept_connections(void* data)
 		if(new_socket >= 0)
 		{
 			printf("Client connected\n");
-			worker = new TcpWorker(new_socket);
-			//TODO: add to worker list, like in uds server from plugin
+			newWorker = new TcpWorker(new_socket);
+			pushWorkerList(newWorker);
 		}
 	}
 	return 0;
@@ -130,14 +136,50 @@ Plugin* RSD::getPlugin(char* name)
 }
 
 
+void RSD::pushWorkerList(TcpWorker* newWorker)
+{
+	pthread_mutex_lock(&tcpWorkerListmutex);
+	tcpWorkerList.push_back(newWorker);
+	pthread_mutex_unlock(&tcpWorkerListmutex);
+}
+
+
+
+void RSD::checkForDeletableWorker()
+{
+
+	pthread_mutex_lock(&tcpWorkerListmutex);
+	for(unsigned int i = 0; i < tcpWorkerList.size() ; i++)
+	{
+		if(tcpWorkerList[i]->isDeletable())
+		{
+			delete tcpWorkerList[i];
+			tcpWorkerList.erase(tcpWorkerList.begin()+i);
+			printf("RSD: Tcpworker deleted from list.\n");
+		}
+	}
+	pthread_mutex_unlock(&tcpWorkerListmutex);
+}
+
+
+void RSD::start()
+{
+	while(rsdActive)
+	{
+		sleep(3);
+		//check uds registry workers
+		regServer->checkForDeletableWorker();
+		//check TCP/workers
+		this->checkForDeletableWorker();
+	}
+}
+
+
 int main(int argc, char** argv)
 {
 
 	RSD* rsd = new RSD();
-	while(1)
-		sleep(5);
-	//TODO: check tcp worker (marked for delete ?) maybe tell the client that the connection was aborted
-
+	rsd->start();
 	delete rsd;
 }
 

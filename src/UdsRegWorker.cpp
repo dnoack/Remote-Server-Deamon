@@ -124,9 +124,8 @@ void UdsRegWorker::thread_work(int socket)
 	close(currentSocket);
 	printf("Uds Reg Worker Thread beendet.\n");
 	WaitForListenerThreadToExit();
-	//destroy this UdsWorker and delete it from workerList in Uds::Server
-	UdsRegServer::editWorkerList(this, DELETE_WORKER);
-
+	//mark this worker as deletable
+	deletable = true;
 }
 
 

@@ -99,6 +99,8 @@ void TcpWorker::thread_work(int socket)
 	close(currentSocket);
 	printf("TCP Worker Thread beendet.\n");
 	WaitForListenerThreadToExit();
+	//mark this whole worker/listener object as deletable
+	deletable = true;
 
 }
 

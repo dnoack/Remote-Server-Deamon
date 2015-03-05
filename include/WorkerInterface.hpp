@@ -26,6 +26,7 @@ class WorkerInterface{
 
 			this->currentSig = 0;
 			this->listenerDown = false;
+			this->deletable = false;
 			configSignals();
 
 		};
@@ -35,6 +36,8 @@ class WorkerInterface{
 		{
 			pthread_mutex_destroy(&rQmutex);
 		};
+
+		bool isDeletable(){return deletable;}
 
 
 	protected:
@@ -50,6 +53,7 @@ class WorkerInterface{
 		int currentSig;
 
 		bool listenerDown;
+		bool deletable;
 
 		static void dummy_handler(int){};
 

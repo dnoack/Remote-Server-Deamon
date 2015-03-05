@@ -39,6 +39,8 @@ class Plugin{
 			delete udsFilePath;
 		}
 
+
+
 		void addMethod(string* methodName)
 		{
 			methods.push_back(methodName);
@@ -62,24 +64,36 @@ class RSD{
 		RSD();
 		~RSD();
 
+		void start();
+
+		void checkForDeletableWorker();
+
 		static bool addPlugin(char* name, char* udsFilePath);
 		static bool deletePlugin(char* name);
 		static Plugin* getPlugin(char* name);
 		static int getPluginPos(char* name);
 
 	private:
-		 static int connection_socket;
-		 static struct sockaddr_in address;
-		 static socklen_t addrlen;
-		 int optionflag;
-		 pthread_t accepter;
 
-		 UdsRegServer* regServer;
+		bool rsdActive;
 
-		 static vector<Plugin*> plugins;
-		 static pthread_mutex_t pLmutex;
+		static int connection_socket;
+		static struct sockaddr_in address;
+		static socklen_t addrlen;
+		int optionflag;
+		pthread_t accepter;
 
-		 static void* accept_connections(void*);
+		UdsRegServer* regServer;
+
+		static vector<Plugin*> plugins;
+		static pthread_mutex_t pLmutex;
+
+		static vector<TcpWorker*> tcpWorkerList;
+		static pthread_mutex_t tcpWorkerListmutex;
+
+		static void pushWorkerList(TcpWorker* newWorker);
+
+		static void* accept_connections(void*);
 };
 
 
