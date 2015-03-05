@@ -12,6 +12,8 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <stdio.h>
+#include <cstring>
 
 using namespace std;
 
@@ -19,55 +21,44 @@ class PluginError : exception{
 
 
 	public:
-		PluginError(const char* msg, char* file, int line)
+		PluginError(const char* msg, const char* file, int line)
 		{
-			this->msg = msg;
-			this->file = file;
-			this->line = line;
-			oStream = new ostringstream();
+			this->exMsg = new string(msg);
+			memset(lineBuffer, '\0', 33);
+
+			exMsg->append("An error was thrown in file: ");
+			exMsg->append(file);
+			exMsg->append(" at line: ");
+			snprintf(lineBuffer, sizeof(lineBuffer), "%d", line);
+			exMsg->append(lineBuffer);
 		}
+
 
 
 		PluginError(const char* msg)
 		{
-			this->msg = msg;
-			this->file = NULL;
-			this->line = line;
-			oStream = new ostringstream();
+			this->exMsg = new string(msg);
 		}
 
 
 		~PluginError() throw()
 		{
-			delete(oStream);
+			delete exMsg;
 		}
 
-
-		char* get() const throw()
+		const char* get() const
 		{
-			if(file != NULL && line != NULL)
-				*oStream << "An error was thrown in file: " << file << " at line: " << line << " ### " << msg ;
-			else
-				*oStream << msg ;
-
-			return (char*)(oStream->str().c_str());
+			return exMsg->c_str();
 		}
 
 
 	private:
-		const char* msg;
-		char* file;
-		int line;
-		ostringstream* oStream;
+		string* exMsg;
+		char lineBuffer[33];
 
 
 
 };
-
-//string PluginError::msgOut;
-
-//#define throw_PluginError(msg) throw PluginError(msg , __FILE__, __LINE__);
-
 
 
 #endif /* INCLUDE_PLUGIN_ERROR_H_ */
