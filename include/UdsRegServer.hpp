@@ -39,8 +39,7 @@ class UdsRegServer{
 
 		void start();
 
-		//add=true -> add the worker, add=false->delete worker
-		static void editWorkerList(UdsRegWorker* newWorker, bool add); //static
+		void checkForDeletableWorker();
 
 	private:
 
@@ -58,6 +57,8 @@ class UdsRegServer{
 		int optionflag;
 
 		static void* uds_accept(void*);
+
+		static void pushWorkerList(UdsRegWorker* newWorker);
 
 
 };
