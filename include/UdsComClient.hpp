@@ -33,11 +33,13 @@ class UdsComClient{
 
 
 	public:
-		UdsComClient(TcpWorker* tcpworker);
+		UdsComClient(TcpWorker* tcpworker, string* udsFilePath, string* pluginName);
 		~UdsComClient();
 
 		int sendData(string* data);
 		int sendResponse(string* data);
+
+		string* getPluginName(){return pluginName;}
 
 	private:
 
@@ -49,6 +51,9 @@ class UdsComClient{
 
 	int optionflag;
 	int currentSocket;
+
+	string* udsFilePath;
+	string* pluginName;
 };
 
 

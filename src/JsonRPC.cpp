@@ -52,15 +52,29 @@ Value* JsonRPC::getParam(const char* name)
 
 const char* JsonRPC::getResult()
 {
-	Value* params = NULL;
-	const char* result = NULL;
+	Value* resultValue = NULL;
+	const char* resultString = NULL;
 
 	if(checkJsonRpcVersion(*inputDOM))
 	{
-		params = &((*inputDOM)["result"]);
-		result = params->GetString();
+		resultValue = &((*inputDOM)["result"]);
+		resultString = resultValue->GetString();
 	}
-	return result;
+	return resultString;
+}
+
+
+const char* JsonRPC::getMethod()
+{
+	Value* methodValue = NULL;
+	const char* methodString = NULL;
+
+	if(checkJsonRpcVersion(*inputDOM))
+	{
+		methodValue = &((*inputDOM)["method"]);
+		methodString = methodValue->GetString();
+	}
+	return methodString;
 }
 
 

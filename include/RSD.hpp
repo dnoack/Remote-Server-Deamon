@@ -69,6 +69,7 @@ class RSD{
 		void checkForDeletableWorker();
 
 		static bool addPlugin(char* name, char* udsFilePath);
+		static bool addPlugin(Plugin* newPlugin);
 		static bool deletePlugin(char* name);
 		static Plugin* getPlugin(char* name);
 		static int getPluginPos(char* name);

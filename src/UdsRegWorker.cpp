@@ -92,6 +92,7 @@ void UdsRegWorker::thread_work(int socket)
 							break;
 
 						case REGISTERED:
+							RSD::addPlugin(nextPlugin);
 							break;
 
 						case ACTIVE:

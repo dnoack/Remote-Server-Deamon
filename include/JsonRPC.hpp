@@ -81,10 +81,13 @@ class JsonRPC {
 		 */
 		bool isRequest();
 
+
+
 		Value* getParam(const char* name);
 
 		const char* getResult();
 
+		const char* getMethod();
 
 		Document* parse(string* msg);
 

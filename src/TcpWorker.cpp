@@ -7,6 +7,7 @@
 
 #include <TcpWorker.hpp>
 
+#include "RSD.hpp"
 #include "UdsComClient.hpp"
 #include "errno.h"
 
@@ -22,12 +23,9 @@ TcpWorker::TcpWorker(int socket)
 	this->jsonInput = NULL;
 	this->identity = NULL;
 	this->currentSocket = socket;
-	this->comClient = new UdsComClient(this);
-	this->json = NULL;
+	this->json = new JsonRPC();
 
-	pthread_mutex_init(&rQmutex, NULL);
 
-	configSignals();
 	StartWorkerThread(currentSocket);
 }
 
@@ -40,9 +38,10 @@ TcpWorker::~TcpWorker()
 	worker_thread_active = false;
 	pthread_kill(lthread, SIGUSR2);
 
-	WaitForWorkerThreadToExit();
 
-	pthread_mutex_destroy(&rQmutex);
+	WaitForWorkerThreadToExit();
+	delete json;
+
 }
 
 
@@ -53,6 +52,13 @@ void TcpWorker::thread_work(int socket)
 
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	worker_thread_active = true;
+	string* request = NULL;
+	const char* methodName = NULL;
+	char* methodNamespace = NULL;
+	int namespacePos = 0;
+	Plugin* currentPlugin = NULL;
+	UdsComClient* currentComClient = NULL;
+	bool clientFound = false;
 
 	//start the listenerthread and remember the theadId of it
 	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
@@ -68,31 +74,65 @@ void TcpWorker::thread_work(int socket)
 			case SIGUSR1:
 				while(getReceiveQueueSize() > 0)
 				{
-					printf("%s\n", receiveQueue.back()->c_str());
-					//parse to dom with jsonrpc
+					clientFound = false;
+					request = receiveQueue.back();
+					printf("%s\n", request->c_str());
+					//TODO: 1) parse to dom with jsonrpc
+					json->parse(request);
 
-					//method ? namespace ? send to correct plugin via uds
-					//sending will be done by a uds client
 
-					//delete msg from queue
-					comClient->sendData(receiveQueue.back());
+					//TODO: 2) (get methodname)get method namespace
+					methodName = json->getMethod();
+					namespacePos = strcspn(methodName, ".");
+					methodNamespace = new char[namespacePos+1];
+					strncpy(methodNamespace, methodName, namespacePos);
+					methodNamespace[namespacePos] = '\0';
+
+					//TODO: 3) check if we already have a udsClient for this namespace
+					for(int i = 0 ; i < comClientList.size() && !clientFound ; i++)
+					{
+						currentComClient = comClientList[i];
+						if(currentComClient->getPluginName()->compare(methodNamespace) == 0)
+						{
+							clientFound = true;
+						}
+					}
+
+					//TODO: 3.1)  IF NOT  -> check RSD plugin list for this namespace and get udsFilePath
+					if(!clientFound)
+					{
+						currentPlugin = RSD::getPlugin(methodNamespace);
+
+						if(currentPlugin == NULL)
+						{
+							//TODO: 3.1.1) error, no plugin with this namespace connected
+						}
+
+						//TODO: 3.2)  create a new udsClient with this udsFilePath and push it to list
+						currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName());
+						comClientList.push_back(currentComClient);
+					}
+
+					//TODO: 4) use the udsClient to send forward the request
+					currentComClient->sendData(receiveQueue.back());
+
 					popReceiveQueue();
 				}
 				break;
 
 			case SIGUSR2:
 				printf("TcpComWorker: SIGUSR2\n");
-				delete comClient;
+				//TODO: delete all udsComClients within udsComClientList
 				break;
 
 			case SIGPIPE:
 				printf("TcpComWorker: SIGPIPE\n");
-				delete comClient;
+				//TODO: delete all udsComClients within udsComClientList
 				break;
 
 			default:
 				printf("TcpComWorker: unkown signal \n");
-				delete comClient;
+				//TODO: delete all udsComClients within udsComClientList
 				break;
 		}
 	}

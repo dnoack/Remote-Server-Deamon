@@ -92,6 +92,21 @@ bool RSD::addPlugin(char* name, char* udsFilePath)
 	return result;
 }
 
+bool RSD::addPlugin(Plugin* newPlugin)
+{
+	bool result = false;
+	char* name = (char*)(newPlugin->getName()->c_str());
+
+	if(getPlugin(name) == NULL)
+	{
+		pthread_mutex_lock(&pLmutex);
+		plugins.push_back(newPlugin);
+		result = true;
+		pthread_mutex_unlock(&pLmutex);
+	}
+	return result;
+}
+
 
 bool RSD::deletePlugin(char* name)
 {
@@ -122,7 +137,7 @@ Plugin* RSD::getPlugin(char* name)
 	string* currentName = NULL;
 
 	pthread_mutex_lock(&pLmutex);
-	for(unsigned int i = plugins.size(); i < plugins.size() && result == NULL; i++)
+	for(unsigned int i = 0; i < plugins.size() && result == NULL; i++)
 	{
 		currentName = plugins[i]->getName();
 		if(currentName->compare(name) == 0)
