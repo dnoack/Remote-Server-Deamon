@@ -12,14 +12,16 @@ struct sockaddr_un UdsComClient::address;
 socklen_t UdsComClient::addrlen;
 
 
-UdsComClient::UdsComClient(TcpWorker* tcpWorker)
+UdsComClient::UdsComClient(TcpWorker* tcpWorker, string* udsFilePath, string* pluginName)
 {
 	optionflag = 1;
 	this->tcpWorker = tcpWorker;
+	this->udsFilePath = new string(*udsFilePath);
+	this->pluginName = new string(*pluginName);
 
 	currentSocket = socket(AF_UNIX, SOCK_STREAM, 0);
 	address.sun_family = AF_UNIX;
-	strncpy(address.sun_path, UDS_COM_PATH, sizeof(UDS_COM_PATH));
+	strncpy(address.sun_path, udsFilePath->c_str(), udsFilePath->size());
 	addrlen = sizeof(address);
 
 	comWorker = new UdsComWorker(currentSocket, tcpWorker);
@@ -32,7 +34,8 @@ UdsComClient::UdsComClient(TcpWorker* tcpWorker)
 UdsComClient::~UdsComClient()
 {
 	delete comWorker;
-
+	delete udsFilePath;
+	delete pluginName;
 }
 
 
