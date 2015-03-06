@@ -43,6 +43,8 @@ class TcpWorker : public WorkerInterface, WorkerThreads{
 		~TcpWorker();
 
 		int tcp_send(string* data);
+		void checkComClientList();
+		pthread_t getLthread(){return this->lthread;}
 
 
 	private:
@@ -67,6 +69,8 @@ class TcpWorker : public WorkerInterface, WorkerThreads{
 		JsonRPC* json;
 		vector<UdsComClient*> comClientList;
 		int currentSocket;
+
+		void deleteComClientList();
 
 
 		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);

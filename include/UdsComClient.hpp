@@ -19,7 +19,7 @@
 #include "signal.h"
 #include <string>
 
-#include "UdsComClient.hpp"
+
 #include "UdsComWorker.hpp"
 
 using namespace std;
@@ -36,10 +36,16 @@ class UdsComClient{
 		UdsComClient(TcpWorker* tcpworker, string* udsFilePath, string* pluginName);
 		~UdsComClient();
 
+
 		int sendData(string* data);
 		int sendResponse(string* data);
 
 		string* getPluginName(){return pluginName;}
+		bool isDeletable(){return deletable;}
+
+		void markAsDeletable();
+		void tcp_send(string* request);
+
 
 	private:
 
@@ -54,6 +60,10 @@ class UdsComClient{
 
 	string* udsFilePath;
 	string* pluginName;
+
+	bool deletable;
+
+
 };
 
 

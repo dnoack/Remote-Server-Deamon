@@ -22,7 +22,7 @@
 #include <pthread.h>
 #include "signal.h"
 
-#include "TcpWorker.hpp"
+
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
 
@@ -33,11 +33,13 @@
 #define WORKER_BUSY 1
 #define WORKER_GETSTATUS 2
 
+class UdsComClient;
+
 
 class UdsComWorker : public WorkerInterface, WorkerThreads{
 
 	public:
-		UdsComWorker(int socket, TcpWorker* tcpWorker);
+		UdsComWorker(int socket, UdsComClient* comClient);
 		~UdsComWorker();
 
 
@@ -62,7 +64,7 @@ class UdsComWorker : public WorkerInterface, WorkerThreads{
 		//not shared, more common
 		pthread_t lthread;
 		int currentSocket;
-		TcpWorker* tcpWorker;
+		UdsComClient* comClient;
 
 
 		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);

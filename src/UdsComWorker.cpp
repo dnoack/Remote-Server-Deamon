@@ -5,11 +5,12 @@
  *      Author: dnoack
  */
 
+#include "UdsComClient.hpp"
 #include "UdsComWorker.hpp"
 #include "errno.h"
 
 
-UdsComWorker::UdsComWorker(int socket, TcpWorker* tcpworker)
+UdsComWorker::UdsComWorker(int socket,  UdsComClient* comClient)
 {
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	this->listen_thread_active = false;
@@ -20,7 +21,7 @@ UdsComWorker::UdsComWorker(int socket, TcpWorker* tcpworker)
 	this->jsonReturn = NULL;
 	this->jsonInput = NULL;
 	this->identity = NULL;
-	this->tcpWorker = tcpworker;
+	this->comClient = comClient;
 	this->currentSocket = socket;
 
 	StartWorkerThread(currentSocket);
@@ -31,7 +32,6 @@ UdsComWorker::UdsComWorker(int socket, TcpWorker* tcpworker)
 
 UdsComWorker::~UdsComWorker()
 {
-	printf("tryn to shutdown udsComworker\n");
 	worker_thread_active = false;
 	listen_thread_active = false;
 	pthread_kill(lthread, SIGUSR2);
@@ -62,7 +62,7 @@ void UdsComWorker::thread_work(int socket)
 				while(getReceiveQueueSize() > 0)
 				{
 					//remove data from queue
-					tcpWorker->tcp_send(receiveQueue.back());
+					comClient->tcp_send(receiveQueue.back());
 					popReceiveQueue();
 				}
 				break;
@@ -84,7 +84,7 @@ void UdsComWorker::thread_work(int socket)
 	close(currentSocket);
 	printf("Uds Worker Thread beendet.\n");
 	WaitForListenerThreadToExit();
-	//TODO: tell tcpWorker to delete his udsComClient instance
+	comClient->markAsDeletable();
 }
 
 

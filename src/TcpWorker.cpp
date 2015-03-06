@@ -77,19 +77,19 @@ void TcpWorker::thread_work(int socket)
 					clientFound = false;
 					request = receiveQueue.back();
 					printf("%s\n", request->c_str());
-					//TODO: 1) parse to dom with jsonrpc
+					// 1) parse to dom with jsonrpc
 					json->parse(request);
 
 
-					//TODO: 2) (get methodname)get method namespace
+					// 2) (get methodname)get method namespace
 					methodName = json->getMethod();
 					namespacePos = strcspn(methodName, ".");
 					methodNamespace = new char[namespacePos+1];
 					strncpy(methodNamespace, methodName, namespacePos);
 					methodNamespace[namespacePos] = '\0';
 
-					//TODO: 3) check if we already have a udsClient for this namespace
-					for(int i = 0 ; i < comClientList.size() && !clientFound ; i++)
+					// 3) check if we already have a udsClient for this namespace
+					for(unsigned int i = 0 ; i < comClientList.size() && !clientFound ; i++)
 					{
 						currentComClient = comClientList[i];
 						if(currentComClient->getPluginName()->compare(methodNamespace) == 0)
@@ -98,7 +98,7 @@ void TcpWorker::thread_work(int socket)
 						}
 					}
 
-					//TODO: 3.1)  IF NOT  -> check RSD plugin list for this namespace and get udsFilePath
+					// 3.1)  IF NOT  -> check RSD plugin list for this namespace and get udsFilePath
 					if(!clientFound)
 					{
 						currentPlugin = RSD::getPlugin(methodNamespace);
@@ -108,12 +108,13 @@ void TcpWorker::thread_work(int socket)
 							//TODO: 3.1.1) error, no plugin with this namespace connected
 						}
 
-						//TODO: 3.2)  create a new udsClient with this udsFilePath and push it to list
+						// 3.2)  create a new udsClient with this udsFilePath and push it to list
 						currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName());
 						comClientList.push_back(currentComClient);
+						printf("Added new ComClient: %s\n", currentComClient->getPluginName()->c_str());
 					}
 
-					//TODO: 4) use the udsClient to send forward the request
+					// 4) use the udsClient to send forward the request
 					currentComClient->sendData(receiveQueue.back());
 
 					popReceiveQueue();
@@ -122,17 +123,17 @@ void TcpWorker::thread_work(int socket)
 
 			case SIGUSR2:
 				printf("TcpComWorker: SIGUSR2\n");
-				//TODO: delete all udsComClients within udsComClientList
+				checkComClientList();
 				break;
 
 			case SIGPIPE:
 				printf("TcpComWorker: SIGPIPE\n");
-				//TODO: delete all udsComClients within udsComClientList
+				deleteComClientList();
 				break;
 
 			default:
 				printf("TcpComWorker: unkown signal \n");
-				//TODO: delete all udsComClients within udsComClientList
+				deleteComClientList();
 				break;
 		}
 	}
@@ -176,10 +177,9 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 			{
 				worker_thread_active = false;
 				listen_thread_active = false;
-				pthread_kill(parent_th, SIGUSR2);
+				pthread_kill(parent_th, SIGPOLL);
+				listenerDown = true;
 			}
-
-			listenerDown = true;
 		}
 
 	}
@@ -187,7 +187,7 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 	{
 		worker_thread_active = false;
 		listen_thread_active = false;
-		pthread_kill(parent_th, SIGUSR2);
+		pthread_kill(parent_th, SIGPOLL);
 	}
 	printf("TCP Listener beendet.\n");
 }
@@ -197,4 +197,38 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 int TcpWorker::tcp_send(string* data)
 {
 	return send(currentSocket, data->c_str(), data->size(), 0);
+}
+
+
+void TcpWorker::deleteComClientList()
+{
+	int size = comClientList.size();
+
+	for(int i = 0; i < size; i++)
+	{
+		printf("Deleting COmClient: %s\n", comClientList[i]->getPluginName()->c_str());
+		delete comClientList[i];
+	}
+
+		comClientList.clear();
+		vector<UdsComClient*>().swap(comClientList);
+}
+
+void TcpWorker::checkComClientList()
+{
+	int size = comClientList.size();
+
+	for(int i = 0; i < size; i++)
+	{
+		if(comClientList[i]->isDeletable())
+		{
+			printf("Deleting COmClient: %s\n", comClientList[i]->getPluginName()->c_str());
+			delete comClientList[i];
+			comClientList.erase(comClientList.begin()+i);
+			//TODO: create correkt json rpc response or notification for client
+			//TODO: also delete plugin from list, else we will always try to connect to it.
+			send(currentSocket, "Connection to AardvarkPlugin Aborted!\n", 39, 0);
+		}
+	}
+
 }
