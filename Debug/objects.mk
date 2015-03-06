@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -laardvark -ldl -lpthread
+LIBS := -ldl -lpthread
 
