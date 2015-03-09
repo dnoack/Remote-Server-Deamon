@@ -64,8 +64,8 @@ class WorkerInterface{
 			string* lastElement = NULL;
 			pthread_mutex_lock(&rQmutex);
 				lastElement = receiveQueue.back();
-				delete lastElement;
 				receiveQueue.pop_back();
+				delete lastElement;
 			pthread_mutex_unlock(&rQmutex);
 		}
 
@@ -82,7 +82,7 @@ class WorkerInterface{
 		{
 			int result = 0;
 			pthread_mutex_lock(&rQmutex);
-			result = receiveQueue.size();
+				result = receiveQueue.size();
 			pthread_mutex_unlock(&rQmutex);
 
 			return result;
