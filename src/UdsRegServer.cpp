@@ -51,14 +51,11 @@ UdsRegServer::~UdsRegServer()
 }
 
 
-
 int UdsRegServer::call()
 {
 	connect(connection_socket, (struct sockaddr*) &address, addrlen);
 	return 0;
 }
-
-
 
 
 void* UdsRegServer::uds_accept(void* param)
@@ -91,7 +88,6 @@ void UdsRegServer::pushWorkerList(UdsRegWorker* newWorker)
 }
 
 
-
 void UdsRegServer::checkForDeletableWorker()
 {
 
@@ -109,12 +105,8 @@ void UdsRegServer::checkForDeletableWorker()
 }
 
 
-
 void UdsRegServer::start()
 {
 	pthread_t accepter;
 	pthread_create(&accepter, NULL, uds_accept, NULL);
 }
-
-
-

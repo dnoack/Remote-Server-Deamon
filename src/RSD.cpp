@@ -29,7 +29,7 @@ RSD::RSD()
 	rsdActive = true;
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons(1234);
+	address.sin_port = htons(TCP_PORT);
 	addrlen = sizeof(address);
 	optionflag = 1;
 
@@ -41,6 +41,7 @@ RSD::RSD()
 	regServer = new UdsRegServer(REGISTRY_PATH, sizeof(REGISTRY_PATH));
 	regServer->start();
 
+	//start comListener
 	pthread_create(&accepter, NULL, accept_connections, NULL);
 }
 
@@ -50,6 +51,9 @@ RSD::~RSD()
 {
 	delete regServer;
 	close(connection_socket);
+
+	//TODO: vector cleanups for tcpWorkerList and plugins
+
 	pthread_mutex_destroy(&pLmutex);
 	pthread_mutex_destroy(&tcpWorkerListmutex);
 }
@@ -57,7 +61,7 @@ RSD::~RSD()
 
 void* RSD::accept_connections(void* data)
 {
-	listen(connection_socket, 5);
+	listen(connection_socket, MAX_CLIENTS);
 	bool accept_thread_active = true;
 	int new_socket = 0;
 	TcpWorker* newWorker = NULL;
@@ -91,6 +95,7 @@ bool RSD::addPlugin(char* name, char* udsFilePath)
 	}
 	return result;
 }
+
 
 bool RSD::addPlugin(Plugin* newPlugin)
 {
@@ -130,7 +135,6 @@ bool RSD::deletePlugin(char* name)
 }
 
 
-
 Plugin* RSD::getPlugin(char* name)
 {
 	Plugin* result = NULL;
@@ -159,7 +163,6 @@ void RSD::pushWorkerList(TcpWorker* newWorker)
 }
 
 
-
 void RSD::checkForDeletableWorker()
 {
 
@@ -181,7 +184,7 @@ void RSD::start()
 {
 	while(rsdActive)
 	{
-		sleep(3);
+		sleep(MAIN_SLEEP_TIME);
 		//check uds registry workers
 		regServer->checkForDeletableWorker();
 		//check TCP/workers
@@ -192,7 +195,6 @@ void RSD::start()
 
 int main(int argc, char** argv)
 {
-
 	RSD* rsd = new RSD();
 	rsd->start();
 	delete rsd;

@@ -9,6 +9,7 @@
 
 #include "RSD.hpp"
 #include "UdsComClient.hpp"
+#include "Plugin_Error.h"
 #include "errno.h"
 
 TcpWorker::TcpWorker(int socket)
@@ -25,11 +26,8 @@ TcpWorker::TcpWorker(int socket)
 	this->currentSocket = socket;
 	this->json = new JsonRPC();
 
-
 	StartWorkerThread(currentSocket);
 }
-
-
 
 
 TcpWorker::~TcpWorker()
@@ -41,10 +39,7 @@ TcpWorker::~TcpWorker()
 
 	WaitForWorkerThreadToExit();
 	delete json;
-
 }
-
-
 
 
 void TcpWorker::thread_work(int socket)
@@ -53,12 +48,8 @@ void TcpWorker::thread_work(int socket)
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	worker_thread_active = true;
 	string* request = NULL;
-	const char* methodName = NULL;
-	char* methodNamespace = NULL;
-	int namespacePos = 0;
-	Plugin* currentPlugin = NULL;
-	UdsComClient* currentComClient = NULL;
-	bool clientFound = false;
+	string* errorResponse = NULL;
+
 
 	//start the listenerthread and remember the theadId of it
 	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
@@ -74,49 +65,19 @@ void TcpWorker::thread_work(int socket)
 			case SIGUSR1:
 				while(getReceiveQueueSize() > 0)
 				{
-					clientFound = false;
-					request = receiveQueue.back();
-					printf("%s\n", request->c_str());
-					// 1) parse to dom with jsonrpc
-					json->parse(request);
-
-
-					// 2) (get methodname)get method namespace
-					methodName = json->getMethod(true);
-					namespacePos = strcspn(methodName, ".");
-					methodNamespace = new char[namespacePos+1];
-					strncpy(methodNamespace, methodName, namespacePos);
-					methodNamespace[namespacePos] = '\0';
-
-					// 3) check if we already have a udsClient for this namespace
-					for(unsigned int i = 0 ; i < comClientList.size() && !clientFound ; i++)
+					try
 					{
-						currentComClient = comClientList[i];
-						if(currentComClient->getPluginName()->compare(methodNamespace) == 0)
-						{
-							clientFound = true;
-						}
-					}
+						request = receiveQueue.back();
+						printf("%s\n", request->c_str());
+						handleMsg(request);
 
-					// 3.1)  IF NOT  -> check RSD plugin list for this namespace and get udsFilePath
-					if(!clientFound)
+					}
+					catch(PluginError &e)
 					{
-						currentPlugin = RSD::getPlugin(methodNamespace);
-
-						if(currentPlugin == NULL)
-						{
-							//TODO: 3.1.1) error, no plugin with this namespace connected
-						}
-
-						// 3.2)  create a new udsClient with this udsFilePath and push it to list
-						currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName());
-						comClientList.push_back(currentComClient);
-						printf("Added new ComClient: %s\n", currentComClient->getPluginName()->c_str());
+						errorResponse = new string(e.get());
+						tcp_send(errorResponse);
+						delete errorResponse;
 					}
-
-					// 4) use the udsClient to send forward the request
-					currentComClient->sendData(receiveQueue.back());
-
 					popReceiveQueue();
 				}
 				break;
@@ -146,7 +107,6 @@ void TcpWorker::thread_work(int socket)
 }
 
 
-
 void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffer)
 {
 	listen_thread_active = true;
@@ -172,7 +132,7 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 			{
 				pthread_kill(parent_th, SIGUSR2);
 			}
-			//plugin invoked shutdown
+			//client
 			else
 			{
 				worker_thread_active = false;
@@ -193,26 +153,111 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 }
 
 
-
 int TcpWorker::tcp_send(string* data)
 {
 	return send(currentSocket, data->c_str(), data->size(), 0);
 }
 
 
+void TcpWorker::handleMsg(string* request)
+{
+	char* methodNamespace = NULL;
+
+	// 1) parse to dom with jsonrpc
+	json->parse(request);
+	methodNamespace = getMethodNamespace();
+
+
+	lastComClient = findComClient(methodNamespace);
+
+	// 4) use the udsClient to send forward the request
+	lastComClient->sendData(receiveQueue.back());
+
+}
+
+
+UdsComClient* TcpWorker::findComClient(char* pluginName)
+{
+	UdsComClient* currentComClient = NULL;
+	Plugin* currentPlugin = NULL;
+	bool clientFound = false;
+
+	/*
+	//first check if lastComClient isn't  what we are looking for
+	if(lastComClient != NULL && lastComClient->getPluginName()->compare(pluginName) == 0 && !lastComClient->isDeletable())
+	{
+		currentComClient = lastComClient;
+		clientFound = true;
+	}
+	else*/
+	{
+		// 3) check if we already have a udsClient for this namespace/pluginName
+		for(unsigned int i = 0 ; i < comClientList.size() && !clientFound ; i++)
+		{
+			currentComClient = comClientList[i];
+			if(currentComClient->getPluginName()->compare(pluginName) == 0)
+			{
+				clientFound = true;
+			}
+		}
+
+		// 3.1)  IF NOT  -> check RSD plugin list for this namespace and get udsFilePath
+		if(!clientFound)
+		{
+			currentPlugin = RSD::getPlugin(pluginName);
+
+			if(currentPlugin == NULL)
+			{
+				//TODO: 3.1.1) error, no plugin with this namespace connected
+			}
+
+			// 3.2)  create a new udsClient with this udsFilePath and push it to list
+			currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName());
+			comClientList.push_back(currentComClient);
+			printf("Added new ComClient: %s\n", currentComClient->getPluginName()->c_str());
+		}
+	}
+
+	return currentComClient;
+}
+
+
+char* TcpWorker::getMethodNamespace()
+{
+	const char* methodName = NULL;
+	char* methodNamespace = NULL;
+	int namespacePos = 0;
+
+	// 2) (get methodname)get method namespace
+	methodName = json->getMethod(true);
+	namespacePos = strcspn(methodName, ".");
+	methodNamespace = new char[namespacePos+1];
+	strncpy(methodNamespace, methodName, namespacePos);
+	methodNamespace[namespacePos] = '\0';
+
+	return methodNamespace;
+
+}
+
+
+
+
 void TcpWorker::deleteComClientList()
 {
+	lastComClient = NULL;
 	int size = comClientList.size();
 
 	for(int i = 0; i < size; i++)
 	{
 		printf("Deleting COmClient: %s\n", comClientList[i]->getPluginName()->c_str());
 		delete comClientList[i];
+		comClientList[i] = NULL;
 	}
 
-		comClientList.clear();
-		vector<UdsComClient*>().swap(comClientList);
+	comClientList.clear();
+	vector<UdsComClient*>().swap(comClientList);
 }
+
 
 void TcpWorker::checkComClientList()
 {
@@ -225,10 +270,9 @@ void TcpWorker::checkComClientList()
 			printf("Deleting COmClient: %s\n", comClientList[i]->getPluginName()->c_str());
 			delete comClientList[i];
 			comClientList.erase(comClientList.begin()+i);
-			//TODO: create correkt json rpc response or notification for client
+			//TODO: create correct json rpc response or notification for client
 			//TODO: also delete plugin from list, else we will always try to connect to it.
 			send(currentSocket, "Connection to AardvarkPlugin Aborted!\n", 39, 0);
 		}
 	}
-
 }

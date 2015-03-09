@@ -68,8 +68,13 @@ class TcpWorker : public WorkerInterface, WorkerThreads{
 		pthread_t lthread;
 		JsonRPC* json;
 		vector<UdsComClient*> comClientList;
+		UdsComClient* lastComClient;
 		int currentSocket;
 
+
+		void handleMsg(string* request);
+		char* getMethodNamespace();
+		UdsComClient* findComClient(char* pluginName);
 		void deleteComClientList();
 
 

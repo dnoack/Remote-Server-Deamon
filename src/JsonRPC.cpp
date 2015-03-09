@@ -36,6 +36,7 @@ Value* JsonRPC::getParam(bool checkParamsField, const char* name)
 {
 	Value* params = NULL;
 	Value* result = NULL;
+	Value nullid;
 
 	try
 	{
@@ -43,7 +44,14 @@ Value* JsonRPC::getParam(bool checkParamsField, const char* name)
 			hasParams();
 
 		params = &((*inputDOM)["params"]);
-		result = &((*params)[name]);
+		if(!params->HasMember(name))
+		{
+			//TODO: insert name of parameter
+			error = generateResponseError(nullid, -32022, "Missing parameter.");
+			throw PluginError(error);
+		}
+		else
+			result = &((*params)[name]);
 
 	}
 	catch(PluginError &e)
@@ -66,6 +74,7 @@ const char* JsonRPC::getResult(bool checkResultField)
 			hasResult();
 
 		resultValue = &((*inputDOM)["result"]);
+		//TODO: result can also be an integer
 		resultString = resultValue->GetString();
 	}
 	catch(PluginError &e)
