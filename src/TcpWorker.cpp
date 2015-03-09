@@ -82,7 +82,7 @@ void TcpWorker::thread_work(int socket)
 
 
 					// 2) (get methodname)get method namespace
-					methodName = json->getMethod();
+					methodName = json->getMethod(true);
 					namespacePos = strcspn(methodName, ".");
 					methodNamespace = new char[namespacePos+1];
 					strncpy(methodNamespace, methodName, namespacePos);

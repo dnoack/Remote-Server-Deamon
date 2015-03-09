@@ -188,9 +188,9 @@ char* UdsRegWorker::handleAnnounceMsg(string* request)
 	const char* udsFilePath = NULL;
 
 	json->parse(request);
-	currentParam = json->getParam("pluginName");
+	currentParam = json->getParam(true, "pluginName");
 	name = currentParam->GetString();
-	currentParam = json->getParam("udsFilePath");
+	currentParam = json->getParam(true, "udsFilePath");
 	udsFilePath = currentParam->GetString();
 	nextPlugin = new Plugin(name, udsFilePath);
 
