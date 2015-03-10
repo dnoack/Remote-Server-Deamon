@@ -47,7 +47,7 @@ class UdsRegServer{
 
 
 		//list of pthread ids with all the active worker. push and pop must be protected by mutex
-		static vector<UdsRegWorker*> workerList;
+		static list<UdsRegWorker*> workerList;
 		static pthread_mutex_t wLmutex;
 
 		static struct sockaddr_un address;

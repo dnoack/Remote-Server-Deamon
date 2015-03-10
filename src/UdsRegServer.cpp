@@ -15,7 +15,7 @@
 //static symbols
 int UdsRegServer::connection_socket;
 
-vector<UdsRegWorker*> UdsRegServer::workerList;
+list<UdsRegWorker*> UdsRegServer::workerList;
 pthread_mutex_t UdsRegServer::wLmutex;
 
 struct sockaddr_un UdsRegServer::address;
@@ -92,14 +92,17 @@ void UdsRegServer::checkForDeletableWorker()
 {
 
 	pthread_mutex_lock(&wLmutex);
-	for(unsigned int i = 0; i < workerList.size() ; i++)
+	list<UdsRegWorker*>::iterator i = workerList.begin();
+	while(i != workerList.end())
 	{
-		if(workerList[i]->isDeletable())
+		if((*i)->isDeletable())
 		{
-			delete workerList[i];
-			workerList.erase(workerList.begin()+i);
+			delete  *i;
+			i = workerList.erase(i);
 			printf("UdsRegServer: UdsRegWorker was deleted.\n");
 		}
+		else
+			++i;
 	}
 	pthread_mutex_unlock(&wLmutex);
 }
