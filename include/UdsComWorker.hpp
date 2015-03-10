@@ -65,6 +65,7 @@ class UdsComWorker : public WorkerInterface, WorkerThreads{
 		pthread_t lthread;
 		int currentSocket;
 		UdsComClient* comClient;
+		bool deletable;
 
 
 		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);
