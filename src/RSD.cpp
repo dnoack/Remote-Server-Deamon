@@ -193,7 +193,7 @@ void RSD::start()
 	{
 		sleep(MAIN_SLEEP_TIME);
 		//check uds registry workers
-		//regServer->checkForDeletableWorker();
+		regServer->checkForDeletableWorker();
 		//check TCP/workers
 		this->checkForDeletableWorker();
 	}

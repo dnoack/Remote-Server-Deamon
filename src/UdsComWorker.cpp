@@ -128,15 +128,15 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 				listen_thread_active = false;
 				pthread_kill(parent_th, SIGPOLL);
 			}
-			//listenerDown = true;
+			listenerDown = true;
 		}
 
-	}/*
+	}
 	if(!listenerDown)
 	{
 		worker_thread_active = false;
 		listen_thread_active = false;
 		pthread_kill(parent_th, SIGUSR2);
-	}*/
+	}
 	printf("Uds Listener beendet.\n");
 }

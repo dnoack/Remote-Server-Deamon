@@ -100,7 +100,7 @@ void TcpWorker::thread_work(int socket)
 
 			case SIGPOLL:
 				printf("TcpComWorker: SIGPOLL\n");
-				//deleteComClientList();
+				deleteComClientList();
 				break;
 
 			default:
@@ -148,17 +148,17 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 				worker_thread_active = false;
 				listen_thread_active = false;
 				pthread_kill(parent_th, SIGPOLL);
-				//listenerDown = true;
 			}
+			listenerDown = true;
 		}
 
-	}/* TODO: delete ?
+	}
 	if(!listenerDown)
 	{
 		worker_thread_active = false;
 		listen_thread_active = false;
 		pthread_kill(parent_th, SIGPOLL);
-	}*/
+	}
 	printf("TCP Listener beendet.\n");
 }
 
