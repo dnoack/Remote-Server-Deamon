@@ -16,7 +16,7 @@ socklen_t RSD::addrlen;
 vector<Plugin*> RSD::plugins;
 pthread_mutex_t RSD::pLmutex;
 
-vector<TcpWorker*> RSD::tcpWorkerList;
+list<TcpWorker*> RSD::tcpWorkerList;
 pthread_mutex_t RSD::tcpWorkerListmutex;
 
 
@@ -119,7 +119,7 @@ bool RSD::deletePlugin(char* name)
 	string* currentName = NULL;
 
 	pthread_mutex_lock(&pLmutex);
-	for(unsigned int i = plugins.size(); i < plugins.size() && result == false; i++)
+	for(unsigned int i = 0; i < plugins.size() && result == false; i++)
 	{
 		currentName = plugins[i]->getName();
 		if(currentName->compare(name) == 0)
@@ -158,23 +158,30 @@ Plugin* RSD::getPlugin(char* name)
 void RSD::pushWorkerList(TcpWorker* newWorker)
 {
 	pthread_mutex_lock(&tcpWorkerListmutex);
-	tcpWorkerList.push_back(newWorker);
+		tcpWorkerList.push_back(newWorker);
+		printf("Anzahl TcpWorker: %d\n", tcpWorkerList.size());
 	pthread_mutex_unlock(&tcpWorkerListmutex);
 }
 
 
 void RSD::checkForDeletableWorker()
 {
-
+	//TcpWorker* currentWorker = NULL;
+	list<TcpWorker*>::iterator i = tcpWorkerList.begin();
 	pthread_mutex_lock(&tcpWorkerListmutex);
-	for(unsigned int i = 0; i < tcpWorkerList.size() ; i++)
+
+	while(i != tcpWorkerList.end())
 	{
-		if(tcpWorkerList[i]->isDeletable())
+		if((*i)->isDeletable())
 		{
-			delete tcpWorkerList[i];
-			tcpWorkerList.erase(tcpWorkerList.begin()+i);
-			printf("RSD: Tcpworker deleted from list.\n");
+			//currentWorker = *i;
+			delete *i;
+			i = tcpWorkerList.erase(i);
+
+			printf("RSD: Tcpworker deleted from list.Verbleibend: %d\n", tcpWorkerList.size());
 		}
+		else
+			++i;
 	}
 	pthread_mutex_unlock(&tcpWorkerListmutex);
 }
@@ -186,7 +193,7 @@ void RSD::start()
 	{
 		sleep(MAIN_SLEEP_TIME);
 		//check uds registry workers
-		regServer->checkForDeletableWorker();
+		//regServer->checkForDeletableWorker();
 		//check TCP/workers
 		this->checkForDeletableWorker();
 	}

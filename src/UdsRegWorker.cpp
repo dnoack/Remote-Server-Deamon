@@ -39,7 +39,8 @@ UdsRegWorker::~UdsRegWorker()
 {
 	worker_thread_active = false;
 	listen_thread_active = false;
-	pthread_kill(lthread, SIGUSR2);
+	if(!deletable)
+		pthread_kill(lthread, SIGUSR2);
 
 	delete json;
 	WaitForWorkerThreadToExit();
@@ -111,13 +112,16 @@ void UdsRegWorker::thread_work(int socket)
 				}
 				break;
 			case SIGUSR2:
-				//sigusr2 = time to exit
+				printf("UdsRegWorker: SIGUSR2\n");
 				break;
 			case SIGPIPE:
-				printf("UdsComWorker: SIGPIPE\n");
+				printf("UdsRegWorker: SIGPIPE\n");
+				break;
+			case SIGPOLL:
+				printf("UdsRegWorker: SIGPOLL\n");
 				break;
 			default:
-				printf("UdsComWorker: unkown signal \n");
+				printf("UdsRegWorker: unkown signal \n");
 				break;
 		}
 	}
@@ -163,18 +167,18 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 			{
 				worker_thread_active = false;
 				listen_thread_active = false;
-				pthread_kill(parent_th, SIGUSR2);
+				pthread_kill(parent_th, SIGPOLL);
 			}
-			listenerDown = true;
+			//listenerDown = true;
 		}
 
-	}
+	}/*
 	if(!listenerDown)
 	{
 		worker_thread_active = false;
 		listen_thread_active = false;
-		pthread_kill(parent_th, SIGUSR2);
-	}
+		pthread_kill(parent_th, SIGPOLL);
+	}*/
 	printf("Uds Reg Listener beendet.\n");
 }
 

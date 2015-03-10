@@ -67,7 +67,7 @@ class TcpWorker : public WorkerInterface, WorkerThreads{
 		//not shared, more common
 		pthread_t lthread;
 		JsonRPC* json;
-		vector<UdsComClient*> comClientList;
+		list<UdsComClient*> comClientList;
 		UdsComClient* lastComClient;
 		int currentSocket;
 

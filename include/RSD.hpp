@@ -23,7 +23,7 @@
 
 #define REGISTRY_PATH "/tmp/RsdRegister.uds"
 #define TCP_PORT 1234
-#define MAX_CLIENTS 5
+#define MAX_CLIENTS 20
 #define MAIN_SLEEP_TIME 3 //in seconds
 
 class Plugin{
@@ -90,7 +90,7 @@ class RSD{
 		static socklen_t addrlen;
 		static vector<Plugin*> plugins;
 		static pthread_mutex_t pLmutex;
-		static vector<TcpWorker*> tcpWorkerList;
+		static list<TcpWorker*> tcpWorkerList;
 		static pthread_mutex_t tcpWorkerListmutex;
 
 

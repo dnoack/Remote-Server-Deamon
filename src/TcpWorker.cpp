@@ -34,7 +34,8 @@ TcpWorker::~TcpWorker()
 {
 	listen_thread_active = false;
 	worker_thread_active = false;
-	pthread_kill(lthread, SIGUSR2);
+	if(!deletable) //if it is Deletable, lthread lifetime already ended.
+		pthread_kill(lthread, SIGPOLL);
 
 
 	WaitForWorkerThreadToExit();
@@ -70,6 +71,7 @@ void TcpWorker::thread_work(int socket)
 						request = receiveQueue.back();
 						printf("%s\n", request->c_str());
 						handleMsg(request);
+						//send(currentSocket, "Reply msg\n", 8, 0);
 
 					}
 					catch(PluginError &e)
@@ -77,6 +79,10 @@ void TcpWorker::thread_work(int socket)
 						errorResponse = new string(e.get());
 						tcp_send(errorResponse);
 						delete errorResponse;
+					}
+					catch(...)
+					{
+						printf("Unkown Exception.\n");
 					}
 					popReceiveQueue();
 				}
@@ -92,15 +98,19 @@ void TcpWorker::thread_work(int socket)
 				deleteComClientList();
 				break;
 
+			case SIGPOLL:
+				printf("TcpComWorker: SIGPOLL\n");
+				//deleteComClientList();
+				break;
+
 			default:
 				printf("TcpComWorker: unkown signal \n");
-				deleteComClientList();
 				break;
 		}
 	}
 	close(currentSocket);
-	printf("TCP Worker Thread beendet.\n");
 	WaitForListenerThreadToExit();
+	printf("TCP Worker Thread beendet.\n");
 	//mark this whole worker/listener object as deletable
 	deletable = true;
 
@@ -138,17 +148,17 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 				worker_thread_active = false;
 				listen_thread_active = false;
 				pthread_kill(parent_th, SIGPOLL);
-				listenerDown = true;
+				//listenerDown = true;
 			}
 		}
 
-	}
+	}/* TODO: delete ?
 	if(!listenerDown)
 	{
 		worker_thread_active = false;
 		listen_thread_active = false;
 		pthread_kill(parent_th, SIGPOLL);
-	}
+	}*/
 	printf("TCP Listener beendet.\n");
 }
 
@@ -181,6 +191,7 @@ UdsComClient* TcpWorker::findComClient(char* pluginName)
 	UdsComClient* currentComClient = NULL;
 	Plugin* currentPlugin = NULL;
 	bool clientFound = false;
+	list<UdsComClient*>::iterator i = comClientList.begin();
 
 	/*
 	//first check if lastComClient isn't  what we are looking for
@@ -192,13 +203,15 @@ UdsComClient* TcpWorker::findComClient(char* pluginName)
 	else*/
 	{
 		// 3) check if we already have a udsClient for this namespace/pluginName
-		for(unsigned int i = 0 ; i < comClientList.size() && !clientFound ; i++)
+		while(i != comClientList.end() && !clientFound)
 		{
-			currentComClient = comClientList[i];
+			currentComClient = *i;
 			if(currentComClient->getPluginName()->compare(pluginName) == 0)
 			{
 				clientFound = true;
 			}
+			else
+				++i;
 		}
 
 		// 3.1)  IF NOT  -> check RSD plugin list for this namespace and get udsFilePath
@@ -245,34 +258,34 @@ char* TcpWorker::getMethodNamespace()
 void TcpWorker::deleteComClientList()
 {
 	lastComClient = NULL;
-	int size = comClientList.size();
+	list<UdsComClient*>::iterator i = comClientList.begin();
 
-	for(int i = 0; i < size; i++)
+	while(i != comClientList.end())
 	{
-		printf("Deleting COmClient: %s\n", comClientList[i]->getPluginName()->c_str());
-		delete comClientList[i];
-		comClientList[i] = NULL;
+		printf("Deleting COmClient: %s\n", (*i)->getPluginName()->c_str());
+		delete *i;
+		i = comClientList.erase(i);
 	}
 
-	comClientList.clear();
-	vector<UdsComClient*>().swap(comClientList);
 }
 
 
 void TcpWorker::checkComClientList()
 {
-	int size = comClientList.size();
+	list<UdsComClient*>::iterator i = comClientList.begin();
 
-	for(int i = 0; i < size; i++)
+	while(i != comClientList.end())
 	{
-		if(comClientList[i]->isDeletable())
+		if((*i)->isDeletable())
 		{
-			printf("Deleting COmClient: %s\n", comClientList[i]->getPluginName()->c_str());
-			delete comClientList[i];
-			comClientList.erase(comClientList.begin()+i);
+			printf("Deleting COmClient: %s\n", (*i)->getPluginName()->c_str());
+			delete *i;
+			i = comClientList.erase(i);
 			//TODO: create correct json rpc response or notification for client
 			//TODO: also delete plugin from list, else we will always try to connect to it.
-			send(currentSocket, "Connection to AardvarkPlugin Aborted!\n", 39, 0);
+			//send(currentSocket, "Connection to AardvarkPlugin Aborted!\n", 39, 0);
 		}
+		else
+			++i;
 	}
 }

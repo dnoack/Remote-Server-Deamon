@@ -23,6 +23,7 @@ UdsComWorker::UdsComWorker(int socket,  UdsComClient* comClient)
 	this->identity = NULL;
 	this->comClient = comClient;
 	this->currentSocket = socket;
+	this->deletable = false;
 
 	StartWorkerThread(currentSocket);
 }
@@ -34,7 +35,8 @@ UdsComWorker::~UdsComWorker()
 {
 	worker_thread_active = false;
 	listen_thread_active = false;
-	pthread_kill(lthread, SIGUSR2);
+	if(!deletable)
+		pthread_kill(lthread, SIGUSR2);
 
 	WaitForWorkerThreadToExit();
 }
@@ -77,6 +79,7 @@ void UdsComWorker::thread_work(int socket)
 
 			default:
 				printf("UdsComWorker: unkown signal \n");
+				comClient->markAsDeletable();
 				break;
 		}
 
@@ -84,7 +87,8 @@ void UdsComWorker::thread_work(int socket)
 	close(currentSocket);
 	printf("Uds Worker Thread beendet.\n");
 	WaitForListenerThreadToExit();
-	comClient->markAsDeletable();
+	deletable = true;
+
 }
 
 
@@ -122,17 +126,17 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 				printf("UdsComListener: ???\n");
 				worker_thread_active = false;
 				listen_thread_active = false;
-				pthread_kill(parent_th, SIGUSR2);
+				pthread_kill(parent_th, SIGPOLL);
 			}
-			listenerDown = true;
+			//listenerDown = true;
 		}
 
-	}
+	}/*
 	if(!listenerDown)
 	{
 		worker_thread_active = false;
 		listen_thread_active = false;
 		pthread_kill(parent_th, SIGUSR2);
-	}
+	}*/
 	printf("Uds Listener beendet.\n");
 }
