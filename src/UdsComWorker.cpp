@@ -36,7 +36,7 @@ UdsComWorker::~UdsComWorker()
 	worker_thread_active = false;
 	listen_thread_active = false;
 	if(!deletable)
-		pthread_kill(lthread, SIGUSR2);
+		pthread_kill(lthread, SIGPOLL);
 
 	WaitForWorkerThreadToExit();
 }
@@ -47,11 +47,23 @@ void UdsComWorker::thread_work(int socket)
 {
 
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
+
 	worker_thread_active = true;
 
 	//start the listenerthread and remember the theadId of it
 	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
 
+	configWorkerSignals();
+
+	action.sa_handler = dummy_handler;
+	action.sa_flags = 0;
+
+	sigaction(SIGUSR1, &action, NULL);
+	sigaction(SIGUSR2, &action, NULL);
+	sigaction(SIGPOLL, &action, NULL);
+	sigaction(SIGPIPE, &action, NULL);
+
+	pthread_sigmask(SIG_UNBLOCK, &sigmask, NULL);
 
 	while(worker_thread_active)
 	{
@@ -93,50 +105,63 @@ void UdsComWorker::thread_work(int socket)
 
 
 
+
 void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffer)
 {
+
 	listen_thread_active = true;
+	int retval;
+	fd_set rfds;
+
+	FD_ZERO(&rfds);
+	FD_SET(socket, &rfds);
 
 	while(listen_thread_active)
 	{
+
 		memset(receiveBuffer, '\0', BUFFER_SIZE);
 
-		recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, 0);
-		//data received
-		if(recvSize > 0)
+		retval = pselect(socket+1, &rfds, NULL, NULL, NULL, &origmask);
+
+		if(retval < 0)
 		{
-			//add received data in buffer to queue
-			pushReceiveQueue(new string(receiveBuffer, recvSize));
-			//signal the worker
-			pthread_kill(parent_th, SIGUSR1);
-		}
-		//no data, either udsComClient or plugin invoked a shutdown of this UdsComWorker
-		else
-		{
-			//udsComClient invoked shutdown
+
 			if(errno == EINTR)
 			{
-				printf("UdsComListener: SIGUSR2\n");
+				//Plugin itself invoked shutdown
+				worker_thread_active = false;
+				listen_thread_active = false;
 				pthread_kill(parent_th, SIGUSR2);
 			}
-			//plugin invoked shutdown
 			else
 			{
+				printf("unkown errno\n");
+				worker_thread_active = false;
+				listen_thread_active = false;
+				pthread_kill(parent_th, SIGUSR2);
+			}
+		}
+		else if(FD_ISSET(socket, &rfds))
+		{
+			recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, MSG_DONTWAIT);
 
-				printf("UdsComListener: ???\n");
+			//data received
+			if(recvSize > 0)
+			{
+				//add received data in buffer to queue
+				pushReceiveQueue(new string(receiveBuffer, recvSize));
+				//signal the worker
+				pthread_kill(parent_th, SIGUSR1);
+			}
+			else
+			{
 				worker_thread_active = false;
 				listen_thread_active = false;
 				pthread_kill(parent_th, SIGPOLL);
 			}
-			listenerDown = true;
 		}
 
 	}
-	if(!listenerDown)
-	{
-		worker_thread_active = false;
-		listen_thread_active = false;
-		pthread_kill(parent_th, SIGUSR2);
-	}
+
 	printf("Uds Listener beendet.\n");
 }

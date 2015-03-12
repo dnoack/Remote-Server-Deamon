@@ -34,7 +34,7 @@ TcpWorker::~TcpWorker()
 {
 	listen_thread_active = false;
 	worker_thread_active = false;
-	if(!deletable) //if it is Deletable, lthread lifetime already ended.
+	//if(!deletable) //if it is Deletable, lthread lifetime already ended.
 		pthread_kill(lthread, SIGPOLL);
 
 
@@ -47,7 +47,9 @@ void TcpWorker::thread_work(int socket)
 {
 
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
+
 	worker_thread_active = true;
+
 	string* request = NULL;
 	string* errorResponse = NULL;
 
@@ -55,6 +57,7 @@ void TcpWorker::thread_work(int socket)
 	//start the listenerthread and remember the theadId of it
 	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
 
+	configWorkerSignals();
 
 	while(worker_thread_active)
 	{
@@ -112,7 +115,7 @@ void TcpWorker::thread_work(int socket)
 	WaitForListenerThreadToExit();
 	printf("TCP Worker Thread beendet.\n");
 	//mark this whole worker/listener object as deletable
-	deletable = true;
+
 
 }
 
@@ -120,46 +123,49 @@ void TcpWorker::thread_work(int socket)
 void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffer)
 {
 	listen_thread_active = true;
+	int retval;
+	fd_set rfds;
+
+	FD_ZERO(&rfds);
+	FD_SET(socket, &rfds);
 
 	while(listen_thread_active)
 	{
 		memset(receiveBuffer, '\0', BUFFER_SIZE);
 
-		recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, 0);
-		if(recvSize > 0)
-		{
-			//add received data in buffer to queue
-			pushReceiveQueue(new string(receiveBuffer, recvSize));
+		retval = pselect(socket+1, &rfds, NULL, NULL, NULL, &origmask);
 
-			//signal the worker
-			pthread_kill(parent_th, SIGUSR1);
-		}
-		//no data, either udsComClient or plugin invoked a shutdown of this UdsComWorker
-		else
+		if(retval < 0)
 		{
-			//udsComClient invoked shutdown
-			if(errno == EINTR)
-			{
-				pthread_kill(parent_th, SIGUSR2);
-			}
-			//client
-			else
-			{
+				deletable = true;
 				worker_thread_active = false;
 				listen_thread_active = false;
-				pthread_kill(parent_th, SIGPOLL);
-			}
-			listenerDown = true;
+				pthread_kill(parent_th, SIGUSR2);
 		}
+		else if(FD_ISSET(socket, &rfds))
+		{
+			recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, MSG_DONTWAIT);
 
+			if(recvSize > 0)
+			{
+				//add received data in buffer to queue
+				pushReceiveQueue(new string(receiveBuffer, recvSize));
+
+				//signal the worker
+				pthread_kill(parent_th, SIGUSR1);
+			}
+			else
+			{
+				deletable = true;
+				//worker_thread_active = false;
+				//listen_thread_active = false;
+				//pthread_kill(parent_th, SIGPOLL);
+			}
+		}
 	}
-	if(!listenerDown)
-	{
-		worker_thread_active = false;
-		listen_thread_active = false;
-		pthread_kill(parent_th, SIGPOLL);
-	}
+
 	printf("TCP Listener beendet.\n");
+
 }
 
 

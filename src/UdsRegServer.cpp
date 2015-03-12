@@ -74,7 +74,6 @@ void* UdsRegServer::uds_accept(void* param)
 			newWorker = new UdsRegWorker(new_socket);
 			pushWorkerList(newWorker);
 			printf("Neues Plugin\n");
-
 		}
 
 	}

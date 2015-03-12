@@ -40,7 +40,7 @@ UdsRegWorker::~UdsRegWorker()
 	worker_thread_active = false;
 	listen_thread_active = false;
 	if(!deletable)
-		pthread_kill(lthread, SIGUSR2);
+		pthread_kill(lthread, SIGPOLL);
 
 	delete json;
 	WaitForWorkerThreadToExit();
@@ -54,10 +54,13 @@ void UdsRegWorker::thread_work(int socket)
 	char* response = NULL;
 
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
+
 	worker_thread_active = true;
 
 	//start the listenerthread and remember the theadId of it
 	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
+
+	configWorkerSignals();
 
 	while(worker_thread_active)
 	{
@@ -139,46 +142,49 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 {
 
 	listen_thread_active = true;
+	int retval;
+	fd_set rfds;
+
+	FD_ZERO(&rfds);
+	FD_SET(socket, &rfds);
 
 	while(listen_thread_active)
 	{
 
 		memset(receiveBuffer, '\0', BUFFER_SIZE);
 
-		recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, 0); //MSG_DONTWAIT for nonblocking
-		//data received
-		if(recvSize > 0)
+		retval = pselect(socket+1, &rfds, NULL, NULL, NULL, &origmask);
+
+		if(retval < 0)
 		{
-			//add received data in buffer to queue
-			pushReceiveQueue(new string(receiveBuffer, recvSize));
-			//signal the worker
-			pthread_kill(parent_th, SIGUSR1);
-		}
-		//no data, either udsComClient or plugin invoked a shutdown of this UdsComWorker
-		else
-		{
-			//udsComClient invoked shutdown
 			if(errno == EINTR)
 			{
+				//Plugin itself invoked shutdown
+				worker_thread_active = false;
+				listen_thread_active = false;
 				pthread_kill(parent_th, SIGUSR2);
 			}
-			//plugin invoked shutdown
+		}
+		else if(FD_ISSET(socket, &rfds))
+		{
+			recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, MSG_DONTWAIT); //MSG_DONTWAIT for nonblocking
+			//data received
+			if(recvSize > 0)
+			{
+				printf("Received: %s", receiveBuffer);
+				//add received data in buffer to queue
+				pushReceiveQueue(new string(receiveBuffer, recvSize));
+				//signal the worker
+				pthread_kill(parent_th, SIGUSR1);
+			}
 			else
 			{
 				worker_thread_active = false;
 				listen_thread_active = false;
 				pthread_kill(parent_th, SIGPOLL);
 			}
-			//listenerDown = true;
 		}
-
-	}/*
-	if(!listenerDown)
-	{
-		worker_thread_active = false;
-		listen_thread_active = false;
-		pthread_kill(parent_th, SIGPOLL);
-	}*/
+	}
 	printf("Uds Reg Listener beendet.\n");
 }
 

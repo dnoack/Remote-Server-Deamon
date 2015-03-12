@@ -50,6 +50,7 @@ class WorkerInterface{
 		//signal variables
 		struct sigaction action;
 		sigset_t sigmask;
+		sigset_t origmask;
 		int currentSig;
 
 		bool listenerDown;
@@ -92,15 +93,35 @@ class WorkerInterface{
 
 		void configSignals()
 		{
-			sigfillset(&sigmask);
-			pthread_sigmask(SIG_UNBLOCK, &sigmask, (sigset_t*)0);
+			sigemptyset(&origmask);
+			sigemptyset(&sigmask);
 
-			action.sa_flags = 0;
 			action.sa_handler = dummy_handler;
-			sigaction(SIGUSR1, &action, (struct sigaction*)0);
-			sigaction(SIGUSR2, &action, (struct sigaction*)0);
-			sigaction(SIGPOLL, &action, (struct sigaction*)0);
-			sigaction(SIGPIPE, &action, (struct sigaction*)0);
+			sigemptyset(&action.sa_mask);
+			action.sa_flags = 0;
+
+			sigaction(SIGUSR1, &action, NULL);
+			sigaction(SIGUSR2, &action, NULL);
+			sigaction(SIGPOLL, &action, NULL);
+			sigaction(SIGPIPE, &action, NULL);
+
+			pthread_sigmask(SIG_BLOCK, &sigmask, &origmask);
+		}
+
+
+		void configWorkerSignals()
+		{
+			sigfillset(&sigmask);
+
+			action.sa_handler = dummy_handler;
+			action.sa_flags = 0;
+
+			sigaction(SIGUSR1, &action, NULL);
+			sigaction(SIGUSR2, &action, NULL);
+			sigaction(SIGPOLL, &action, NULL);
+			sigaction(SIGPIPE, &action, NULL);
+
+			pthread_sigmask(SIG_UNBLOCK, &sigmask, NULL);
 		}
 
 
