@@ -72,6 +72,11 @@ class UdsComWorker : public WorkerInterface, WorkerThreads{
 
 		virtual void thread_work(int socket);
 
+		static void cleanupWorker(void* arg)
+		{
+			printf("Uds Worker Thread beendet.\n");
+		};
+
 
 };
 

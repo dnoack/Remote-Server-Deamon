@@ -35,9 +35,15 @@ UdsComWorker::~UdsComWorker()
 {
 	worker_thread_active = false;
 	listen_thread_active = false;
-	if(!deletable)
-		pthread_kill(lthread, SIGPOLL);
 
+	close(currentSocket);
+
+	if(pthread_cancel(getListener()) != 0)
+		printf("error canceling udsCOMlistener.\n");
+	if(pthread_cancel(getWorker()) != 0)
+		printf("error canceling udsCOMworker.\n");
+
+	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
 }
 
@@ -47,23 +53,15 @@ void UdsComWorker::thread_work(int socket)
 {
 
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
-
 	worker_thread_active = true;
+
+	pthread_cleanup_push(&UdsComWorker::cleanupWorker, NULL);
+
 
 	//start the listenerthread and remember the theadId of it
 	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
 
 	configWorkerSignals();
-
-	action.sa_handler = dummy_handler;
-	action.sa_flags = 0;
-
-	sigaction(SIGUSR1, &action, NULL);
-	sigaction(SIGUSR2, &action, NULL);
-	sigaction(SIGPOLL, &action, NULL);
-	sigaction(SIGPIPE, &action, NULL);
-
-	pthread_sigmask(SIG_UNBLOCK, &sigmask, NULL);
 
 	while(worker_thread_active)
 	{
@@ -91,16 +89,13 @@ void UdsComWorker::thread_work(int socket)
 
 			default:
 				printf("UdsComWorker: unkown signal \n");
-				comClient->markAsDeletable();
 				break;
 		}
 
 	}
 	close(currentSocket);
 	printf("Uds Worker Thread beendet.\n");
-	WaitForListenerThreadToExit();
-	deletable = true;
-
+	pthread_cleanup_pop(NULL);
 }
 
 
@@ -121,7 +116,7 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 
 		memset(receiveBuffer, '\0', BUFFER_SIZE);
 
-		retval = pselect(socket+1, &rfds, NULL, NULL, NULL, &origmask);
+		retval = select(socket+1, &rfds, NULL, NULL, NULL);
 
 		if(retval < 0)
 		{
@@ -155,9 +150,9 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 			}
 			else
 			{
-				worker_thread_active = false;
 				listen_thread_active = false;
-				pthread_kill(parent_th, SIGPOLL);
+				deletable = true;
+				comClient->markAsDeletable();
 			}
 		}
 

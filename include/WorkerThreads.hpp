@@ -92,6 +92,8 @@ public:
 	   (void) pthread_join(_listener, NULL);
    }
 
+   pthread_t getListener(){return _listener;}
+   pthread_t getWorker(){return _worker;}
 
 
 

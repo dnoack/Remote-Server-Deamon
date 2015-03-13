@@ -36,7 +36,7 @@ class UdsComClient;
 #define WORKER_GETSTATUS 2
 
 
-class TcpWorker : public WorkerInterface, WorkerThreads{
+class TcpWorker : public WorkerInterface, public WorkerThreads{
 
 	public:
 		TcpWorker(int socket);
@@ -44,7 +44,6 @@ class TcpWorker : public WorkerInterface, WorkerThreads{
 
 		int tcp_send(string* data);
 		void checkComClientList();
-		pthread_t getLthread(){return this->lthread;}
 
 
 	private:
@@ -68,7 +67,6 @@ class TcpWorker : public WorkerInterface, WorkerThreads{
 		pthread_t lthread;
 		JsonRPC* json;
 		list<UdsComClient*> comClientList;
-		UdsComClient* lastComClient;
 		int currentSocket;
 
 
@@ -82,6 +80,11 @@ class TcpWorker : public WorkerInterface, WorkerThreads{
 
 		virtual void thread_work(int socket);
 
+		static void cleanupWorker(void* arg)
+		{
+			TcpWorker* worker = static_cast<TcpWorker*>(arg);
+			worker->deleteComClientList();
+		};
 
 };
 

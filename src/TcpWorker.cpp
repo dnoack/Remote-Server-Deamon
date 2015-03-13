@@ -34,24 +34,28 @@ TcpWorker::~TcpWorker()
 {
 	listen_thread_active = false;
 	worker_thread_active = false;
-	//if(!deletable) //if it is Deletable, lthread lifetime already ended.
-		pthread_kill(lthread, SIGPOLL);
 
+	if(pthread_cancel(getListener()) != 0)
+		printf("error canceling tcplistener.\n");
 
+	if(pthread_cancel(getWorker()) != 0)
+		printf("error canceling tcpworker.\n");
+
+	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
 	delete json;
 }
 
 
+
 void TcpWorker::thread_work(int socket)
 {
-
-	memset(receiveBuffer, '\0', BUFFER_SIZE);
-
-	worker_thread_active = true;
-
 	string* request = NULL;
 	string* errorResponse = NULL;
+	worker_thread_active = true;
+
+	pthread_cleanup_push(&TcpWorker::cleanupWorker, this);
+	memset(receiveBuffer, '\0', BUFFER_SIZE);
 
 
 	//start the listenerthread and remember the theadId of it
@@ -112,9 +116,9 @@ void TcpWorker::thread_work(int socket)
 		}
 	}
 	close(currentSocket);
-	WaitForListenerThreadToExit();
 	printf("TCP Worker Thread beendet.\n");
 	//mark this whole worker/listener object as deletable
+	pthread_cleanup_pop(NULL);
 
 
 }
@@ -135,12 +139,14 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 
 		retval = pselect(socket+1, &rfds, NULL, NULL, NULL, &origmask);
 
-		if(retval < 0)
+		if(retval < 0 )
 		{
-				deletable = true;
-				worker_thread_active = false;
-				listen_thread_active = false;
-				pthread_kill(parent_th, SIGUSR2);
+			/*
+			deletable = true;
+			worker_thread_active = false;
+			listen_thread_active = false;
+			pthread_kill(parent_th, SIGUSR2);*/
+			checkComClientList();
 		}
 		else if(FD_ISSET(socket, &rfds))
 		{
@@ -157,16 +163,16 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 			else
 			{
 				deletable = true;
-				//worker_thread_active = false;
-				//listen_thread_active = false;
-				//pthread_kill(parent_th, SIGPOLL);
+				printf("TcpWorker: deletable was set.\n");
+				listen_thread_active = false;
+
 			}
 		}
 	}
 
 	printf("TCP Listener beendet.\n");
-
 }
+
 
 
 int TcpWorker::tcp_send(string* data)
@@ -178,18 +184,25 @@ int TcpWorker::tcp_send(string* data)
 void TcpWorker::handleMsg(string* request)
 {
 	char* methodNamespace = NULL;
+	UdsComClient* currentClient = NULL;
 
 	// 1) parse to dom with jsonrpc
 	json->parse(request);
 	methodNamespace = getMethodNamespace();
 
 
-	lastComClient = findComClient(methodNamespace);
+	currentClient = findComClient(methodNamespace);
 
-	// 4) use the udsClient to send forward the request
-	lastComClient->sendData(receiveQueue.back());
+	if(currentClient != NULL)
+	{
+		// 4) use the udsClient to send forward the request
+		currentClient->sendData(receiveQueue.back());
+	}
+	else
+		send(currentSocket, "Aardvark Plugin Not online", 26, 0);
 
 }
+
 
 
 UdsComClient* TcpWorker::findComClient(char* pluginName)
@@ -199,41 +212,41 @@ UdsComClient* TcpWorker::findComClient(char* pluginName)
 	bool clientFound = false;
 	list<UdsComClient*>::iterator i = comClientList.begin();
 
-	/*
-	//first check if lastComClient isn't  what we are looking for
-	if(lastComClient != NULL && lastComClient->getPluginName()->compare(pluginName) == 0 && !lastComClient->isDeletable())
+
+	// 3) check if we already have a udsClient for this namespace/pluginName
+	while(i != comClientList.end() && !clientFound)
 	{
-		currentComClient = lastComClient;
-		clientFound = true;
-	}
-	else*/
-	{
-		// 3) check if we already have a udsClient for this namespace/pluginName
-		while(i != comClientList.end() && !clientFound)
+		currentComClient = *i;
+		if(currentComClient->getPluginName()->compare(pluginName) == 0)
 		{
-			currentComClient = *i;
-			if(currentComClient->getPluginName()->compare(pluginName) == 0)
-			{
-				clientFound = true;
-			}
-			else
-				++i;
+			clientFound = true;
+		}
+		else
+			++i;
+	}
+
+	// 3.1)  IF NOT  -> check RSD plugin list for this namespace and get udsFilePath
+	if(!clientFound)
+	{
+		currentPlugin = RSD::getPlugin(pluginName);
+
+		if(currentPlugin == NULL)
+		{
+			//TODO: 3.1.1) error, no plugin with this namespace connected
 		}
 
-		// 3.1)  IF NOT  -> check RSD plugin list for this namespace and get udsFilePath
-		if(!clientFound)
+		// 3.2)  create a new udsClient with this udsFilePath and push it to list
+		currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName());
+		if(currentComClient->tryToconnect())
 		{
-			currentPlugin = RSD::getPlugin(pluginName);
-
-			if(currentPlugin == NULL)
-			{
-				//TODO: 3.1.1) error, no plugin with this namespace connected
-			}
-
-			// 3.2)  create a new udsClient with this udsFilePath and push it to list
-			currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName());
 			comClientList.push_back(currentComClient);
 			printf("Added new ComClient: %s\n", currentComClient->getPluginName()->c_str());
+		}
+		else
+		{
+			printf("Requested Plugin is offline.\n");
+			delete currentComClient;
+			currentComClient = NULL;
 		}
 	}
 
@@ -263,7 +276,6 @@ char* TcpWorker::getMethodNamespace()
 
 void TcpWorker::deleteComClientList()
 {
-	lastComClient = NULL;
 	list<UdsComClient*>::iterator i = comClientList.begin();
 
 	while(i != comClientList.end())
@@ -285,11 +297,13 @@ void TcpWorker::checkComClientList()
 		if((*i)->isDeletable())
 		{
 			printf("Deleting COmClient: %s\n", (*i)->getPluginName()->c_str());
+
 			delete *i;
 			i = comClientList.erase(i);
+
 			//TODO: create correct json rpc response or notification for client
 			//TODO: also delete plugin from list, else we will always try to connect to it.
-			//send(currentSocket, "Connection to AardvarkPlugin Aborted!\n", 39, 0);
+			send(currentSocket, "Connection to AardvarkPlugin Aborted!\n", 39, 0);
 		}
 		else
 			++i;

@@ -45,6 +45,7 @@ class UdsComClient{
 
 		void markAsDeletable();
 		void tcp_send(string* request);
+		bool tryToconnect();
 
 
 	private:
