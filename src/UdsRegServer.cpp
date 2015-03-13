@@ -67,13 +67,11 @@ void* UdsRegServer::uds_accept(void* param)
 
 	while(accept_thread_active)
 	{
-		printf("RegServer aktiv.\n");
 		new_socket = accept(connection_socket, (struct sockaddr*)&address, &addrlen);
 		if(new_socket >= 0)
 		{
 			newWorker = new UdsRegWorker(new_socket);
 			pushWorkerList(newWorker);
-			printf("Neues Plugin\n");
 		}
 
 	}
@@ -91,7 +89,6 @@ void UdsRegServer::pushWorkerList(UdsRegWorker* newWorker)
 
 void UdsRegServer::checkForDeletableWorker()
 {
-
 	pthread_mutex_lock(&wLmutex);
 	list<UdsRegWorker*>::iterator i = workerList.begin();
 	while(i != workerList.end())

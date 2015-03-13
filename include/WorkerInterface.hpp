@@ -27,7 +27,6 @@ class WorkerInterface{
 			this->currentSig = 0;
 			this->listenerDown = false;
 			this->deletable = false;
-			configSignals();
 
 		};
 
@@ -91,10 +90,13 @@ class WorkerInterface{
 
 
 
+
 		void configSignals()
 		{
 			sigemptyset(&origmask);
 			sigemptyset(&sigmask);
+			sigaddset(&sigmask, SIGUSR1);
+			sigaddset(&sigmask, SIGUSR2);
 
 			action.sa_handler = dummy_handler;
 			sigemptyset(&action.sa_mask);
@@ -102,26 +104,8 @@ class WorkerInterface{
 
 			sigaction(SIGUSR1, &action, NULL);
 			sigaction(SIGUSR2, &action, NULL);
-			sigaction(SIGPOLL, &action, NULL);
-			sigaction(SIGPIPE, &action, NULL);
 
 			pthread_sigmask(SIG_BLOCK, &sigmask, &origmask);
-		}
-
-
-		void configWorkerSignals()
-		{
-			sigfillset(&sigmask);
-
-			action.sa_handler = dummy_handler;
-			action.sa_flags = 0;
-
-			sigaction(SIGUSR1, &action, NULL);
-			sigaction(SIGUSR2, &action, NULL);
-			sigaction(SIGPOLL, &action, NULL);
-			sigaction(SIGPIPE, &action, NULL);
-
-			pthread_sigmask(SIG_UNBLOCK, &sigmask, NULL);
 		}
 
 

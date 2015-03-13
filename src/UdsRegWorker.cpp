@@ -39,11 +39,14 @@ UdsRegWorker::~UdsRegWorker()
 {
 	worker_thread_active = false;
 	listen_thread_active = false;
-	if(!deletable)
-		pthread_kill(lthread, SIGPOLL);
 
-	delete json;
+	pthread_cancel(getListener());
+	pthread_cancel(getWorker());
+
+
+	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
+	delete json;
 }
 
 
@@ -60,7 +63,7 @@ void UdsRegWorker::thread_work(int socket)
 	//start the listenerthread and remember the theadId of it
 	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
 
-	configWorkerSignals();
+	configSignals();
 
 	while(worker_thread_active)
 	{
@@ -72,9 +75,7 @@ void UdsRegWorker::thread_work(int socket)
 				while(getReceiveQueueSize() > 0)
 				{
 					request = receiveQueue.back();
-					//sigusr1 = there is data for work e.g. parsing json rpc
-					printf("Register service received: %s \n", request->c_str());
-
+					printf("Received: %s\n", request->c_str());
 					switch(state)
 					{
 						case NOT_ACTIVE:
@@ -117,12 +118,6 @@ void UdsRegWorker::thread_work(int socket)
 			case SIGUSR2:
 				printf("UdsRegWorker: SIGUSR2\n");
 				break;
-			case SIGPIPE:
-				printf("UdsRegWorker: SIGPIPE\n");
-				break;
-			case SIGPOLL:
-				printf("UdsRegWorker: SIGPOLL\n");
-				break;
 			default:
 				printf("UdsRegWorker: unkown signal \n");
 				break;
@@ -130,10 +125,7 @@ void UdsRegWorker::thread_work(int socket)
 	}
 
 	close(currentSocket);
-	printf("Uds Reg Worker Thread beendet.\n");
-	WaitForListenerThreadToExit();
-	//mark this worker as deletable
-	deletable = true;
+
 }
 
 
@@ -144,6 +136,8 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 	listen_thread_active = true;
 	int retval;
 	fd_set rfds;
+
+	configSignals();
 
 	FD_ZERO(&rfds);
 	FD_SET(socket, &rfds);
@@ -157,21 +151,17 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 
 		if(retval < 0)
 		{
-			if(errno == EINTR)
-			{
-				//Plugin itself invoked shutdown
-				worker_thread_active = false;
-				listen_thread_active = false;
-				pthread_kill(parent_th, SIGUSR2);
-			}
+			//Plugin itself invoked shutdown
+			worker_thread_active = false;
+			listen_thread_active = false;
+			pthread_kill(parent_th, SIGUSR2);
 		}
 		else if(FD_ISSET(socket, &rfds))
 		{
-			recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, MSG_DONTWAIT); //MSG_DONTWAIT for nonblocking
+			recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, 0); //MSG_DONTWAIT for nonblocking
 			//data received
 			if(recvSize > 0)
 			{
-				printf("Received: %s", receiveBuffer);
 				//add received data in buffer to queue
 				pushReceiveQueue(new string(receiveBuffer, recvSize));
 				//signal the worker
@@ -179,13 +169,11 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 			}
 			else
 			{
-				worker_thread_active = false;
+				deletable = true;
 				listen_thread_active = false;
-				pthread_kill(parent_th, SIGPOLL);
 			}
 		}
 	}
-	printf("Uds Reg Listener beendet.\n");
 }
 
 

@@ -38,10 +38,8 @@ UdsComWorker::~UdsComWorker()
 
 	close(currentSocket);
 
-	if(pthread_cancel(getListener()) != 0)
-		printf("error canceling udsCOMlistener.\n");
-	if(pthread_cancel(getWorker()) != 0)
-		printf("error canceling udsCOMworker.\n");
+	pthread_cancel(getListener());
+	pthread_cancel(getWorker());
 
 	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
@@ -52,16 +50,15 @@ UdsComWorker::~UdsComWorker()
 void UdsComWorker::thread_work(int socket)
 {
 
-	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	worker_thread_active = true;
-
+	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	pthread_cleanup_push(&UdsComWorker::cleanupWorker, NULL);
 
 
 	//start the listenerthread and remember the theadId of it
 	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
 
-	configWorkerSignals();
+	configSignals();
 
 	while(worker_thread_active)
 	{
@@ -83,10 +80,6 @@ void UdsComWorker::thread_work(int socket)
 				printf("UdsComWorker: SIGUSR2\n");
 				break;
 
-			case SIGPIPE:
-				printf("UdsComWorker: SIGPIPE\n");
-				break;
-
 			default:
 				printf("UdsComWorker: unkown signal \n");
 				break;
@@ -94,7 +87,6 @@ void UdsComWorker::thread_work(int socket)
 
 	}
 	close(currentSocket);
-	printf("Uds Worker Thread beendet.\n");
 	pthread_cleanup_pop(NULL);
 }
 
@@ -103,10 +95,11 @@ void UdsComWorker::thread_work(int socket)
 
 void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffer)
 {
-
 	listen_thread_active = true;
-	int retval;
+	int retval = 0;
 	fd_set rfds;
+
+	configSignals();
 
 	FD_ZERO(&rfds);
 	FD_SET(socket, &rfds);
@@ -116,25 +109,14 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 
 		memset(receiveBuffer, '\0', BUFFER_SIZE);
 
-		retval = select(socket+1, &rfds, NULL, NULL, NULL);
+		retval = pselect(socket+1, &rfds, NULL, NULL, NULL, &origmask);
 
 		if(retval < 0)
 		{
-
-			if(errno == EINTR)
-			{
-				//Plugin itself invoked shutdown
-				worker_thread_active = false;
-				listen_thread_active = false;
-				pthread_kill(parent_th, SIGUSR2);
-			}
-			else
-			{
-				printf("unkown errno\n");
-				worker_thread_active = false;
-				listen_thread_active = false;
-				pthread_kill(parent_th, SIGUSR2);
-			}
+			//Plugin itself invoked shutdown
+			worker_thread_active = false;
+			listen_thread_active = false;
+			pthread_kill(parent_th, SIGUSR2);
 		}
 		else if(FD_ISSET(socket, &rfds))
 		{
@@ -155,8 +137,5 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 				comClient->markAsDeletable();
 			}
 		}
-
 	}
-
-	printf("Uds Listener beendet.\n");
 }

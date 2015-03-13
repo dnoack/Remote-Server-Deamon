@@ -6,7 +6,6 @@
  */
 
 #include <TcpWorker.hpp>
-
 #include "RSD.hpp"
 #include "UdsComClient.hpp"
 #include "Plugin_Error.h"
@@ -35,11 +34,8 @@ TcpWorker::~TcpWorker()
 	listen_thread_active = false;
 	worker_thread_active = false;
 
-	if(pthread_cancel(getListener()) != 0)
-		printf("error canceling tcplistener.\n");
-
-	if(pthread_cancel(getWorker()) != 0)
-		printf("error canceling tcpworker.\n");
+	pthread_cancel(getListener());
+	pthread_cancel(getWorker());
 
 	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
@@ -61,7 +57,7 @@ void TcpWorker::thread_work(int socket)
 	//start the listenerthread and remember the theadId of it
 	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
 
-	configWorkerSignals();
+	configSignals();
 
 	while(worker_thread_active)
 	{
@@ -100,26 +96,14 @@ void TcpWorker::thread_work(int socket)
 				checkComClientList();
 				break;
 
-			case SIGPIPE:
-				printf("TcpComWorker: SIGPIPE\n");
-				deleteComClientList();
-				break;
-
-			case SIGPOLL:
-				printf("TcpComWorker: SIGPOLL\n");
-				deleteComClientList();
-				break;
-
 			default:
 				printf("TcpComWorker: unkown signal \n");
 				break;
 		}
 	}
-	close(currentSocket);
-	printf("TCP Worker Thread beendet.\n");
-	//mark this whole worker/listener object as deletable
-	pthread_cleanup_pop(NULL);
 
+	close(currentSocket);
+	pthread_cleanup_pop(NULL);
 
 }
 
@@ -129,6 +113,8 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 	listen_thread_active = true;
 	int retval;
 	fd_set rfds;
+
+	configSignals();
 
 	FD_ZERO(&rfds);
 	FD_SET(socket, &rfds);
@@ -141,11 +127,7 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 
 		if(retval < 0 )
 		{
-			/*
-			deletable = true;
-			worker_thread_active = false;
-			listen_thread_active = false;
-			pthread_kill(parent_th, SIGUSR2);*/
+			//error occured
 			checkComClientList();
 		}
 		else if(FD_ISSET(socket, &rfds))
@@ -160,17 +142,15 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 				//signal the worker
 				pthread_kill(parent_th, SIGUSR1);
 			}
+			//connection closed
 			else
 			{
 				deletable = true;
-				printf("TcpWorker: deletable was set.\n");
 				listen_thread_active = false;
-
 			}
 		}
 	}
 
-	printf("TCP Listener beendet.\n");
 }
 
 
@@ -233,20 +213,21 @@ UdsComClient* TcpWorker::findComClient(char* pluginName)
 		if(currentPlugin == NULL)
 		{
 			//TODO: 3.1.1) error, no plugin with this namespace connected
-		}
 
-		// 3.2)  create a new udsClient with this udsFilePath and push it to list
-		currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName());
-		if(currentComClient->tryToconnect())
-		{
-			comClientList.push_back(currentComClient);
-			printf("Added new ComClient: %s\n", currentComClient->getPluginName()->c_str());
 		}
 		else
 		{
-			printf("Requested Plugin is offline.\n");
-			delete currentComClient;
-			currentComClient = NULL;
+			// 3.2)  create a new udsClient with this udsFilePath and push it to list
+			currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName());
+			if(currentComClient->tryToconnect())
+			{
+				comClientList.push_back(currentComClient);
+			}
+			else
+			{
+				delete currentComClient;
+				currentComClient = NULL;
+			}
 		}
 	}
 
@@ -280,7 +261,6 @@ void TcpWorker::deleteComClientList()
 
 	while(i != comClientList.end())
 	{
-		printf("Deleting COmClient: %s\n", (*i)->getPluginName()->c_str());
 		delete *i;
 		i = comClientList.erase(i);
 	}
@@ -296,8 +276,6 @@ void TcpWorker::checkComClientList()
 	{
 		if((*i)->isDeletable())
 		{
-			printf("Deleting COmClient: %s\n", (*i)->getPluginName()->c_str());
-
 			delete *i;
 			i = comClientList.erase(i);
 
