@@ -15,6 +15,7 @@ socklen_t UdsComClient::addrlen;
 UdsComClient::UdsComClient(TcpWorker* tcpWorker, string* udsFilePath, string* pluginName)
 {
 	optionflag = 1;
+	this->comWorker = NULL;
 	this->deletable = false;
 	this->tcpWorker = tcpWorker;
 	this->udsFilePath = new string(*udsFilePath);
@@ -25,16 +26,15 @@ UdsComClient::UdsComClient(TcpWorker* tcpWorker, string* udsFilePath, string* pl
 	strncpy(address.sun_path, udsFilePath->c_str(), udsFilePath->size());
 	addrlen = sizeof(address);
 
-	comWorker = new UdsComWorker(currentSocket, this);
-	connect(currentSocket, (struct sockaddr*)&address, addrlen);
-
 }
 
 
 
 UdsComClient::~UdsComClient()
 {
-	delete comWorker;
+	if(comWorker != NULL)
+		delete comWorker;
+
 	delete udsFilePath;
 	delete pluginName;
 }
@@ -42,7 +42,7 @@ UdsComClient::~UdsComClient()
 void UdsComClient::markAsDeletable()
 {
 	deletable = true;
-	pthread_kill(tcpWorker->getLthread(), SIGUSR2);
+	pthread_kill(tcpWorker->getListener(), SIGUSR2);
 }
 
 
@@ -55,6 +55,20 @@ int UdsComClient::sendData(string* data)
 void UdsComClient::tcp_send(string* request)
 {
 	tcpWorker->tcp_send(request);
+}
+
+bool UdsComClient::tryToconnect()
+{
+	if( connect(currentSocket, (struct sockaddr*)&address, addrlen) < 0)
+	{
+		printf("Gewünschtes Plugin nicht gefunden.\n");
+		return false;
+	}
+	else
+	{
+		comWorker = new UdsComWorker(currentSocket, this);
+		return true;
+	}
 }
 
 
