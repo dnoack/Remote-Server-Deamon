@@ -39,10 +39,7 @@ RSD::RSD()
 
 	//create Registry Server
 	regServer = new UdsRegServer(REGISTRY_PATH, sizeof(REGISTRY_PATH));
-	regServer->start();
 
-	//start comListener
-	pthread_create(&accepter, NULL, accept_connections, NULL);
 }
 
 
@@ -52,7 +49,6 @@ RSD::~RSD()
 	delete regServer;
 	close(connection_socket);
 
-	//TODO: vector cleanups for tcpWorkerList and plugins
 
 	pthread_mutex_destroy(&pLmutex);
 	pthread_mutex_destroy(&tcpWorkerListmutex);
@@ -113,7 +109,7 @@ bool RSD::addPlugin(Plugin* newPlugin)
 }
 
 
-bool RSD::deletePlugin(char* name)
+bool RSD::deletePlugin(string* name)
 {
 	bool result = false;
 	string* currentName = NULL;
@@ -122,7 +118,7 @@ bool RSD::deletePlugin(char* name)
 	for(unsigned int i = 0; i < plugins.size() && result == false; i++)
 	{
 		currentName = plugins[i]->getName();
-		if(currentName->compare(name) == 0)
+		if(currentName->compare(*name) == 0)
 		{
 			delete plugins[i];
 			plugins.erase(plugins.begin()+i);
@@ -189,6 +185,11 @@ void RSD::checkForDeletableWorker()
 
 void RSD::start()
 {
+	regServer->start();
+
+	//start comListener
+	pthread_create(&accepter, NULL, accept_connections, NULL);
+
 	while(rsdActive)
 	{
 		sleep(MAIN_SLEEP_TIME);

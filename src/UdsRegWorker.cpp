@@ -26,7 +26,7 @@ UdsRegWorker::UdsRegWorker(int socket)
 	this->request = 0;
 	this->response = 0;
 	this->currentSocket = socket;
-	this->nextPlugin = NULL;
+	this->plugin = NULL;
 	this->state = NOT_ACTIVE;
 	this->json = new JsonRPC();
 
@@ -47,6 +47,12 @@ UdsRegWorker::~UdsRegWorker()
 	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
 	delete json;
+}
+
+
+string* UdsRegWorker::getPluginName()
+{
+	return plugin->getName();
 }
 
 
@@ -93,11 +99,10 @@ void UdsRegWorker::thread_work(int socket)
 								response = createRegisterACKMsg();
 								send(currentSocket, response, strlen(response), 0);
 							}
-							//send registerACK
 							break;
 
 						case REGISTERED:
-							RSD::addPlugin(nextPlugin);
+							RSD::addPlugin(plugin);
 							break;
 
 						case ACTIVE:
@@ -190,10 +195,10 @@ char* UdsRegWorker::handleAnnounceMsg(string* request)
 	name = currentParam->GetString();
 	currentParam = json->getParam(true, "udsFilePath");
 	udsFilePath = currentParam->GetString();
-	nextPlugin = new Plugin(name, udsFilePath);
+	plugin = new Plugin(name, udsFilePath);
 
 	result.SetString("announceACK");
-	id.SetInt(1);//TODO: read id from requestmsg
+	id = json->getId(true);
 
 	return json->generateResponse(id, result);
 
@@ -211,7 +216,7 @@ bool UdsRegWorker::handleRegisterMsg(string* request)
 		for(Value::ConstMemberIterator i = (*dom)["params"].MemberBegin(); i != (*dom)["params"].MemberEnd(); ++i)
 		{
 			methodName = new string(i->value.GetString());
-			nextPlugin->addMethod(methodName);
+			plugin->addMethod(methodName);
 		}
 		result = true;
 	}
@@ -229,7 +234,7 @@ char* UdsRegWorker::createRegisterACKMsg()
 	Value result;
 	Value id;
 	result.SetString("registerACK");
-	id.SetInt(2);//TODO: read id from requestmsg
+	id = json->getId(false);
 	return json->generateResponse(id, result);
 }
 

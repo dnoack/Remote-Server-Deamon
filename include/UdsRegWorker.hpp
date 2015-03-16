@@ -41,11 +41,13 @@ class UdsRegWorker : public WorkerInterface, WorkerThreads{
 		UdsRegWorker(int socket);
 		~UdsRegWorker();
 
+		string* getPluginName();
+
 
 	private:
 
 		JsonRPC* json;
-		Plugin* nextPlugin;
+		Plugin* plugin;
 
 		//variables for listener
 		bool listen_thread_active;

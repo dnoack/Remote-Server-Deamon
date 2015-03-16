@@ -5,6 +5,7 @@
  *      Author: dnoack
  */
 
+#include "RSD.hpp"
 #include <UdsRegServer.hpp>
 #include "JsonRPC.hpp"
 #include "UdsRegWorker.hpp"
@@ -45,9 +46,9 @@ UdsRegServer::UdsRegServer( const char* udsFile, int nameSize)
 
 UdsRegServer::~UdsRegServer()
 {
-	pthread_mutex_destroy(&wLmutex);
 	close(connection_socket);
 	workerList.erase(workerList.begin(), workerList.end());
+	pthread_mutex_destroy(&wLmutex);
 }
 
 
@@ -95,6 +96,7 @@ void UdsRegServer::checkForDeletableWorker()
 	{
 		if((*i)->isDeletable())
 		{
+			RSD::deletePlugin((*i)->getPluginName());
 			delete  *i;
 			i = workerList.erase(i);
 			printf("UdsRegServer: UdsRegWorker was deleted.\n");

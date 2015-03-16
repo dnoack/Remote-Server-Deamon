@@ -74,8 +74,6 @@ void TcpWorker::thread_work(int socket)
 						request = receiveQueue.back();
 						printf("%s\n", request->c_str());
 						handleMsg(request);
-						//send(currentSocket, "Reply msg\n", 8, 0);
-
 					}
 					catch(PluginError &e)
 					{
@@ -164,6 +162,8 @@ int TcpWorker::tcp_send(string* data)
 void TcpWorker::handleMsg(string* request)
 {
 	char* methodNamespace = NULL;
+	char* error = NULL;
+	Value id;
 	UdsComClient* currentClient = NULL;
 
 	// 1) parse to dom with jsonrpc
@@ -179,7 +179,11 @@ void TcpWorker::handleMsg(string* request)
 		currentClient->sendData(receiveQueue.back());
 	}
 	else
-		send(currentSocket, "Aardvark Plugin Not online", 26, 0);
+	{
+		id.SetInt(json->getId(true));
+		error = json->generateResponseError(id, -33011, "Plugin not found.");
+		throw PluginError(error);
+	}
 
 }
 
@@ -210,12 +214,7 @@ UdsComClient* TcpWorker::findComClient(char* pluginName)
 	{
 		currentPlugin = RSD::getPlugin(pluginName);
 
-		if(currentPlugin == NULL)
-		{
-			//TODO: 3.1.1) error, no plugin with this namespace connected
-
-		}
-		else
+		if(currentPlugin != NULL)
 		{
 			// 3.2)  create a new udsClient with this udsFilePath and push it to list
 			currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName());
@@ -239,14 +238,27 @@ char* TcpWorker::getMethodNamespace()
 {
 	const char* methodName = NULL;
 	char* methodNamespace = NULL;
-	int namespacePos = 0;
+	char* error = NULL;
+	unsigned int namespacePos = 0;
+	Value id;
 
 	// 2) (get methodname)get method namespace
 	methodName = json->getMethod(true);
 	namespacePos = strcspn(methodName, ".");
-	methodNamespace = new char[namespacePos+1];
-	strncpy(methodNamespace, methodName, namespacePos);
-	methodNamespace[namespacePos] = '\0';
+
+	//Not '.' found -> no namespace
+	if(namespacePos == strlen(methodName) || namespacePos == 0)
+	{
+		id.SetInt(json->getId(true));
+		error = json->generateResponseError(id, -32010, "Methodname has no namespace.");
+		throw PluginError(error);
+	}
+	else
+	{
+		methodNamespace = new char[namespacePos+1];
+		strncpy(methodNamespace, methodName, namespacePos);
+		methodNamespace[namespacePos] = '\0';
+	}
 
 	return methodNamespace;
 

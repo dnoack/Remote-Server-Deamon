@@ -98,6 +98,8 @@ class JsonRPC {
 		char* generateResponse(Value &id, Value &response);
 
 
+		char* generateResponseError(Value &id, int code, const char* msg);
+
 		Document* getRequestDOM() { return this->inputDOM;}
 		Document* getResponseDOM() { return this->responseDOM;}
 		Document* getErrorDOM(){ return this->errorDOM;}
@@ -145,9 +147,6 @@ class JsonRPC {
 		char* responseMsg;
 		char* error;
 
-
-
-		char* generateResponseError(Value &id, int code, const char* msg);
 
 		void generateRequestDOM(Document &dom);
 
