@@ -29,9 +29,10 @@
 class Plugin{
 
 	public:
-		Plugin(const char* name, const char* path)
+		Plugin(const char* name, int pluginNumber, const char* path)
 		{
 			this->name = new string(name);
+			this->pluginNumber = pluginNumber;
 			this->udsFilePath = new string(path);
 		}
 
@@ -39,6 +40,7 @@ class Plugin{
 		{
 			delete name;
 			delete udsFilePath;
+			deleteMethodList();
 		}
 
 
@@ -55,8 +57,21 @@ class Plugin{
 	private:
 
 		string* name;
+		int pluginNumber;
 		string* udsFilePath;
-		vector<string*> methods;
+		list<string*> methods;
+
+
+		void deleteMethodList()
+		{
+			list<string*>::iterator i = methods.begin();
+
+			while(i != methods.end())
+			{
+				delete *i;
+				i = methods.erase(i);
+			}
+		}
 };
 
 
@@ -71,7 +86,7 @@ class RSD{
 		void start();
 		void checkForDeletableWorker();
 
-		static bool addPlugin(char* name, char* udsFilePath);
+		static bool addPlugin(char* name, int pluginNumber, char* udsFilePath);
 		static bool addPlugin(Plugin* newPlugin);
 		static bool deletePlugin(string* name);
 		static Plugin* getPlugin(char* name);

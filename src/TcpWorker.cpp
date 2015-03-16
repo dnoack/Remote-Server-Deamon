@@ -101,7 +101,7 @@ void TcpWorker::thread_work(int socket)
 	}
 
 	close(currentSocket);
-	pthread_cleanup_pop(NULL);
+	pthread_cleanup_pop(0);
 
 }
 
@@ -136,7 +136,6 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 			{
 				//add received data in buffer to queue
 				pushReceiveQueue(new string(receiveBuffer, recvSize));
-
 				//signal the worker
 				pthread_kill(parent_th, SIGUSR1);
 			}

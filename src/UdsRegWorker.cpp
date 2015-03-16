@@ -188,6 +188,7 @@ char* UdsRegWorker::handleAnnounceMsg(string* request)
 	Value result;
 	Value id;
 	const char* name = NULL;
+	int number;
 	const char* udsFilePath = NULL;
 
 	json->parse(request);
@@ -195,7 +196,9 @@ char* UdsRegWorker::handleAnnounceMsg(string* request)
 	name = currentParam->GetString();
 	currentParam = json->getParam(true, "udsFilePath");
 	udsFilePath = currentParam->GetString();
-	plugin = new Plugin(name, udsFilePath);
+	currentParam = json->getParam(true, "pluginNumber");
+	number = currentParam->GetInt();
+	plugin = new Plugin(name, number, udsFilePath);
 
 	result.SetString("announceACK");
 	id = json->getId(true);

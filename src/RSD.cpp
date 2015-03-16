@@ -77,7 +77,7 @@ void* RSD::accept_connections(void* data)
 }
 
 
-bool RSD::addPlugin(char* name, char* udsFilePath)
+bool RSD::addPlugin(char* name, int pluginNumber, char* udsFilePath)
 {
 	bool result = false;
 
@@ -85,7 +85,7 @@ bool RSD::addPlugin(char* name, char* udsFilePath)
 	if(getPlugin(name) == NULL)
 	{
 		pthread_mutex_lock(&pLmutex);
-		plugins.push_back(new Plugin(name, udsFilePath));
+		plugins.push_back(new Plugin(name, pluginNumber, udsFilePath));
 		result = true;
 		pthread_mutex_unlock(&pLmutex);
 	}
