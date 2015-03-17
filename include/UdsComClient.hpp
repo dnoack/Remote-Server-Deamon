@@ -21,6 +21,7 @@
 
 
 #include "UdsComWorker.hpp"
+#include "RsdMsg.h"
 
 using namespace std;
 
@@ -38,13 +39,13 @@ class UdsComClient{
 
 
 		int sendData(string* data);
-		int sendResponse(string* data);
+
 
 		string* getPluginName(){return pluginName;}
 		bool isDeletable(){return deletable;}
 
 		void markAsDeletable();
-		void tcp_send(string* request);
+		void routeBack(RsdMsg* data);
 		bool tryToconnect();
 
 
