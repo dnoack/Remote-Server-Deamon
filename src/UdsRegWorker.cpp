@@ -11,6 +11,7 @@
 #include "Plugin_Error.h"
 #include "document.h"
 #include "errno.h"
+#include "RsdMsg.h"
 
 using namespace rapidjson;
 
@@ -80,7 +81,7 @@ void UdsRegWorker::thread_work(int socket)
 			case SIGUSR1:
 				while(getReceiveQueueSize() > 0)
 				{
-					request = receiveQueue.back();
+					request = receiveQueue.back()->getContent();
 					printf("Received: %s\n", request->c_str());
 					switch(state)
 					{
@@ -139,6 +140,7 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 {
 
 	listen_thread_active = true;
+	string* content = NULL;
 	int retval;
 	fd_set rfds;
 
@@ -168,7 +170,8 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 			if(recvSize > 0)
 			{
 				//add received data in buffer to queue
-				pushReceiveQueue(new string(receiveBuffer, recvSize));
+				content = new string(receiveBuffer, recvSize);
+				pushReceiveQueue(new RsdMsg(0, content));
 				//signal the worker
 				pthread_kill(parent_th, SIGUSR1);
 			}

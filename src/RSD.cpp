@@ -27,6 +27,7 @@ RSD::RSD()
 	pthread_mutex_init(&tcpWorkerListmutex, NULL);
 
 	rsdActive = true;
+	accepter = 0;
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
 	address.sin_port = htons(TCP_PORT);
@@ -141,6 +142,26 @@ Plugin* RSD::getPlugin(char* name)
 	{
 		currentName = plugins[i]->getName();
 		if(currentName->compare(name) == 0)
+		{
+			result = plugins[i];
+		}
+	}
+	pthread_mutex_unlock(&pLmutex);
+
+	return result;
+}
+
+
+Plugin* RSD::getPlugin(int pluginNumber)
+{
+	Plugin* result = NULL;
+	int currentNumber = -1;
+
+	pthread_mutex_lock(&pLmutex);
+	for(unsigned int i = 0; i < plugins.size() && result == NULL; i++)
+	{
+		currentNumber = plugins[i]->getPluginNumber();
+		if(pluginNumber == currentNumber)
 		{
 			result = plugins[i];
 		}

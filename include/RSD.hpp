@@ -50,8 +50,9 @@ class Plugin{
 			methods.push_back(methodName);
 		}
 
-		string* getName(){return name;}
-		string* getUdsFilePath(){return udsFilePath;}
+		string* getName(){return this->name;}
+		string* getUdsFilePath(){return this->udsFilePath;}
+		int getPluginNumber(){return this->pluginNumber;}
 
 
 	private:
@@ -90,6 +91,7 @@ class RSD{
 		static bool addPlugin(Plugin* newPlugin);
 		static bool deletePlugin(string* name);
 		static Plugin* getPlugin(char* name);
+		static Plugin* getPlugin(int pluginNumber);
 		static int getPluginPos(char* name);
 
 	private:

@@ -12,6 +12,7 @@
 #include <string>
 #include <pthread.h>
 #include "signal.h"
+#include "RsdMsg.h"
 
 
 using namespace std;
@@ -42,7 +43,7 @@ class WorkerInterface{
 	protected:
 
 		//receivequeue
-		list<string*> receiveQueue;
+		list<RsdMsg*> receiveQueue;
 		pthread_mutex_t rQmutex;
 
 
@@ -61,7 +62,7 @@ class WorkerInterface{
 
 		void popReceiveQueue()
 		{
-			string* lastElement = NULL;
+			RsdMsg* lastElement = NULL;
 			pthread_mutex_lock(&rQmutex);
 				lastElement = receiveQueue.back();
 				receiveQueue.pop_back();
@@ -70,7 +71,7 @@ class WorkerInterface{
 		}
 
 
-		void pushReceiveQueue(string* data)
+		void pushReceiveQueue(RsdMsg* data)
 		{
 			pthread_mutex_lock(&rQmutex);
 				receiveQueue.push_front(data);

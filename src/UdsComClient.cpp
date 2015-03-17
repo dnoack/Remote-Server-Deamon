@@ -52,9 +52,9 @@ int UdsComClient::sendData(string* data)
 }
 
 
-void UdsComClient::tcp_send(string* request)
+void UdsComClient::routeBack(RsdMsg* data)
 {
-	tcpWorker->tcp_send(request);
+	tcpWorker->routeBack(data);
 }
 
 bool UdsComClient::tryToconnect()

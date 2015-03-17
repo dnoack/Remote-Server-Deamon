@@ -36,13 +36,16 @@ class UdsComClient;
 #define WORKER_GETSTATUS 2
 
 
+
+
+
 class TcpWorker : public WorkerInterface, public WorkerThreads{
 
 	public:
 		TcpWorker(int socket);
 		~TcpWorker();
 
-		int tcp_send(string* data);
+		int routeBack(RsdMsg* data);
 		void checkComClientList();
 
 
@@ -85,6 +88,8 @@ class TcpWorker : public WorkerInterface, public WorkerThreads{
 			TcpWorker* worker = static_cast<TcpWorker*>(arg);
 			worker->deleteComClientList();
 		};
+
+
 
 };
 

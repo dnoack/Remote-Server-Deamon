@@ -46,8 +46,9 @@ TcpWorker::~TcpWorker()
 
 void TcpWorker::thread_work(int socket)
 {
-	string* request = NULL;
+	RsdMsg* request = NULL;
 	string* errorResponse = NULL;
+	RsdMsg* errorMsg = NULL;
 	worker_thread_active = true;
 
 	pthread_cleanup_push(&TcpWorker::cleanupWorker, this);
@@ -72,14 +73,15 @@ void TcpWorker::thread_work(int socket)
 					try
 					{
 						request = receiveQueue.back();
-						printf("%s\n", request->c_str());
-						handleMsg(request);
+						printf("Received: %s\n", request->getContent()->c_str());
+						handleMsg(request->getContent());
 					}
 					catch(PluginError &e)
 					{
 						errorResponse = new string(e.get());
-						tcp_send(errorResponse);
-						delete errorResponse;
+						errorMsg = new RsdMsg(0, errorResponse);
+						routeBack(errorMsg);
+						delete errorMsg;
 					}
 					catch(...)
 					{
@@ -109,6 +111,7 @@ void TcpWorker::thread_work(int socket)
 void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffer)
 {
 	listen_thread_active = true;
+	string* content = NULL;
 	int retval;
 	fd_set rfds;
 
@@ -135,7 +138,8 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 			if(recvSize > 0)
 			{
 				//add received data in buffer to queue
-				pushReceiveQueue(new string(receiveBuffer, recvSize));
+				content = new string(receiveBuffer, recvSize);
+				pushReceiveQueue(new RsdMsg(0, content));
 				//signal the worker
 				pthread_kill(parent_th, SIGUSR1);
 			}
@@ -152,9 +156,18 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 
 
 
-int TcpWorker::tcp_send(string* data)
+int TcpWorker::routeBack(RsdMsg* data)
 {
-	return send(currentSocket, data->c_str(), data->size(), 0);
+	if(data->getSender() == 0)
+		return send(currentSocket, data->getContent()->c_str(), data->getContent()->size(), 0);
+	else
+	{
+		//TODO: get udsclient to corresponding plugin with pluginnumber
+
+		//TODO:  send content of RsdMsg to plugin
+
+
+	}
 }
 
 
@@ -175,7 +188,7 @@ void TcpWorker::handleMsg(string* request)
 	if(currentClient != NULL)
 	{
 		// 4) use the udsClient to send forward the request
-		currentClient->sendData(receiveQueue.back());
+		currentClient->sendData(receiveQueue.back()->getContent());
 	}
 	else
 	{

@@ -71,7 +71,7 @@ void UdsComWorker::thread_work(int socket)
 				while(getReceiveQueueSize() > 0)
 				{
 					//remove data from queue
-					comClient->tcp_send(receiveQueue.back());
+					comClient->routeBack(receiveQueue.back());
 					popReceiveQueue();
 				}
 				break;
@@ -97,6 +97,7 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 {
 	listen_thread_active = true;
 	int retval = 0;
+	string* content = NULL;
 	fd_set rfds;
 
 	configSignals();
@@ -126,7 +127,9 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 			if(recvSize > 0)
 			{
 				//add received data in buffer to queue
-				pushReceiveQueue(new string(receiveBuffer, recvSize));
+				content = new string(receiveBuffer, recvSize);
+				pushReceiveQueue(new RsdMsg(0, content));
+
 				//signal the worker
 				pthread_kill(parent_th, SIGUSR1);
 			}
