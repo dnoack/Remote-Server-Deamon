@@ -11,11 +11,18 @@
 class RsdMsg{
 
 	public:
-	RsdMsg(int sender, string* content)
+
+		RsdMsg(int sender, string* content)
 		{
 			this->sender = sender;
 			this->content = content;
 		};
+
+		RsdMsg(RsdMsg* msg)
+		{
+			this->sender = msg->getSender();
+			this->content = new string(msg->getContent()->c_str(), msg->getContent()->size());
+		}
 
 		~RsdMsg()
 		{
