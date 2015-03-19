@@ -28,13 +28,12 @@ using namespace std;
 
 class TcpWorker;
 
-#define UDS_COM_PATH "/tmp/AardvarkPlugin.uds"
 
 class UdsComClient{
 
 
 	public:
-		UdsComClient(TcpWorker* tcpworker, string* udsFilePath, string* pluginName);
+		UdsComClient(TcpWorker* tcpworker, string* udsFilePath, string* pluginName, int pluginNumber);
 		~UdsComClient();
 
 
@@ -43,6 +42,7 @@ class UdsComClient{
 
 		string* getPluginName(){return pluginName;}
 		bool isDeletable(){return deletable;}
+		int getPluginNumber(){return pluginNumber;}
 
 		void markAsDeletable();
 		void routeBack(RsdMsg* data);
@@ -54,14 +54,15 @@ class UdsComClient{
 	TcpWorker* tcpWorker;
 	UdsComWorker* comWorker;
 
-	static struct sockaddr_un address;
-	static socklen_t addrlen;
+	 struct sockaddr_un address;
+	 socklen_t addrlen;
 
 	int optionflag;
 	int currentSocket;
 
 	string* udsFilePath;
 	string* pluginName;
+	int pluginNumber;
 
 	bool deletable;
 

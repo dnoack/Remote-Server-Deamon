@@ -68,12 +68,14 @@ void UdsComWorker::thread_work(int socket)
 		switch(currentSig)
 		{
 			case SIGUSR1:
-				while(getReceiveQueueSize() > 0)
-				{
+				//while(getReceiveQueueSize() > 0)
+				//{
 					//remove data from queue
+					printf("Routeback: %s\n", receiveQueue.back()->getContent()->c_str());
+
 					comClient->routeBack(receiveQueue.back());
-					popReceiveQueue();
-				}
+					popReceiveQueue(true);
+				//}
 				break;
 
 			case SIGUSR2:
@@ -128,7 +130,7 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 			{
 				//add received data in buffer to queue
 				content = new string(receiveBuffer, recvSize);
-				pushReceiveQueue(new RsdMsg(0, content));
+				pushReceiveQueue(new RsdMsg(comClient->getPluginNumber(), content));
 
 				//signal the worker
 				pthread_kill(parent_th, SIGUSR1);

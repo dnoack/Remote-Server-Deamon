@@ -64,6 +64,20 @@ class WorkerInterface{
 		{
 			RsdMsg* lastElement = NULL;
 			pthread_mutex_lock(&rQmutex);
+
+			printf("popReceiveQueue: %s\n", receiveQueue.back()->getContent()->c_str());
+				lastElement = receiveQueue.back();
+				receiveQueue.pop_back();
+				delete lastElement;
+			pthread_mutex_unlock(&rQmutex);
+		}
+
+		void popReceiveQueue(bool bla)
+		{
+			RsdMsg* lastElement = NULL;
+			pthread_mutex_lock(&rQmutex);
+
+			printf("Uds: popReceiveQueue: %s\n", receiveQueue.back()->getContent()->c_str());
 				lastElement = receiveQueue.back();
 				receiveQueue.pop_back();
 				delete lastElement;
@@ -71,10 +85,19 @@ class WorkerInterface{
 		}
 
 
+		void popReceiveQueueWithoutDelete()
+		{
+			pthread_mutex_lock(&rQmutex);
+
+				receiveQueue.pop_back();
+			pthread_mutex_unlock(&rQmutex);
+		}
+
+
 		void pushReceiveQueue(RsdMsg* data)
 		{
 			pthread_mutex_lock(&rQmutex);
-				receiveQueue.push_front(data);
+				receiveQueue.push_back(data); //was push front 18.03.2015
 			pthread_mutex_unlock(&rQmutex);
 		}
 

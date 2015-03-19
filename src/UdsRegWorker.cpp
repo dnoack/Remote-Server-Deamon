@@ -79,10 +79,10 @@ void UdsRegWorker::thread_work(int socket)
 		switch(currentSig)
 		{
 			case SIGUSR1:
-				while(getReceiveQueueSize() > 0)
-				{
+				//while(getReceiveQueueSize() > 0)
+				//{
 					request = receiveQueue.back()->getContent();
-					printf("Received: %s\n", request->c_str());
+					printf("RegWorker Received: %s\n", request->c_str());
 					switch(state)
 					{
 						case NOT_ACTIVE:
@@ -116,7 +116,7 @@ void UdsRegWorker::thread_work(int socket)
 							//something went completely wrong
 							state = BROKEN;
 							break;
-					}
+					//}
 					popReceiveQueue();
 
 				}

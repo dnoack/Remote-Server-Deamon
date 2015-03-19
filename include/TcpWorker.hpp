@@ -45,7 +45,7 @@ class TcpWorker : public WorkerInterface, public WorkerThreads{
 		TcpWorker(int socket);
 		~TcpWorker();
 
-		int routeBack(RsdMsg* data);
+		void routeBack(RsdMsg* data);
 		void checkComClientList();
 
 
@@ -73,9 +73,10 @@ class TcpWorker : public WorkerInterface, public WorkerThreads{
 		int currentSocket;
 
 
-		void handleMsg(string* request);
+		void handleMsg(RsdMsg* request);
 		char* getMethodNamespace();
 		UdsComClient* findComClient(char* pluginName);
+		UdsComClient* findComClient(int pluginNumber);
 		void deleteComClientList();
 
 

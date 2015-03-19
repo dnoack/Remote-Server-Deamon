@@ -68,13 +68,13 @@ void TcpWorker::thread_work(int socket)
 		switch(currentSig)
 		{
 			case SIGUSR1:
-				while(getReceiveQueueSize() > 0)
-				{
+				//while(getReceiveQueueSize() > 0)
+				//{
 					try
 					{
 						request = receiveQueue.back();
-						printf("Received: %s\n", request->getContent()->c_str());
-						handleMsg(request->getContent());
+						printf("Tcp Queue Received: %s\n", request->getContent()->c_str());
+						handleMsg(request);
 					}
 					catch(PluginError &e)
 					{
@@ -87,8 +87,8 @@ void TcpWorker::thread_work(int socket)
 					{
 						printf("Unkown Exception.\n");
 					}
-					popReceiveQueue();
-				}
+
+				//}
 				break;
 
 			case SIGUSR2:
@@ -156,22 +156,58 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 
 
 
-int TcpWorker::routeBack(RsdMsg* data)
+void TcpWorker::routeBack(RsdMsg* data)
 {
-	if(data->getSender() == 0)
-		return send(currentSocket, data->getContent()->c_str(), data->getContent()->size(), 0);
-	else
+	int lastRequestSender = 0;
+	UdsComClient* comClient = NULL;
+
+
+
+
+	try{
+		json->parse(data->getContent());
+		//check if msg is a response or a request
+		if(json->isRequest())
+		{
+			//request will be queued in the "receiveQueue"
+			pushReceiveQueue(new RsdMsg(data)); //copy
+			//signal the worker
+			pthread_kill(getWorker(), SIGUSR1);
+		}
+	}
+	catch(PluginError &e)
 	{
-		//TODO: get udsclient to corresponding plugin with pluginnumber
+		//if it is a response then
+			//check last sender of the latest RsdMsg in "ReceiveQueue"
+			lastRequestSender = receiveQueue.back()->getSender();
 
-		//TODO:  send content of RsdMsg to plugin
-
+			//if this is 0, we have to send the response over tcp to the client
+			if(lastRequestSender == 0)
+			{
+				send(currentSocket, data->getContent()->c_str(), data->getContent()->size(), 0);
+				popReceiveQueue();
+			}
+			else
+			{
+				comClient = findComClient(lastRequestSender);
+				popReceiveQueueWithoutDelete();
+				//send response to this last sender
+				comClient->sendData(data->getContent());
+				//delete data; //!!!!!!!!!!!
+			}
 
 	}
+	//TODO: implement JsonRPC::isResponse() and another else for errors
+
+
+
+
+
+
 }
 
 
-void TcpWorker::handleMsg(string* request)
+void TcpWorker::handleMsg(RsdMsg* request)
 {
 	char* methodNamespace = NULL;
 	char* error = NULL;
@@ -179,7 +215,7 @@ void TcpWorker::handleMsg(string* request)
 	UdsComClient* currentClient = NULL;
 
 	// 1) parse to dom with jsonrpc
-	json->parse(request);
+	json->parse(request->getContent());
 	methodNamespace = getMethodNamespace();
 
 
@@ -229,7 +265,7 @@ UdsComClient* TcpWorker::findComClient(char* pluginName)
 		if(currentPlugin != NULL)
 		{
 			// 3.2)  create a new udsClient with this udsFilePath and push it to list
-			currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName());
+			currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName(), currentPlugin->getPluginNumber());
 			if(currentComClient->tryToconnect())
 			{
 				comClientList.push_back(currentComClient);
@@ -241,6 +277,32 @@ UdsComClient* TcpWorker::findComClient(char* pluginName)
 			}
 		}
 	}
+
+	return currentComClient;
+}
+
+
+
+UdsComClient* TcpWorker::findComClient(int pluginNumber)
+{
+	UdsComClient* currentComClient = NULL;
+	bool clientFound = false;
+	list<UdsComClient*>::iterator i = comClientList.begin();
+
+
+	// 3) check if we already have a udsClient for this namespace/pluginName
+	while(i != comClientList.end() && !clientFound)
+	{
+		currentComClient = *i;
+		if(currentComClient->getPluginNumber() == pluginNumber)
+		{
+			clientFound = true;
+		}
+		else
+			++i;
+	}
+	if(!clientFound)
+		currentComClient = NULL;
 
 	return currentComClient;
 }
