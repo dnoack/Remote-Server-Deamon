@@ -260,6 +260,7 @@ UdsComClient* TcpWorker::findComClient(char* pluginName)
 	// 3.1)  IF NOT  -> check RSD plugin list for this namespace and get udsFilePath
 	if(!clientFound)
 	{
+		currentComClient = NULL;
 		currentPlugin = RSD::getPlugin(pluginName);
 
 		if(currentPlugin != NULL)
