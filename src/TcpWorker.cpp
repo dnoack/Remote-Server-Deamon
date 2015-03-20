@@ -211,7 +211,7 @@ void TcpWorker::handleMsg(RsdMsg* request)
 {
 	char* methodNamespace = NULL;
 	char* error = NULL;
-	Value id;
+	Value* id;
 	UdsComClient* currentClient = NULL;
 
 	// 1) parse to dom with jsonrpc
@@ -228,8 +228,8 @@ void TcpWorker::handleMsg(RsdMsg* request)
 	}
 	else
 	{
-		id.SetInt(json->getId(true));
-		error = json->generateResponseError(id, -33011, "Plugin not found.");
+		id = json->tryTogetId();
+		error = json->generateResponseError(*id, -33011, "Plugin not found.");
 		throw PluginError(error);
 	}
 
@@ -315,17 +315,17 @@ char* TcpWorker::getMethodNamespace()
 	char* methodNamespace = NULL;
 	char* error = NULL;
 	unsigned int namespacePos = 0;
-	Value id;
+	Value* id;
 
 	// 2) (get methodname)get method namespace
-	methodName = json->getMethod(true);
+	methodName = json->tryTogetMethod()->GetString();
 	namespacePos = strcspn(methodName, ".");
 
 	//Not '.' found -> no namespace
 	if(namespacePos == strlen(methodName) || namespacePos == 0)
 	{
-		id.SetInt(json->getId(true));
-		error = json->generateResponseError(id, -32010, "Methodname has no namespace.");
+		id = json->tryTogetId();
+		error = json->generateResponseError(*id, -32010, "Methodname has no namespace.");
 		throw PluginError(error);
 	}
 	else

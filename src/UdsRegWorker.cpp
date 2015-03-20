@@ -189,24 +189,24 @@ char* UdsRegWorker::handleAnnounceMsg(string* request)
 {
 	Value* currentParam = NULL;
 	Value result;
-	Value id;
+	Value* id;
 	const char* name = NULL;
 	int number;
 	const char* udsFilePath = NULL;
 
 	json->parse(request);
-	currentParam = json->getParam(true, "pluginName");
+	currentParam = json->tryTogetParam("pluginName");
 	name = currentParam->GetString();
-	currentParam = json->getParam(true, "udsFilePath");
+	currentParam = json->tryTogetParam("udsFilePath");
 	udsFilePath = currentParam->GetString();
-	currentParam = json->getParam(true, "pluginNumber");
+	currentParam = json->tryTogetParam("pluginNumber");
 	number = currentParam->GetInt();
 	plugin = new Plugin(name, number, udsFilePath);
 
 	result.SetString("announceACK");
-	id = json->getId(true);
+	id = json->tryTogetId();
 
-	return json->generateResponse(id, result);
+	return json->generateResponse(*id, result);
 
 }
 
@@ -238,10 +238,10 @@ bool UdsRegWorker::handleRegisterMsg(string* request)
 char* UdsRegWorker::createRegisterACKMsg()
 {
 	Value result;
-	Value id;
+	Value* id;
 	result.SetString("registerACK");
-	id = json->getId(false);
-	return json->generateResponse(id, result);
+	id = json->getId();
+	return json->generateResponse(*id, result);
 }
 
 

@@ -1,8 +1,10 @@
 /*
- * JsonRPC.h
+ * JsonRPC.hpp
  *
- *  Created on: 16.01.2015
- *      Author: dnoack
+ *  Created on: 	16.01.2015
+ *  Last edited: 	20.03.2015
+ *  Author: 		dnoack
+ *
  */
 
 #ifndef SRC_JSONRPC_H_
@@ -82,30 +84,21 @@ class JsonRPC {
 		bool isRequest();
 
 
-
-		Value* getParam(bool checkParamsField, const char* name);
-
-		const char* getResult(bool checkResultField);
-
-		const char* getMethod(bool checkMethodField);
-
-		int getId(bool checkIdField);
-
 		Document* parse(string* msg);
 
-		char* generateRequest(Value &method, Value &params, Value &id);
-
-		char* generateResponse(Value &id, Value &response);
-
-
-		char* generateResponseError(Value &id, int code, const char* msg);
-
-		Document* getRequestDOM() { return this->inputDOM;}
-		Document* getResponseDOM() { return this->responseDOM;}
-		Document* getErrorDOM(){ return this->errorDOM;}
+		Value* getParam(const char* name);
+		Value* tryTogetParam(const char* name);
 
 
-		//new
+		Value* getResult();
+		Value* tryTogetResult();
+
+		Value* getMethod();
+		Value* tryTogetMethod();
+
+		Value* getId();
+		Value* tryTogetId();
+
 
 		bool hasJsonRPCVersion();
 		bool hasMethod();
@@ -113,6 +106,17 @@ class JsonRPC {
 		bool hasId();
 		bool hasResult();
 		bool hasError();
+
+
+		char* generateRequest(Value &method, Value &params, Value &id);
+		char* generateResponse(Value &id, Value &response);
+		char* generateResponseError(Value &id, int code, const char* msg);
+
+		Document* getRequestDOM() { return this->inputDOM;}
+		Document* getResponseDOM() { return this->responseDOM;}
+		Document* getErrorDOM(){ return this->errorDOM;}
+
+
 
 
 

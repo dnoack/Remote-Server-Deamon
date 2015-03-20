@@ -1,14 +1,14 @@
 /*
  * JsonRPC.cpp
  *
- *  Created on: 16.01.2015
- *      Author: dnoack
+ *  Created on: 	16.01.2015
+ *  Last edited:	20.03.2015
+ *  Author: 		dnoack
  */
 
+#include "stdio.h"
 #include <JsonRPC.hpp>
 #include "Plugin_Error.h"
-#include "stdio.h"
-
 
 
 
@@ -32,26 +32,38 @@ Document* JsonRPC::parse(string* msg)
 }
 
 
-Value* JsonRPC::getParam(bool checkParamsField, const char* name)
+Value* JsonRPC::getParam(const char* name)
 {
 	Value* params = NULL;
 	Value* result = NULL;
+
+	params = &((*inputDOM)["params"]);
+	result = &((*params)[name]);
+
+	return result;
+}
+
+
+
+Value* JsonRPC::tryTogetParam(const char* name)
+{
+	Value* result;
+	Value* params;
 	Value nullid;
 
 	try
 	{
-		if(checkParamsField)
-			hasParams();
-
+		hasParams();
 		params = &((*inputDOM)["params"]);
 		if(!params->HasMember(name))
 		{
-			//TODO: insert name of parameter
 			error = generateResponseError(nullid, -32022, "Missing parameter.");
 			throw PluginError(error);
 		}
 		else
-			result = &((*params)[name]);
+		{
+			result = getParam(name);
+		}
 
 	}
 	catch(PluginError &e)
@@ -63,71 +75,78 @@ Value* JsonRPC::getParam(bool checkParamsField, const char* name)
 }
 
 
-const char* JsonRPC::getResult(bool checkResultField)
+
+Value* JsonRPC::getResult()
 {
 	Value* resultValue = NULL;
-	const char* resultString = NULL;
+	resultValue = &((*inputDOM)["result"]);
+	return resultValue;
+}
+
+
+Value* JsonRPC::tryTogetResult()
+{
+	Value* resultValue = NULL;
 
 	try
 	{
-		if(checkResultField)
-			hasResult();
-
-		resultValue = &((*inputDOM)["result"]);
-		//TODO: result can also be an integer
-		resultString = resultValue->GetString();
+		hasResult();
+		resultValue = getResult();
 	}
 	catch(PluginError &e)
 	{
 		throw;
 	}
 
-	return resultString;
+	return resultValue;
 }
 
 
-const char* JsonRPC::getMethod(bool checkMethodField)
+Value* JsonRPC::getMethod()
 {
 	Value* methodValue = NULL;
-	const char* methodString = NULL;
-
-	try
-	{
-		if(checkMethodField)
-			hasMethod();
-
-			methodValue = &((*inputDOM)["method"]);
-			methodString = methodValue->GetString();
-
-	}
-	catch(PluginError &e)
-	{
-		throw;
-	}
-
-	return methodString;
+	methodValue = &((*inputDOM)["method"]);
+	return methodValue;
 }
 
 
-int JsonRPC::getId(bool checkIdField)
+Value* JsonRPC::tryTogetMethod()
 {
-	int result = 0;
-	Value id;
-
+	Value* methodValue = NULL;
 	try
 	{
-		if(checkIdField)
-			hasId();
-
-		id = (*inputDOM)["id"];
-		result = id.GetInt();
+		hasMethod();
+		methodValue = getMethod();
 	}
 	catch(PluginError &e)
 	{
 		throw;
 	}
+	return methodValue;
+}
 
-	return result;
+
+Value* JsonRPC::getId()
+{
+	Value* idValue;
+	idValue = &((*inputDOM)["id"]);
+	return idValue;
+}
+
+
+Value* JsonRPC::tryTogetId()
+{
+	Value* idValue = NULL;
+	try
+	{
+		hasId();
+		idValue = getId();
+	}
+	catch(PluginError &e)
+	{
+		throw;
+	}
+	return idValue;
 }
 
 
