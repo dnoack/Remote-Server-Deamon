@@ -21,7 +21,6 @@
 #include <pthread.h>
 #include "signal.h"
 
-#include "JsonRPC.hpp"
 #include "WorkerInterface.hpp"
 #include <WorkerThreads.hpp>
 
@@ -58,20 +57,11 @@ class TcpWorker : public WorkerInterface, public WorkerThreads{
 		//variables for worker
 		bool worker_thread_active;
 		char* bufferOut;
-		string* jsonInput;
-		string* identity;
-		string* jsonReturn;
 
 
 		//not shared, more common
 		pthread_t lthread;
-		JsonRPC* json;
 		int currentSocket;
-
-
-
-		void handleMsg(RsdMsg* request);
-		char* getMethodNamespace();
 
 
 		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);

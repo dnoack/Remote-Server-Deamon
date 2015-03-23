@@ -56,7 +56,7 @@ int UdsComClient::sendData(string* data)
 
 void UdsComClient::routeBack(RsdMsg* msg)
 {
-	context->tcp_send(msg);
+	context->processMsg(msg);
 }
 
 bool UdsComClient::tryToconnect()

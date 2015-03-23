@@ -25,8 +25,11 @@ class ConnectionContext
 		UdsComClient* findUdsConnection(char* pluginName);
 		UdsComClient* findUdsConnection(int pluginNumber);
 
+		void processMsg(RsdMsg* msg);
+
 		//A connectioNContext is deletable if there is no working tcp part
 		bool isDeletable();
+		bool isRequestInProcess();
 
 		bool isUdsCheckEnabled(){return this->udsCheck;}
 
@@ -44,8 +47,21 @@ class ConnectionContext
 
 		TcpWorker* tcpConnection;
 		list<UdsComClient*> udsConnections;
+		list<RsdMsg*> requests;
+		int lastSender;
 		bool deletable;
 		bool udsCheck;
+		bool requestInProcess;
+		pthread_mutex_t rIPMutex;
+
+		JsonRPC* json;
+		string* jsonInput;
+		string* identity;
+		string* jsonReturn;
+
+		void setRequestInProcess();
+		void setRequestNotInProcess();
+		char* getMethodNamespace();
 
 
 };
