@@ -21,12 +21,8 @@ TcpWorker::TcpWorker(ConnectionContext* context, int socket)
 	this->recvSize = 0;
 	this->lthread = 0;
 	this->bufferOut = NULL;
-	this->jsonReturn = NULL;
-	this->jsonInput = NULL;
-	this->identity = NULL;
 	this->context = context;
 	this->currentSocket = socket;
-	this->json = new JsonRPC();
 
 	StartWorkerThread(currentSocket);
 }
@@ -42,14 +38,13 @@ TcpWorker::~TcpWorker()
 
 	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
-	delete json;
 }
 
 
 
 void TcpWorker::thread_work(int socket)
 {
-	RsdMsg* request = NULL;
+	RsdMsg* msg = NULL;
 	string* errorResponse = NULL;
 	RsdMsg* errorMsg = NULL;
 	worker_thread_active = true;
@@ -71,27 +66,31 @@ void TcpWorker::thread_work(int socket)
 		switch(currentSig)
 		{
 			case SIGUSR1:
-				//while(getReceiveQueueSize() > 0)
-				//{
-					try
+				while(getReceiveQueueSize() > 0)
+				{
+					//Another request is still in progress, wait...
+					if(!context->isRequestInProcess())
 					{
-						request = receiveQueue.back();
-						printf("Tcp Queue Received: %s\n", request->getContent()->c_str());
-						handleMsg(request);
+						try
+						{
+							msg = receiveQueue.back();
+							printf("Tcp Queue Received: %s\n", msg->getContent()->c_str());
+							context->processMsg(msg);
+						}
+						catch(PluginError &e)
+						{
+							errorResponse = new string(e.get());
+							errorMsg = new RsdMsg(0, errorResponse);
+							tcp_send(errorMsg);
+							delete errorMsg;
+						}
+						catch(...)
+						{
+							printf("Unkown Exception.\n");
+						}
+						popReceiveQueueWithoutDelete();
 					}
-					catch(PluginError &e)
-					{
-						errorResponse = new string(e.get());
-						errorMsg = new RsdMsg(0, errorResponse);
-						tcp_send(errorMsg);
-						delete errorMsg;
-					}
-					catch(...)
-					{
-						printf("Unkown Exception.\n");
-					}
-
-				//}
+				}
 				break;
 
 			case SIGUSR2:
@@ -158,110 +157,6 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 }
 
 
-
-void TcpWorker::routeBack(RsdMsg* data)
-{
-	int lastRequestSender = 0;
-	UdsComClient* comClient = NULL;
-
-
-	try{
-		json->parse(data->getContent());
-		//check if msg is a response or a request
-		if(json->isRequest())
-		{
-			//request will be queued in the "receiveQueue"
-			pushReceiveQueue(new RsdMsg(data)); //copy
-			//signal the worker
-			pthread_kill(getWorker(), SIGUSR1);
-		}
-	}
-	catch(PluginError &e)
-	{
-		//if it is a response then
-			//check last sender of the latest RsdMsg in "ReceiveQueue"
-			lastRequestSender = receiveQueue.back()->getSender();
-
-			//if this is 0, we have to send the response over tcp to the client
-			if(lastRequestSender == 0)
-			{
-				send(currentSocket, data->getContent()->c_str(), data->getContent()->size(), 0);
-				popReceiveQueue();
-			}
-			else
-			{
-				comClient = context->findUdsConnection(lastRequestSender);
-				popReceiveQueueWithoutDelete();
-				//send response to this last sender
-				comClient->sendData(data->getContent());
-				//delete data; //!!!!!!!!!!!
-			}
-
-	}
-	//TODO: implement JsonRPC::isResponse() and another else for errors
-
-}
-
-
-void TcpWorker::handleMsg(RsdMsg* request)
-{
-	char* methodNamespace = NULL;
-	char* error = NULL;
-	Value* id;
-	UdsComClient* currentClient = NULL;
-
-	// 1) parse to dom with jsonrpc
-	json->parse(request->getContent());
-	methodNamespace = getMethodNamespace();
-
-
-	currentClient = context->findUdsConnection(methodNamespace);
-
-	if(currentClient != NULL)
-	{
-		// 4) use the udsClient to send forward the request
-		currentClient->sendData(receiveQueue.back()->getContent());
-	}
-	else
-	{
-		id = json->tryTogetId();
-		error = json->generateResponseError(*id, -33011, "Plugin not found.");
-		throw PluginError(error);
-	}
-
-}
-
-
-
-char* TcpWorker::getMethodNamespace()
-{
-	const char* methodName = NULL;
-	char* methodNamespace = NULL;
-	char* error = NULL;
-	unsigned int namespacePos = 0;
-	Value* id;
-
-	// 2) (get methodname)get method namespace
-	methodName = json->tryTogetMethod()->GetString();
-	namespacePos = strcspn(methodName, ".");
-
-	//Not '.' found -> no namespace
-	if(namespacePos == strlen(methodName) || namespacePos == 0)
-	{
-		id = json->tryTogetId();
-		error = json->generateResponseError(*id, -32010, "Methodname has no namespace.");
-		throw PluginError(error);
-	}
-	else
-	{
-		methodNamespace = new char[namespacePos+1];
-		strncpy(methodNamespace, methodName, namespacePos);
-		methodNamespace[namespacePos] = '\0';
-	}
-
-	return methodNamespace;
-
-}
 
 int TcpWorker::tcp_send(char* data, int size)
 {

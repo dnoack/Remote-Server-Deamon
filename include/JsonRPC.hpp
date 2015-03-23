@@ -83,6 +83,8 @@ class JsonRPC {
 		 */
 		bool isRequest();
 
+		bool isResponse();
+
 
 		Document* parse(string* msg);
 
@@ -106,6 +108,7 @@ class JsonRPC {
 		bool hasId();
 		bool hasResult();
 		bool hasError();
+		bool hasResultOrError();
 
 
 		char* generateRequest(Value &method, Value &params, Value &id);

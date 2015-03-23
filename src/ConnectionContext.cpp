@@ -7,12 +7,22 @@
 
 #include "RSD.hpp"
 #include "Plugin.hpp"
+#include "Plugin_Error.h"
 #include "ConnectionContext.hpp"
+
 
 
 ConnectionContext::ConnectionContext(int tcpSocket)
 {
+	pthread_mutex_init(&rIPMutex, NULL);
 	deletable = false;
+	udsCheck = false;
+	requestInProcess = false;
+	lastSender = -1;
+	jsonInput = NULL;
+	identity = NULL;
+	jsonReturn = NULL;
+	json = new JsonRPC();
 	tcpConnection = new TcpWorker(this, tcpSocket);
 }
 
@@ -20,6 +30,104 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 ConnectionContext::~ConnectionContext()
 {
 	delete tcpConnection;
+	pthread_mutex_destroy(&rIPMutex);
+}
+
+
+void ConnectionContext::processMsg(RsdMsg* msg)
+{
+	char* methodNamespace = NULL;
+	char* error = NULL;
+	int lastSender = 0;
+	Value* id;
+	UdsComClient* currentClient = NULL;
+	printf("ProcessMsg()\n");
+
+	try
+	{
+		setRequestInProcess();
+		//parse to dom with jsonrpc
+		json->parse(msg->getContent());
+
+
+		//is it a request ?
+		if(json->isRequest())
+		{
+			methodNamespace = getMethodNamespace();
+			currentClient = findUdsConnection(methodNamespace);
+
+			if(currentClient != NULL)
+			{
+				//TODO: add msg to requestlist
+				requests.push_back(msg);
+				currentClient->sendData(msg->getContent());
+			}
+			else
+			{
+				id = json->tryTogetId();
+				error = json->generateResponseError(*id, -33011, "Plugin not found.");
+				setRequestNotInProcess();
+				throw PluginError(error);
+			}
+		}
+		//or is it a response ?
+		else if(json->isResponse())
+		{
+			//TODO: check the id of the last request !
+			lastSender = requests.back()->getSender();
+			if(lastSender != 0)
+			{
+				//TODO: forward msg to sender of request !
+				currentClient =  findUdsConnection(lastSender);
+				currentClient->sendData(msg->getContent());
+				printf("Back to plugin.\n");
+			}
+			else
+			{	printf("Back to Tcp Client.\n");
+				tcp_send(msg);
+				setRequestNotInProcess();
+			}
+			requests.pop_back();
+		}
+	}
+	catch(PluginError &e)
+	{
+		setRequestNotInProcess();
+		throw;
+	}
+
+
+}
+
+
+char* ConnectionContext::getMethodNamespace()
+{
+	const char* methodName = NULL;
+	char* methodNamespace = NULL;
+	char* error = NULL;
+	unsigned int namespacePos = 0;
+	Value* id;
+
+	// 2) (get methodname)get method namespace
+	methodName = json->tryTogetMethod()->GetString();
+	namespacePos = strcspn(methodName, ".");
+
+	//Not '.' found -> no namespace
+	if(namespacePos == strlen(methodName) || namespacePos == 0)
+	{
+		id = json->tryTogetId();
+		error = json->generateResponseError(*id, -32010, "Methodname has no namespace.");
+		throw PluginError(error);
+	}
+	else
+	{
+		methodNamespace = new char[namespacePos+1];
+		strncpy(methodNamespace, methodName, namespacePos);
+		methodNamespace[namespacePos] = '\0';
+	}
+
+	return methodNamespace;
+
 }
 
 
@@ -164,4 +272,30 @@ void ConnectionContext::arrangeUdsConnectionCheck()
 int ConnectionContext::tcp_send(RsdMsg* msg)
 {
 	return tcpConnection->tcp_send(msg);
+}
+
+bool ConnectionContext::isRequestInProcess()
+{
+	bool result = false;
+	pthread_mutex_lock(&rIPMutex);
+		result = requestInProcess;
+	pthread_mutex_unlock(&rIPMutex);
+	return result;
+}
+
+
+void ConnectionContext::setRequestInProcess()
+{
+	pthread_mutex_lock(&rIPMutex);
+	requestInProcess = true;
+	pthread_mutex_unlock(&rIPMutex);
+
+}
+
+void ConnectionContext::setRequestNotInProcess()
+{
+	pthread_mutex_lock(&rIPMutex);
+	requestInProcess = false;
+	pthread_mutex_unlock(&rIPMutex);
+
 }

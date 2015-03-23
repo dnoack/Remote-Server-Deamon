@@ -8,6 +8,10 @@
 #ifndef INCLUDE_RSDMSG_H_
 #define INCLUDE_RSDMSG_H_
 
+#include <string>
+
+using namespace std;
+
 class RsdMsg{
 
 	public:

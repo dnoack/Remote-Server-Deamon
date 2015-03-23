@@ -191,9 +191,28 @@ bool JsonRPC::isRequest()
 	catch(PluginError &e)
 	{
 		result = false;
-		throw;
 	}
 
+	return result;
+}
+
+bool JsonRPC::isResponse()
+{
+	bool result = false;
+
+	try
+	{
+		hasJsonRPCVersion();
+		checkJsonRpcVersion();
+		hasResultOrError();
+		hasId();
+		result = true;
+	}
+	catch(PluginError &e)
+	{
+		result = false;
+		throw;
+	}
 	return result;
 }
 
@@ -331,6 +350,7 @@ bool JsonRPC::hasId()
 
 }
 
+
 bool JsonRPC::hasResult()
 {
 	bool result = false;
@@ -385,6 +405,23 @@ bool JsonRPC::hasError()
 	catch(PluginError &e)
 	{
 		throw;
+	}
+
+	return result;
+}
+
+
+bool JsonRPC::hasResultOrError()
+{
+	bool result = false;
+
+	try
+	{
+		result = hasResult();
+	}
+	catch(PluginError &e)
+	{
+		result |= hasError(); //TODO: will this work as expected ?
 	}
 
 	return result;
