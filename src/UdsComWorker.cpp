@@ -68,14 +68,10 @@ void UdsComWorker::thread_work(int socket)
 		switch(currentSig)
 		{
 			case SIGUSR1:
-				//while(getReceiveQueueSize() > 0)
-				//{
-					//remove data from queue
 					printf("Routeback: %s\n", receiveQueue.back()->getContent()->c_str());
-
 					comClient->routeBack(receiveQueue.back());
 					popReceiveQueue(true);
-				//}
+
 				break;
 
 			case SIGUSR2:

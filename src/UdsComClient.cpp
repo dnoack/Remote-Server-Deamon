@@ -6,13 +6,10 @@
  */
 #include "errno.h"
 
+#include "ConnectionContext.hpp"
 #include "UdsComClient.hpp"
 #include "TcpWorker.hpp"
 
-
-
-//struct sockaddr_un UdsComClient::address;
-//socklen_t UdsComClient::addrlen;
 
 
 UdsComClient::UdsComClient(ConnectionContext* context, string* udsFilePath, string* pluginName, int pluginNumber)
@@ -47,7 +44,7 @@ UdsComClient::~UdsComClient()
 void UdsComClient::markAsDeletable()
 {
 	deletable = true;
-	//TODO: pthread_kill(tcpWorker->getListener(), SIGUSR2);
+	context->arrangeUdsConnectionCheck();
 }
 
 
@@ -57,9 +54,9 @@ int UdsComClient::sendData(string* data)
 }
 
 
-void UdsComClient::routeBack(RsdMsg* data)
+void UdsComClient::routeBack(RsdMsg* msg)
 {
-	//TODO:: tcpWorker->routeBack(data);
+	context->tcp_send(msg);
 }
 
 bool UdsComClient::tryToconnect()

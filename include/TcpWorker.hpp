@@ -30,16 +30,7 @@ class ConnectionContext;
 class UdsComClient;
 
 
-
 #define BUFFER_SIZE 1024
-#define ADD_WORKER true
-#define DELETE_WORKER false
-#define WORKER_FREE 0
-#define WORKER_BUSY 1
-#define WORKER_GETSTATUS 2
-
-
-
 
 
 class TcpWorker : public WorkerInterface, public WorkerThreads{
@@ -52,9 +43,10 @@ class TcpWorker : public WorkerInterface, public WorkerThreads{
 		void checkComClientList();
 
 		int tcp_send(char* data, int size);
-
+		int tcp_send(RsdMsg* data);
 
 	private:
+		ConnectionContext* context;
 
 
 		//variables for listener
@@ -74,9 +66,8 @@ class TcpWorker : public WorkerInterface, public WorkerThreads{
 		//not shared, more common
 		pthread_t lthread;
 		JsonRPC* json;
-		list<UdsComClient*> comClientList;
 		int currentSocket;
-		ConnectionContext* context;
+
 
 
 		void handleMsg(RsdMsg* request);

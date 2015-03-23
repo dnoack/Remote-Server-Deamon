@@ -83,7 +83,7 @@ void TcpWorker::thread_work(int socket)
 					{
 						errorResponse = new string(e.get());
 						errorMsg = new RsdMsg(0, errorResponse);
-						routeBack(errorMsg);
+						tcp_send(errorMsg);
 						delete errorMsg;
 					}
 					catch(...)
@@ -265,8 +265,14 @@ char* TcpWorker::getMethodNamespace()
 
 int TcpWorker::tcp_send(char* data, int size)
 {
-	//TODO:
-	return 0;
+	return send(currentSocket, data, size, 0);
+}
+
+
+int TcpWorker::tcp_send(RsdMsg* msg)
+{
+	string* data = msg->getContent();
+	return send(currentSocket, data->c_str(), data->size(), 0);
 }
 
 

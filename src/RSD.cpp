@@ -188,16 +188,21 @@ void RSD::checkForDeletableConnections()
 	list<ConnectionContext*>::iterator i = connectionContextList.begin();
 	while(i != connectionContextList.end())
 	{
+
 		if((*i)->isDeletable())
 		{
-			//currentWorker = *i;
 			delete *i;
 			i = connectionContextList.erase(i);
-
-			printf("RSD: Tcpworker deleted from list.Verbleibend: %d\n", connectionContextList.size());
+			printf("RSD: ConnectionContext deleted from list.Verbleibend: %d\n", connectionContextList.size());
+		}
+		else if((*i)->isUdsCheckEnabled())
+		{
+			(*i)->checkUdsConnections();
+			++i;
 		}
 		else
 			++i;
+
 	}
 	pthread_mutex_unlock(&connectionContextListMutex);
 }

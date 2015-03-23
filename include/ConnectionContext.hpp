@@ -25,20 +25,27 @@ class ConnectionContext
 		UdsComClient* findUdsConnection(char* pluginName);
 		UdsComClient* findUdsConnection(int pluginNumber);
 
-		bool isDeletable(){return this->deletable;}
+		//A connectioNContext is deletable if there is no working tcp part
+		bool isDeletable();
+
+		bool isUdsCheckEnabled(){return this->udsCheck;}
+
+
+		//checks the tcp connections if the checkUdsConnections flag is set, the udsCOnnections
+		void checkUdsConnections();
 
 		void deleteAllUdsConnections();
 
-		void checkUdsConnections();
+		void arrangeUdsConnectionCheck();
+
+		int tcp_send(RsdMsg* msg);
 
 	private:
 
 		TcpWorker* tcpConnection;
 		list<UdsComClient*> udsConnections;
 		bool deletable;
-
-
-
+		bool udsCheck;
 
 
 };

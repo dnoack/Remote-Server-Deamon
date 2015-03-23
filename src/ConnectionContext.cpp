@@ -23,6 +23,53 @@ ConnectionContext::~ConnectionContext()
 }
 
 
+bool ConnectionContext::isDeletable()
+{
+	list<UdsComClient*>::iterator udsConnection;
+
+	if(tcpConnection->isDeletable())
+	{
+		//close tcpConnection
+		deletable = true;
+		delete tcpConnection;
+		tcpConnection = NULL;
+
+		//close all UdsConnections
+		udsConnection = udsConnections.begin();
+		while(udsConnection != udsConnections.end())
+		{
+			delete *udsConnection;
+			udsConnection = udsConnections.erase(udsConnection);
+			printf("RSD: Tcpworker deleted from list.Verbleibend: %d\n", udsConnections.size());
+			++udsConnection;
+		}
+	}
+	return deletable;
+}
+
+
+void ConnectionContext::checkUdsConnections()
+{
+	list<UdsComClient*>::iterator udsConnection;
+
+	udsConnection = udsConnections.begin();
+	while(udsConnection != udsConnections.end())
+	{
+		if((*udsConnection)->isDeletable())
+		{
+			delete *udsConnection;
+			udsConnection = udsConnections.erase(udsConnection);
+			printf("RSD: Tcpworker deleted from list.Verbleibend: %d\n", udsConnections.size());
+			tcpConnection->tcp_send("Connection to AardvarkPlugin Aborted!\n", 39);
+		}
+		else
+			++udsConnection;
+	}
+
+}
+
+
+
 UdsComClient* ConnectionContext::findUdsConnection(char* pluginName)
 {
 	UdsComClient* currentComClient = NULL;
@@ -107,23 +154,14 @@ void ConnectionContext::deleteAllUdsConnections()
 }
 
 
-void ConnectionContext::checkUdsConnections()
+
+void ConnectionContext::arrangeUdsConnectionCheck()
 {
-	list<UdsComClient*>::iterator i = udsConnections.begin();
-
-	while(i != udsConnections.end())
-	{
-		if((*i)->isDeletable())
-		{
-			delete *i;
-			i = udsConnections.erase(i);
-
-			//TODO: create correct json rpc response or notification for client
-			//TODO: also delete plugin from list, else we will always try to connect to it.
-			tcpConnection->tcp_send("Connection to AardvarkPlugin Aborted!\n", 39);
-		}
-		else
-			++i;
-	}
+	udsCheck = true;
 }
 
+
+int ConnectionContext::tcp_send(RsdMsg* msg)
+{
+	return tcpConnection->tcp_send(msg);
+}
