@@ -18,14 +18,17 @@
 #include <list>
 
 
-#include "JsonRPC.hpp"
 #include <pthread.h>
-#include "WorkerInterface.hpp"
-#include <WorkerThreads.hpp>
 #include "signal.h"
 
+#include "JsonRPC.hpp"
+#include "WorkerInterface.hpp"
+#include <WorkerThreads.hpp>
 
+
+class ConnectionContext;
 class UdsComClient;
+
 
 
 #define BUFFER_SIZE 1024
@@ -42,11 +45,13 @@ class UdsComClient;
 class TcpWorker : public WorkerInterface, public WorkerThreads{
 
 	public:
-		TcpWorker(int socket);
+		TcpWorker(ConnectionContext* context, int socket);
 		~TcpWorker();
 
 		void routeBack(RsdMsg* data);
 		void checkComClientList();
+
+		int tcp_send(char* data, int size);
 
 
 	private:
@@ -71,13 +76,11 @@ class TcpWorker : public WorkerInterface, public WorkerThreads{
 		JsonRPC* json;
 		list<UdsComClient*> comClientList;
 		int currentSocket;
+		ConnectionContext* context;
 
 
 		void handleMsg(RsdMsg* request);
 		char* getMethodNamespace();
-		UdsComClient* findComClient(char* pluginName);
-		UdsComClient* findComClient(int pluginNumber);
-		void deleteComClientList();
 
 
 		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);
@@ -87,7 +90,7 @@ class TcpWorker : public WorkerInterface, public WorkerThreads{
 		static void cleanupWorker(void* arg)
 		{
 			TcpWorker* worker = static_cast<TcpWorker*>(arg);
-			worker->deleteComClientList();
+			//TODO::worker->deleteComClientList();
 		};
 
 

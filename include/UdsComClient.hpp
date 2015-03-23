@@ -26,14 +26,15 @@
 using namespace std;
 
 
-class TcpWorker;
+class ConnectionContext;
+class UdsComWorker;
 
 
 class UdsComClient{
 
 
 	public:
-		UdsComClient(TcpWorker* tcpworker, string* udsFilePath, string* pluginName, int pluginNumber);
+		UdsComClient(ConnectionContext* context, string* udsFilePath, string* pluginName, int pluginNumber);
 		~UdsComClient();
 
 
@@ -51,7 +52,7 @@ class UdsComClient{
 
 	private:
 
-	TcpWorker* tcpWorker;
+	ConnectionContext* context;
 	UdsComWorker* comWorker;
 
 	 struct sockaddr_un address;

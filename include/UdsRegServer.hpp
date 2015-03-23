@@ -8,6 +8,8 @@
 #ifndef INCLUDE_UDSREGSERVER_HPP_
 #define INCLUDE_UDSREGSERVER_HPP_
 
+
+
 //unix domain socket definition
 #include <sys/un.h>
 #include <sys/socket.h>
@@ -17,12 +19,11 @@
 #include <cstdio>
 #include <list>
 #include <pthread.h>
-
 #include "signal.h"
+
 #include "JsonRPC.hpp"
+#include "UdsRegWorker.hpp"
 
-
-class UdsRegWorker;
 
 
 

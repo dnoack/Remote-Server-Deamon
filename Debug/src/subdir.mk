@@ -4,6 +4,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/ConnectionContext.cpp \
 ../src/JsonRPC.cpp \
 ../src/RSD.cpp \
 ../src/TcpWorker.cpp \
@@ -13,6 +14,7 @@ CPP_SRCS += \
 ../src/UdsRegWorker.cpp 
 
 OBJS += \
+./src/ConnectionContext.o \
 ./src/JsonRPC.o \
 ./src/RSD.o \
 ./src/TcpWorker.o \
@@ -22,6 +24,7 @@ OBJS += \
 ./src/UdsRegWorker.o 
 
 CPP_DEPS += \
+./src/ConnectionContext.d \
 ./src/JsonRPC.d \
 ./src/RSD.d \
 ./src/TcpWorker.d \
