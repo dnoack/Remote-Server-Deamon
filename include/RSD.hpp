@@ -17,8 +17,10 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#include "TcpWorker.hpp"
 #include "UdsRegServer.hpp"
+#include "ConnectionContext.hpp"
+#include "Plugin.hpp"
+
 
 
 #define REGISTRY_PATH "/tmp/RsdRegister.uds"
@@ -26,54 +28,6 @@
 #define MAX_CLIENTS 20
 #define MAIN_SLEEP_TIME 3 //in seconds
 
-class Plugin{
-
-	public:
-		Plugin(const char* name, int pluginNumber, const char* path)
-		{
-			this->name = new string(name);
-			this->pluginNumber = pluginNumber;
-			this->udsFilePath = new string(path);
-		}
-
-		~Plugin()
-		{
-			delete name;
-			delete udsFilePath;
-			deleteMethodList();
-		}
-
-
-
-		void addMethod(string* methodName)
-		{
-			methods.push_back(methodName);
-		}
-
-		string* getName(){return this->name;}
-		string* getUdsFilePath(){return this->udsFilePath;}
-		int getPluginNumber(){return this->pluginNumber;}
-
-
-	private:
-
-		string* name;
-		int pluginNumber;
-		string* udsFilePath;
-		list<string*> methods;
-
-
-		void deleteMethodList()
-		{
-			list<string*>::iterator i = methods.begin();
-
-			while(i != methods.end())
-			{
-				delete *i;
-				i = methods.erase(i);
-			}
-		}
-};
 
 
 class RSD{
@@ -85,7 +39,7 @@ class RSD{
 		~RSD();
 
 		void start();
-		void checkForDeletableWorker();
+		void checkForDeletableConnections();
 
 		static bool addPlugin(char* name, int pluginNumber, char* udsFilePath);
 		static bool addPlugin(Plugin* newPlugin);
@@ -105,13 +59,15 @@ class RSD{
 		static int connection_socket;
 		static struct sockaddr_in address;
 		static socklen_t addrlen;
+
 		static vector<Plugin*> plugins;
 		static pthread_mutex_t pLmutex;
-		static list<TcpWorker*> tcpWorkerList;
-		static pthread_mutex_t tcpWorkerListmutex;
+
+		static list<ConnectionContext*> connectionContextList;
+		static pthread_mutex_t connectionContextListMutex;
 
 
-		static void pushWorkerList(TcpWorker* newWorker);
+		static void pushWorkerList(ConnectionContext* newWorker);
 		static void* accept_connections(void*);
 };
 

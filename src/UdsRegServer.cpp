@@ -5,10 +5,11 @@
  *      Author: dnoack
  */
 
+
 #include "RSD.hpp"
-#include <UdsRegServer.hpp>
+#include "UdsRegServer.hpp"
 #include "JsonRPC.hpp"
-#include "UdsRegWorker.hpp"
+
 
 
 #define EXPECTED_NUM_OF_DEVICES 1

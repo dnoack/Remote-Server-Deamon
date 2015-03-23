@@ -1,17 +1,19 @@
 /*
  * UdsWorker.cpp
  *
- *  Created on: 09.02.2015
- *      Author: dnoack
+ *  Created on: 	09.02.2015
+ *  Author: 		dnoack
  */
 
-#include <TcpWorker.hpp>
-#include "RSD.hpp"
-#include "UdsComClient.hpp"
-#include "Plugin_Error.h"
 #include "errno.h"
 
-TcpWorker::TcpWorker(int socket)
+#include <TcpWorker.hpp>
+#include "ConnectionContext.hpp"
+#include "UdsComClient.hpp"
+#include "Plugin_Error.h"
+
+
+TcpWorker::TcpWorker(ConnectionContext* context, int socket)
 {
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
 	this->listen_thread_active = false;
@@ -22,6 +24,7 @@ TcpWorker::TcpWorker(int socket)
 	this->jsonReturn = NULL;
 	this->jsonInput = NULL;
 	this->identity = NULL;
+	this->context = context;
 	this->currentSocket = socket;
 	this->json = new JsonRPC();
 
@@ -93,7 +96,7 @@ void TcpWorker::thread_work(int socket)
 
 			case SIGUSR2:
 				printf("TcpComWorker: SIGUSR2\n");
-				checkComClientList();
+				context->checkUdsConnections();
 				break;
 
 			default:
@@ -129,7 +132,7 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 		if(retval < 0 )
 		{
 			//error occured
-			checkComClientList();
+			context->checkUdsConnections();
 		}
 		else if(FD_ISSET(socket, &rfds))
 		{
@@ -162,8 +165,6 @@ void TcpWorker::routeBack(RsdMsg* data)
 	UdsComClient* comClient = NULL;
 
 
-
-
 	try{
 		json->parse(data->getContent());
 		//check if msg is a response or a request
@@ -189,7 +190,7 @@ void TcpWorker::routeBack(RsdMsg* data)
 			}
 			else
 			{
-				comClient = findComClient(lastRequestSender);
+				comClient = context->findUdsConnection(lastRequestSender);
 				popReceiveQueueWithoutDelete();
 				//send response to this last sender
 				comClient->sendData(data->getContent());
@@ -198,11 +199,6 @@ void TcpWorker::routeBack(RsdMsg* data)
 
 	}
 	//TODO: implement JsonRPC::isResponse() and another else for errors
-
-
-
-
-
 
 }
 
@@ -219,7 +215,7 @@ void TcpWorker::handleMsg(RsdMsg* request)
 	methodNamespace = getMethodNamespace();
 
 
-	currentClient = findComClient(methodNamespace);
+	currentClient = context->findUdsConnection(methodNamespace);
 
 	if(currentClient != NULL)
 	{
@@ -235,78 +231,6 @@ void TcpWorker::handleMsg(RsdMsg* request)
 
 }
 
-
-
-UdsComClient* TcpWorker::findComClient(char* pluginName)
-{
-	UdsComClient* currentComClient = NULL;
-	Plugin* currentPlugin = NULL;
-	bool clientFound = false;
-	list<UdsComClient*>::iterator i = comClientList.begin();
-
-
-	// 3) check if we already have a udsClient for this namespace/pluginName
-	while(i != comClientList.end() && !clientFound)
-	{
-		currentComClient = *i;
-		if(currentComClient->getPluginName()->compare(pluginName) == 0)
-		{
-			clientFound = true;
-		}
-		else
-			++i;
-	}
-
-	// 3.1)  IF NOT  -> check RSD plugin list for this namespace and get udsFilePath
-	if(!clientFound)
-	{
-		currentComClient = NULL;
-		currentPlugin = RSD::getPlugin(pluginName);
-
-		if(currentPlugin != NULL)
-		{
-			// 3.2)  create a new udsClient with this udsFilePath and push it to list
-			currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName(), currentPlugin->getPluginNumber());
-			if(currentComClient->tryToconnect())
-			{
-				comClientList.push_back(currentComClient);
-			}
-			else
-			{
-				delete currentComClient;
-				currentComClient = NULL;
-			}
-		}
-	}
-
-	return currentComClient;
-}
-
-
-
-UdsComClient* TcpWorker::findComClient(int pluginNumber)
-{
-	UdsComClient* currentComClient = NULL;
-	bool clientFound = false;
-	list<UdsComClient*>::iterator i = comClientList.begin();
-
-
-	// 3) check if we already have a udsClient for this namespace/pluginName
-	while(i != comClientList.end() && !clientFound)
-	{
-		currentComClient = *i;
-		if(currentComClient->getPluginNumber() == pluginNumber)
-		{
-			clientFound = true;
-		}
-		else
-			++i;
-	}
-	if(!clientFound)
-		currentComClient = NULL;
-
-	return currentComClient;
-}
 
 
 char* TcpWorker::getMethodNamespace()
@@ -339,38 +263,10 @@ char* TcpWorker::getMethodNamespace()
 
 }
 
-
-
-
-void TcpWorker::deleteComClientList()
+int TcpWorker::tcp_send(char* data, int size)
 {
-	list<UdsComClient*>::iterator i = comClientList.begin();
-
-	while(i != comClientList.end())
-	{
-		delete *i;
-		i = comClientList.erase(i);
-	}
-
+	//TODO:
+	return 0;
 }
 
 
-void TcpWorker::checkComClientList()
-{
-	list<UdsComClient*>::iterator i = comClientList.begin();
-
-	while(i != comClientList.end())
-	{
-		if((*i)->isDeletable())
-		{
-			delete *i;
-			i = comClientList.erase(i);
-
-			//TODO: create correct json rpc response or notification for client
-			//TODO: also delete plugin from list, else we will always try to connect to it.
-			send(currentSocket, "Connection to AardvarkPlugin Aborted!\n", 39, 0);
-		}
-		else
-			++i;
-	}
-}

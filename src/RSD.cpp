@@ -9,6 +9,7 @@
 #include "RSD.hpp"
 
 
+
 int RSD::connection_socket;
 struct sockaddr_in RSD::address;
 socklen_t RSD::addrlen;
@@ -16,15 +17,15 @@ socklen_t RSD::addrlen;
 vector<Plugin*> RSD::plugins;
 pthread_mutex_t RSD::pLmutex;
 
-list<TcpWorker*> RSD::tcpWorkerList;
-pthread_mutex_t RSD::tcpWorkerListmutex;
+list<ConnectionContext*> RSD::connectionContextList;
+pthread_mutex_t RSD::connectionContextListMutex;
 
 
 
 RSD::RSD()
 {
 	pthread_mutex_init(&pLmutex, NULL);
-	pthread_mutex_init(&tcpWorkerListmutex, NULL);
+	pthread_mutex_init(&connectionContextListMutex, NULL);
 
 	rsdActive = true;
 	accepter = 0;
@@ -50,9 +51,8 @@ RSD::~RSD()
 	delete regServer;
 	close(connection_socket);
 
-
 	pthread_mutex_destroy(&pLmutex);
-	pthread_mutex_destroy(&tcpWorkerListmutex);
+	pthread_mutex_destroy(&connectionContextListMutex);
 }
 
 
@@ -60,18 +60,18 @@ void* RSD::accept_connections(void* data)
 {
 	listen(connection_socket, MAX_CLIENTS);
 	bool accept_thread_active = true;
-	int new_socket = 0;
-	TcpWorker* newWorker = NULL;
+	int tcpSocket = 0;
+	ConnectionContext* context = NULL;
 
 
 	while(accept_thread_active)
 	{
-		new_socket = accept(connection_socket, (struct sockaddr*)&address, &addrlen);
-		if(new_socket >= 0)
+		tcpSocket = accept(connection_socket, (struct sockaddr*)&address, &addrlen);
+		if(tcpSocket >= 0)
 		{
 			printf("Client connected\n");
-			newWorker = new TcpWorker(new_socket);
-			pushWorkerList(newWorker);
+			context = new ConnectionContext(tcpSocket);
+			pushWorkerList(context);
 		}
 	}
 	return 0;
@@ -172,35 +172,34 @@ Plugin* RSD::getPlugin(int pluginNumber)
 }
 
 
-void RSD::pushWorkerList(TcpWorker* newWorker)
+void RSD::pushWorkerList(ConnectionContext* context)
 {
-	pthread_mutex_lock(&tcpWorkerListmutex);
-		tcpWorkerList.push_back(newWorker);
-		printf("Anzahl TcpWorker: %d\n", tcpWorkerList.size());
-	pthread_mutex_unlock(&tcpWorkerListmutex);
+	pthread_mutex_lock(&connectionContextListMutex);
+	connectionContextList.push_back(context);
+		printf("Anzahl TcpWorker: %d\n", connectionContextList.size());
+	pthread_mutex_unlock(&connectionContextListMutex);
 }
 
 
-void RSD::checkForDeletableWorker()
+void RSD::checkForDeletableConnections()
 {
-	//TcpWorker* currentWorker = NULL;
-	list<TcpWorker*>::iterator i = tcpWorkerList.begin();
-	pthread_mutex_lock(&tcpWorkerListmutex);
+	pthread_mutex_lock(&connectionContextListMutex);
 
-	while(i != tcpWorkerList.end())
+	list<ConnectionContext*>::iterator i = connectionContextList.begin();
+	while(i != connectionContextList.end())
 	{
 		if((*i)->isDeletable())
 		{
 			//currentWorker = *i;
 			delete *i;
-			i = tcpWorkerList.erase(i);
+			i = connectionContextList.erase(i);
 
-			printf("RSD: Tcpworker deleted from list.Verbleibend: %d\n", tcpWorkerList.size());
+			printf("RSD: Tcpworker deleted from list.Verbleibend: %d\n", connectionContextList.size());
 		}
 		else
 			++i;
 	}
-	pthread_mutex_unlock(&tcpWorkerListmutex);
+	pthread_mutex_unlock(&connectionContextListMutex);
 }
 
 
@@ -217,7 +216,7 @@ void RSD::start()
 		//check uds registry workers
 		regServer->checkForDeletableWorker();
 		//check TCP/workers
-		this->checkForDeletableWorker();
+		this->checkForDeletableConnections();
 	}
 }
 

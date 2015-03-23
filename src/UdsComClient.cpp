@@ -4,21 +4,23 @@
  *  Created on: 11.02.2015
  *      Author: dnoack
  */
-
-#include "TcpWorker.hpp"
-#include "UdsComClient.hpp"
 #include "errno.h"
+
+#include "UdsComClient.hpp"
+#include "TcpWorker.hpp"
+
+
 
 //struct sockaddr_un UdsComClient::address;
 //socklen_t UdsComClient::addrlen;
 
 
-UdsComClient::UdsComClient(TcpWorker* tcpWorker, string* udsFilePath, string* pluginName, int pluginNumber)
+UdsComClient::UdsComClient(ConnectionContext* context, string* udsFilePath, string* pluginName, int pluginNumber)
 {
 	optionflag = 1;
 	this->comWorker = NULL;
 	this->deletable = false;
-	this->tcpWorker = tcpWorker;
+	this->context = context;
 	this->pluginNumber = pluginNumber;
 	this->udsFilePath = new string(*udsFilePath);
 	this->pluginName = new string(*pluginName);
@@ -45,7 +47,7 @@ UdsComClient::~UdsComClient()
 void UdsComClient::markAsDeletable()
 {
 	deletable = true;
-	pthread_kill(tcpWorker->getListener(), SIGUSR2);
+	//TODO: pthread_kill(tcpWorker->getListener(), SIGUSR2);
 }
 
 
@@ -57,7 +59,7 @@ int UdsComClient::sendData(string* data)
 
 void UdsComClient::routeBack(RsdMsg* data)
 {
-	tcpWorker->routeBack(data);
+	//TODO:: tcpWorker->routeBack(data);
 }
 
 bool UdsComClient::tryToconnect()

@@ -1,5 +1,5 @@
 /*
- * UdsWorker.hpp
+ * UdsRegWorker.hpp
  *
  *  Created on: 09.02.2015
  *      Author: dnoack
@@ -21,11 +21,8 @@
 #include "JsonRPC.hpp"
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
+#include "Plugin.hpp"
 
-
-
-class UdsRegServer;
-class Plugin;
 
 
 
