@@ -41,11 +41,12 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 	int lastSender = 0;
 	Value* id;
 	UdsComClient* currentClient = NULL;
-	printf("ProcessMsg()\n");
+
 
 	try
 	{
 		setRequestInProcess();
+		printf("ProcessMsg()\n");
 		//parse to dom with jsonrpc
 		json->parse(msg->getContent());
 
@@ -66,7 +67,6 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 			{
 				id = json->tryTogetId();
 				error = json->generateResponseError(*id, -33011, "Plugin not found.");
-				setRequestNotInProcess();
 				throw PluginError(error);
 			}
 		}

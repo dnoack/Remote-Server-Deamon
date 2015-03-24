@@ -70,7 +70,7 @@ void UdsComWorker::thread_work(int socket)
 			case SIGUSR1:
 					printf("Routeback: %s\n", receiveQueue.back()->getContent()->c_str());
 					comClient->routeBack(receiveQueue.back());
-					popReceiveQueue(true);
+					popReceiveQueueWithoutDelete();
 
 				break;
 
