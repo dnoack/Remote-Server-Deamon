@@ -72,17 +72,6 @@ class WorkerInterface{
 			pthread_mutex_unlock(&rQmutex);
 		}
 
-		void popReceiveQueue(bool bla)
-		{
-			RsdMsg* lastElement = NULL;
-			pthread_mutex_lock(&rQmutex);
-
-			printf("Uds: popReceiveQueue: %s\n", receiveQueue.back()->getContent()->c_str());
-				lastElement = receiveQueue.back();
-				receiveQueue.pop_back();
-				delete lastElement;
-			pthread_mutex_unlock(&rQmutex);
-		}
 
 
 		void popReceiveQueueWithoutDelete()
@@ -111,8 +100,6 @@ class WorkerInterface{
 
 			return result;
 		}
-
-
 
 
 		void configSignals()
