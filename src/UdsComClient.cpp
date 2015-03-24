@@ -9,6 +9,7 @@
 #include "ConnectionContext.hpp"
 #include "UdsComClient.hpp"
 #include "TcpWorker.hpp"
+#include "Plugin_Error.h"
 
 
 
@@ -54,9 +55,18 @@ int UdsComClient::sendData(string* data)
 }
 
 
+
+
 void UdsComClient::routeBack(RsdMsg* msg)
 {
-	context->processMsg(msg);
+	try
+	{
+		context->processMsg(msg);
+	}
+	catch(PluginError &e)
+	{
+		sendData(e.getString());
+	}
 }
 
 bool UdsComClient::tryToconnect()

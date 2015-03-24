@@ -12,35 +12,32 @@
 
 using namespace std;
 
+
 class RsdMsg{
 
 	public:
 
-		RsdMsg(int sender, string* content)
-		{
-			this->sender = sender;
-			this->content = content;
-		};
+		RsdMsg(int sender, string* content);
 
-		RsdMsg(RsdMsg* msg)
-		{
-			this->sender = msg->getSender();
-			this->content = new string(msg->getContent()->c_str(), msg->getContent()->size());
-		}
 
-		~RsdMsg()
-		{
-			delete content;
-		};
+		RsdMsg(RsdMsg* msg);
+
+
+		~RsdMsg();
+
 
 
 		int getSender(){return this->sender;}
 		string* getContent(){return this->content;}
+		static void printCounters();
 
 	private:
 		int sender;
 		string* content;
+		static int countMalloc;
+		static int countDealloc;
 
 };
+
 
 #endif /* INCLUDE_RSDMSG_H_ */
