@@ -1,13 +1,13 @@
 /*
  * RSD.cpp
  *
- *  Created on: 11.02.2015
- *      Author: dnoack
+ *  Created on: 	11.02.2015
+ *  Author: 		dnoack
  */
 
 
 #include "RSD.hpp"
-
+#include "RsdMsg.h"
 
 
 int RSD::connection_socket;
@@ -41,7 +41,6 @@ RSD::RSD()
 
 	//create Registry Server
 	regServer = new UdsRegServer(REGISTRY_PATH, sizeof(REGISTRY_PATH));
-
 }
 
 
@@ -63,7 +62,6 @@ void* RSD::accept_connections(void* data)
 	int tcpSocket = 0;
 	ConnectionContext* context = NULL;
 
-
 	while(accept_thread_active)
 	{
 		tcpSocket = accept(connection_socket, (struct sockaddr*)&address, &addrlen);
@@ -74,6 +72,7 @@ void* RSD::accept_connections(void* data)
 			pushWorkerList(context);
 		}
 	}
+
 	return 0;
 }
 
@@ -90,6 +89,7 @@ bool RSD::addPlugin(char* name, int pluginNumber, char* udsFilePath)
 		result = true;
 		pthread_mutex_unlock(&pLmutex);
 	}
+
 	return result;
 }
 
@@ -106,6 +106,7 @@ bool RSD::addPlugin(Plugin* newPlugin)
 		result = true;
 		pthread_mutex_unlock(&pLmutex);
 	}
+
 	return result;
 }
 
@@ -175,8 +176,8 @@ Plugin* RSD::getPlugin(int pluginNumber)
 void RSD::pushWorkerList(ConnectionContext* context)
 {
 	pthread_mutex_lock(&connectionContextListMutex);
-	connectionContextList.push_back(context);
-		printf("Anzahl TcpWorker: %d\n", connectionContextList.size());
+		connectionContextList.push_back(context);
+		printf("Anzahl ConnectionContext: %d\n", connectionContextList.size());
 	pthread_mutex_unlock(&connectionContextListMutex);
 }
 
@@ -185,24 +186,24 @@ void RSD::checkForDeletableConnections()
 {
 	pthread_mutex_lock(&connectionContextListMutex);
 
-	list<ConnectionContext*>::iterator i = connectionContextList.begin();
-	while(i != connectionContextList.end())
+	list<ConnectionContext*>::iterator connection = connectionContextList.begin();
+	while(connection != connectionContextList.end())
 	{
-
-		if((*i)->isDeletable())
+		//is a tcp connection down ?
+		if((*connection)->isDeletable())
 		{
-			delete *i;
-			i = connectionContextList.erase(i);
+			delete *connection;
+			connection = connectionContextList.erase(connection);
 			printf("RSD: ConnectionContext deleted from list.Verbleibend: %d\n", connectionContextList.size());
 		}
-		else if((*i)->isUdsCheckEnabled())
+		//maybe we got a working tcp connection but a plugin went down
+		else if((*connection)->isUdsCheckEnabled())
 		{
-			(*i)->checkUdsConnections();
-			++i;
+			(*connection)->checkUdsConnections();
+			++connection;
 		}
 		else
-			++i;
-
+			++connection;
 	}
 	pthread_mutex_unlock(&connectionContextListMutex);
 }
@@ -222,6 +223,7 @@ void RSD::start()
 		regServer->checkForDeletableWorker();
 		//check TCP/workers
 		this->checkForDeletableConnections();
+		RsdMsg::printCounters();
 	}
 }
 

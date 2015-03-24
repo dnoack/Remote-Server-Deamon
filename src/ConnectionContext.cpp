@@ -39,6 +39,7 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 	char* methodNamespace = NULL;
 	char* error = NULL;
 	int lastSender = 0;
+	RsdMsg* temp = NULL;
 	Value* id;
 	UdsComClient* currentClient = NULL;
 
@@ -46,7 +47,6 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 	try
 	{
 		setRequestInProcess();
-		printf("ProcessMsg()\n");
 		//parse to dom with jsonrpc
 		json->parse(msg->getContent());
 
@@ -59,7 +59,6 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 
 			if(currentClient != NULL)
 			{
-				//TODO: add msg to requestlist
 				requests.push_back(msg);
 				currentClient->sendData(msg->getContent());
 			}
@@ -73,30 +72,29 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 		//or is it a response ?
 		else if(json->isResponse())
 		{
-			//TODO: check the id of the last request !
 			lastSender = requests.back()->getSender();
 			if(lastSender != 0)
 			{
-				//TODO: forward msg to sender of request !
 				currentClient =  findUdsConnection(lastSender);
 				currentClient->sendData(msg->getContent());
-				printf("Back to plugin.\n");
 			}
 			else
-			{	printf("Back to Tcp Client.\n");
+			{
 				tcp_send(msg);
 				setRequestNotInProcess();
 			}
+			temp = requests.back();
+			delete temp;
+			delete msg;
 			requests.pop_back();
 		}
 	}
 	catch(PluginError &e)
 	{
 		setRequestNotInProcess();
+		delete msg;
 		throw;
 	}
-
-
 }
 
 
@@ -108,11 +106,11 @@ char* ConnectionContext::getMethodNamespace()
 	unsigned int namespacePos = 0;
 	Value* id;
 
-	// 2) (get methodname)get method namespace
+	// get method namespace
 	methodName = json->tryTogetMethod()->GetString();
 	namespacePos = strcspn(methodName, ".");
 
-	//Not '.' found -> no namespace
+	//No '.' found -> no namespace
 	if(namespacePos == strlen(methodName) || namespacePos == 0)
 	{
 		id = json->tryTogetId();
@@ -148,8 +146,7 @@ bool ConnectionContext::isDeletable()
 		{
 			delete *udsConnection;
 			udsConnection = udsConnections.erase(udsConnection);
-			printf("RSD: Tcpworker deleted from list.Verbleibend: %d\n", udsConnections.size());
-			++udsConnection;
+			printf("RSD: UdsComworker deleted from list.Verbleibend: %d\n", udsConnections.size());
 		}
 	}
 	return deletable;
@@ -167,7 +164,7 @@ void ConnectionContext::checkUdsConnections()
 		{
 			delete *udsConnection;
 			udsConnection = udsConnections.erase(udsConnection);
-			printf("RSD: Tcpworker deleted from list.Verbleibend: %d\n", udsConnections.size());
+			printf("RSD: UdsComWorker deleted from list.Verbleibend: %d\n", udsConnections.size());
 			tcpConnection->tcp_send("Connection to AardvarkPlugin Aborted!\n", 39);
 		}
 		else
@@ -186,7 +183,7 @@ UdsComClient* ConnectionContext::findUdsConnection(char* pluginName)
 	list<UdsComClient*>::iterator i = udsConnections.begin();
 
 
-	// 3) check if we already have a udsClient for this namespace/pluginName
+	//  check if we already have a udsClient for this namespace/pluginName
 	while(i != udsConnections.end() && !clientFound)
 	{
 		currentComClient = *i;
@@ -198,7 +195,7 @@ UdsComClient* ConnectionContext::findUdsConnection(char* pluginName)
 			++i;
 	}
 
-	// 3.1)  IF NOT  -> check RSD plugin list for this namespace and get udsFilePath
+	//   IF NOT  -> check RSD plugin list for this namespace and get udsFilePath
 	if(!clientFound)
 	{
 		currentComClient = NULL;
@@ -206,7 +203,7 @@ UdsComClient* ConnectionContext::findUdsConnection(char* pluginName)
 
 		if(currentPlugin != NULL)
 		{
-			// 3.2)  create a new udsClient with this udsFilePath and push it to list
+			//   create a new udsClient with this udsFilePath and push it to list
 			currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName(), currentPlugin->getPluginNumber());
 			if(currentComClient->tryToconnect())
 			{
@@ -229,6 +226,7 @@ UdsComClient* ConnectionContext::findUdsConnection(int pluginNumber)
 {
 	UdsComClient* currentComClient = NULL;
 	bool clientFound = false;
+	Plugin* currentPlugin = NULL;
 	list<UdsComClient*>::iterator i = udsConnections.begin();
 
 
@@ -244,7 +242,25 @@ UdsComClient* ConnectionContext::findUdsConnection(int pluginNumber)
 			++i;
 	}
 	if(!clientFound)
+	{
 		currentComClient = NULL;
+		currentPlugin = RSD::getPlugin(pluginNumber);
+
+		if(currentPlugin != NULL)
+		{
+			//   create a new udsClient with this udsFilePath and push it to list
+			currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName(), currentPlugin->getPluginNumber());
+			if(currentComClient->tryToconnect())
+			{
+				udsConnections.push_back(currentComClient);
+			}
+			else
+			{
+				delete currentComClient;
+				currentComClient = NULL;
+			}
+		}
+	}
 
 	return currentComClient;
 }
@@ -262,7 +278,6 @@ void ConnectionContext::deleteAllUdsConnections()
 }
 
 
-
 void ConnectionContext::arrangeUdsConnectionCheck()
 {
 	udsCheck = true;
@@ -273,6 +288,7 @@ int ConnectionContext::tcp_send(RsdMsg* msg)
 {
 	return tcpConnection->tcp_send(msg);
 }
+
 
 bool ConnectionContext::isRequestInProcess()
 {
@@ -289,13 +305,12 @@ void ConnectionContext::setRequestInProcess()
 	pthread_mutex_lock(&rIPMutex);
 	requestInProcess = true;
 	pthread_mutex_unlock(&rIPMutex);
-
 }
+
 
 void ConnectionContext::setRequestNotInProcess()
 {
 	pthread_mutex_lock(&rIPMutex);
 	requestInProcess = false;
 	pthread_mutex_unlock(&rIPMutex);
-
 }

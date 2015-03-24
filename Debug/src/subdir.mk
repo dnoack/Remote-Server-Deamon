@@ -7,6 +7,7 @@ CPP_SRCS += \
 ../src/ConnectionContext.cpp \
 ../src/JsonRPC.cpp \
 ../src/RSD.cpp \
+../src/RsdMsg.cpp \
 ../src/TcpWorker.cpp \
 ../src/UdsComClient.cpp \
 ../src/UdsComWorker.cpp \
@@ -17,6 +18,7 @@ OBJS += \
 ./src/ConnectionContext.o \
 ./src/JsonRPC.o \
 ./src/RSD.o \
+./src/RsdMsg.o \
 ./src/TcpWorker.o \
 ./src/UdsComClient.o \
 ./src/UdsComWorker.o \
@@ -27,6 +29,7 @@ CPP_DEPS += \
 ./src/ConnectionContext.d \
 ./src/JsonRPC.d \
 ./src/RSD.d \
+./src/RsdMsg.d \
 ./src/TcpWorker.d \
 ./src/UdsComClient.d \
 ./src/UdsComWorker.d \

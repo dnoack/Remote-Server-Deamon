@@ -51,6 +51,11 @@ class PluginError : exception{
 			return exMsg->c_str();
 		}
 
+		string* getString()
+		{
+			return exMsg;
+		}
+
 
 	private:
 		string* exMsg;
