@@ -27,11 +27,7 @@
 #include "WorkerThreads.hpp"
 
 #define BUFFER_SIZE 1024
-#define ADD_WORKER true
-#define DELETE_WORKER false
-#define WORKER_FREE 0
-#define WORKER_BUSY 1
-#define WORKER_GETSTATUS 2
+
 
 class UdsComClient;
 
