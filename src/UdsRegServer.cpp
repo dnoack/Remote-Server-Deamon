@@ -9,13 +9,13 @@
 #include "RSD.hpp"
 #include "UdsRegServer.hpp"
 #include "JsonRPC.hpp"
+#include "Plugin_Error.h"
 
 
-
-#define EXPECTED_NUM_OF_DEVICES 1
 
 //static symbols
 int UdsRegServer::connection_socket;
+bool UdsRegServer::accept_thread_active;
 
 list<UdsRegWorker*> UdsRegServer::workerList;
 pthread_mutex_t UdsRegServer::wLmutex;
@@ -27,8 +27,9 @@ socklen_t UdsRegServer::addrlen;
 
 UdsRegServer::UdsRegServer( const char* udsFile, int nameSize)
 {
-
 	optionflag = 1;
+	accepter = 0;
+	accept_thread_active = false;
 	connection_socket = socket(AF_UNIX, SOCK_STREAM, 0);
 	address.sun_family = AF_UNIX;
 	strncpy(address.sun_path, udsFile, nameSize);
@@ -39,7 +40,6 @@ UdsRegServer::UdsRegServer( const char* udsFile, int nameSize)
 	unlink(udsFile);
 	setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag));
 	bind(connection_socket, (struct sockaddr*)&address, addrlen);
-
 
 }
 
@@ -64,8 +64,8 @@ void* UdsRegServer::uds_accept(void* param)
 {
 	int new_socket = 0;
 	UdsRegWorker* newWorker;
-	bool accept_thread_active = true;
 	listen(connection_socket, 5);
+	accept_thread_active = true;
 
 	while(accept_thread_active)
 	{
@@ -75,7 +75,6 @@ void* UdsRegServer::uds_accept(void* param)
 			newWorker = new UdsRegWorker(new_socket);
 			pushWorkerList(newWorker);
 		}
-
 	}
 	return 0;
 }
@@ -109,8 +108,23 @@ void UdsRegServer::checkForDeletableWorker()
 }
 
 
+int UdsRegServer::wait_for_accepter_up()
+{
+   time_t startTime = time(NULL);
+   while(time(NULL) - startTime < TIMEOUT)
+   {
+	   if(accept_thread_active == true)
+		   return 0;
+   }
+   return -1;
+}
+
+
+
 void UdsRegServer::start()
 {
-	pthread_t accepter;
 	pthread_create(&accepter, NULL, uds_accept, NULL);
+	if(wait_for_accepter_up() < 0)
+		throw PluginError("Couldnt start Accept thread in time.");
+
 }

@@ -25,6 +25,9 @@ TcpWorker::TcpWorker(ConnectionContext* context, int socket)
 	this->currentSocket = socket;
 
 	StartWorkerThread(currentSocket);
+
+	if(wait_for_listener_up() != 0)
+		throw PluginError("Creation of Listener/worker threads failed.");
 }
 
 
@@ -128,6 +131,7 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 
 		retval = pselect(socket+1, &rfds, NULL, NULL, NULL, &origmask);
 
+		printf("receiv ?\n");
 		if(retval < 0 )
 		{
 			//error occured

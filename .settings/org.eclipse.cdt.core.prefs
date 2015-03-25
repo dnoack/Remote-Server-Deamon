@@ -1,4 +1,15 @@
 eclipse.preferences.version=1
+environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432.940662285/CFLAGS/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432.940662285/CFLAGS/operation=replace
+environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432.940662285/CFLAGS/value=-I../include -I"${HOME}/libs/rapidjson/include/rapidjson"
+environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432.940662285/CXXFLAGS/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432.940662285/CXXFLAGS/operation=append
+environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432.940662285/CXXFLAGS/value=${CFLAGS}
+environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432.940662285/LDFLAGS/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432.940662285/LDFLAGS/operation=append
+environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432.940662285/LDFLAGS/value=-L${HOME}/cpputest-3.6/lib/lib
+environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432.940662285/append=true
+environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432.940662285/appendContributed=true
 environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432/CFLAGS/delimiter=\:
 environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432/CFLAGS/operation=replace
 environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432/CFLAGS/value=-I../include -I"${HOME}/libs/rapidjson/include/rapidjson"

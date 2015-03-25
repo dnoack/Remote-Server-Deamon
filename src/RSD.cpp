@@ -227,6 +227,7 @@ void RSD::start()
 	}
 }
 
+#ifndef TESTMODE
 
 int main(int argc, char** argv)
 {
@@ -234,6 +235,8 @@ int main(int argc, char** argv)
 	rsd->start();
 	delete rsd;
 }
+
+#endif
 
 
 

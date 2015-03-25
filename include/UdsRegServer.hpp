@@ -42,10 +42,13 @@ class UdsRegServer{
 
 		void checkForDeletableWorker();
 
+
+
 	private:
 
 		static int connection_socket;
-
+		pthread_t accepter;
+		static bool accept_thread_active;
 
 		//list of pthread ids with all the active worker. push and pop must be protected by mutex
 		static list<UdsRegWorker*> workerList;
@@ -56,6 +59,8 @@ class UdsRegServer{
 
 
 		int optionflag;
+
+		int wait_for_accepter_up();
 
 		static void* uds_accept(void*);
 

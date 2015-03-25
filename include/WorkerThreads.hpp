@@ -12,6 +12,9 @@
 
 #include <pthread.h>
 #include <stdlib.h>
+#include <ctime>
+
+#define TIMEOUT 2
 
 class WorkerThreads;
 
@@ -94,6 +97,18 @@ public:
 
    pthread_t getListener(){return _listener;}
    pthread_t getWorker(){return _worker;}
+
+
+   int wait_for_listener_up()
+   {
+	   time_t startTime = time(NULL);
+	   while(time(NULL) - startTime < TIMEOUT)
+	   {
+		   if(_listener != 0)
+			   return 0;
+	   }
+	   return -1;
+   }
 
 
 

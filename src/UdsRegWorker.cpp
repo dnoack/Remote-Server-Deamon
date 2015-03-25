@@ -33,6 +33,9 @@ UdsRegWorker::UdsRegWorker(int socket)
 	this->json = new JsonRPC();
 
 	StartWorkerThread(currentSocket);
+
+	if(wait_for_listener_up() != 0)
+			throw PluginError("Creation of Listener/worker threads failed.");
 }
 
 
@@ -118,9 +121,6 @@ void UdsRegWorker::thread_work(int socket)
 					}
 					popReceiveQueue();
 				break;
-			case SIGUSR2:
-				printf("UdsRegWorker: SIGUSR2\n");
-				break;
 			default:
 				printf("UdsRegWorker: unkown signal \n");
 				break;
@@ -128,7 +128,6 @@ void UdsRegWorker::thread_work(int socket)
 	}
 
 	close(currentSocket);
-
 }
 
 

@@ -26,6 +26,7 @@ UdsComWorker::UdsComWorker(int socket,  UdsComClient* comClient)
 	this->deletable = false;
 
 	StartWorkerThread(currentSocket);
+
 }
 
 

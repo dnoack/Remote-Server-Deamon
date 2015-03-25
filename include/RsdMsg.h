@@ -25,7 +25,21 @@ class RsdMsg{
 
 		~RsdMsg();
 
+		bool operator==(RsdMsg* msg2)
+		{
+			string* content1 = this->getContent();
+			string* content2 = msg2->getContent();
 
+			if (content1->compare(*content2) && this->getSender() == msg2->getSender())
+				return true;
+			else
+				return false;
+		}
+
+		const char* print()
+		{
+			return content->c_str();
+		}
 
 		int getSender(){return this->sender;}
 		string* getContent(){return this->content;}

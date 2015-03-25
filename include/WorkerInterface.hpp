@@ -26,7 +26,7 @@ class WorkerInterface{
 			pthread_mutex_init(&rQmutex, NULL);
 
 			this->currentSig = 0;
-			this->listenerDown = false;
+			this->ready = false;
 			this->deletable = false;
 
 		};
@@ -53,7 +53,7 @@ class WorkerInterface{
 		sigset_t origmask;
 		int currentSig;
 
-		bool listenerDown;
+		bool ready;
 		bool deletable;
 
 		static void dummy_handler(int){};
