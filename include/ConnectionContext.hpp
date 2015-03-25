@@ -19,13 +19,15 @@
 class ConnectionContext
 {
 	public:
+		ConnectionContext();
 		ConnectionContext(int tcpSocket);
-		~ConnectionContext();
+		virtual ~ConnectionContext();
+
 
 		UdsComClient* findUdsConnection(char* pluginName);
-		UdsComClient* findUdsConnection(int pluginNumber);
+		virtual UdsComClient* findUdsConnection(int pluginNumber);
 
-		void processMsg(RsdMsg* msg);
+		virtual void processMsg(RsdMsg* msg);
 
 		//A connectioNContext is deletable if there is no working tcp part
 		bool isDeletable();
@@ -42,6 +44,9 @@ class ConnectionContext
 		void arrangeUdsConnectionCheck();
 
 		int tcp_send(RsdMsg* msg);
+
+
+
 
 	private:
 
