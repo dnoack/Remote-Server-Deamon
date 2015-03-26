@@ -22,7 +22,7 @@ Document* JsonRPC::parse(string* msg)
 			result = inputDOM;
 		else
 		{
-
+			nullId.SetInt(0);
 			error = generateResponseError(nullId, -32700, "Error while parsing json rpc.");
 			result = NULL;
 			throw PluginError(error);

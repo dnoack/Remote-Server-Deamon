@@ -52,6 +52,8 @@ UdsRegWorker::~UdsRegWorker()
 	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
 	delete json;
+	if(plugin != NULL)
+		delete plugin;
 }
 
 
@@ -59,7 +61,6 @@ string* UdsRegWorker::getPluginName()
 {
 	return plugin->getName();
 }
-
 
 
 
@@ -76,6 +77,8 @@ void UdsRegWorker::thread_work(int socket)
 
 	configSignals();
 
+	pthread_cleanup_push(&UdsRegWorker::cleanupReceiveQueue, this);
+
 	while(worker_thread_active)
 	{
 		//wait for signals from listenerthread
@@ -83,6 +86,8 @@ void UdsRegWorker::thread_work(int socket)
 		switch(currentSig)
 		{
 			case SIGUSR1:
+				try
+				{
 					request = receiveQueue.back()->getContent();
 					printf("RegWorker Received: %s\n", request->c_str());
 					switch(state)
@@ -111,16 +116,25 @@ void UdsRegWorker::thread_work(int socket)
 						case ACTIVE:
 
 							break;
-						case BROKEN:
-
-							break;
-						default:
-							//something went completely wrong
-							state = BROKEN;
-							break;
 					}
 					popReceiveQueue();
-				break;
+				}
+				catch(PluginError &e)
+				{
+					popReceiveQueue();
+					string* errorString = e.getString();
+					state = NOT_ACTIVE;
+					if(plugin != NULL)
+					{
+						delete plugin;
+						plugin = NULL;
+					}
+					send(currentSocket, errorString->c_str(), errorString->size(), 0);
+
+				}
+			break;
+
+
 			default:
 				printf("UdsRegWorker: unkown signal \n");
 				break;
@@ -128,6 +142,7 @@ void UdsRegWorker::thread_work(int socket)
 	}
 
 	close(currentSocket);
+	pthread_cleanup_pop(0);
 }
 
 
@@ -210,24 +225,15 @@ bool UdsRegWorker::handleRegisterMsg(string* request)
 {
 	Document* dom;
 	string* methodName = NULL;
-	bool result = false;
 
-	try
+	dom = json->parse(request);
+	for(Value::ConstMemberIterator i = (*dom)["params"].MemberBegin(); i != (*dom)["params"].MemberEnd(); ++i)
 	{
-		dom = json->parse(request);
-		for(Value::ConstMemberIterator i = (*dom)["params"].MemberBegin(); i != (*dom)["params"].MemberEnd(); ++i)
-		{
-			methodName = new string(i->value.GetString());
-			plugin->addMethod(methodName);
-		}
-		result = true;
+		methodName = new string(i->value.GetString());
+		plugin->addMethod(methodName);
 	}
-	catch(PluginError &e)
-	{
-		printf("%s\n",e.get());
-		result = false;
-	}
-	return result;
+
+	return true;
 }
 
 
@@ -241,5 +247,10 @@ char* UdsRegWorker::createRegisterACKMsg()
 }
 
 
+void UdsRegWorker::cleanupReceiveQueue(void* arg)
+{
+	UdsRegWorker* worker = static_cast<UdsRegWorker*>(arg);
+	worker->deleteReceiveQueue();
+}
 
 

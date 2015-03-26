@@ -1,2 +1,3 @@
 /Debug/
-/Testing RSD/
+*.o
+*.d

@@ -40,6 +40,8 @@ class UdsRegWorker : public WorkerInterface, WorkerThreads{
 
 		string* getPluginName();
 
+		static void cleanupReceiveQueue(void* arg);
+
 
 	private:
 

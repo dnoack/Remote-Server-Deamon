@@ -58,14 +58,20 @@ class WorkerInterface{
 
 		static void dummy_handler(int){};
 
-
+		void deleteReceiveQueue()
+		{
+			list<RsdMsg*>::iterator i = receiveQueue.begin();
+			while(i != receiveQueue.end())
+			{
+				delete *i;
+				i = receiveQueue.erase(i);
+			}
+		}
 
 		void popReceiveQueue()
 		{
 			RsdMsg* lastElement = NULL;
 			pthread_mutex_lock(&rQmutex);
-
-			printf("popReceiveQueue: %s\n", receiveQueue.back()->getContent()->c_str());
 				lastElement = receiveQueue.back();
 				receiveQueue.pop_back();
 				delete lastElement;

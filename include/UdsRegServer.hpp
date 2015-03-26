@@ -41,6 +41,7 @@ class UdsRegServer{
 		void start();
 
 		void checkForDeletableWorker();
+		static void deleteWorkerList();
 
 
 
@@ -64,7 +65,7 @@ class UdsRegServer{
 
 		static void* uds_accept(void*);
 
-		static void pushWorkerList(UdsRegWorker* newWorker);
+		static void pushWorkerList(int new_socket);
 
 
 };

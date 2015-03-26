@@ -112,7 +112,7 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 	{
 		setRequestNotInProcess();
 		delete msg;
-		//throw;
+		throw;
 	}
 }
 
