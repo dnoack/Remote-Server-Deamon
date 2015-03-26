@@ -71,7 +71,7 @@ class ConnectionContextMock  : public ConnectionContext
 
 
 
-TEST(CONNECTION_CONTEXT, firstTest)
+IGNORE_TEST(CONNECTION_CONTEXT, firstTest)
 {
 	RsdMsgComparator comparator;
 	mock().installComparator("RsdMsg", comparator);
