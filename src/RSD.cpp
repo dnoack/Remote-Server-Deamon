@@ -216,7 +216,7 @@ void RSD::start()
 	//start comListener
 	pthread_create(&accepter, NULL, accept_connections, NULL);
 
-	while(rsdActive)
+	do
 	{
 		sleep(MAIN_SLEEP_TIME);
 		//check uds registry workers
@@ -225,6 +225,8 @@ void RSD::start()
 		this->checkForDeletableConnections();
 		//RsdMsg::printCounters();
 	}
+	while(rsdActive);
+
 }
 
 #ifndef TESTMODE

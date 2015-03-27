@@ -10,25 +10,13 @@
 #include "Plugin_Error.h"
 #include "RsdMsg.h"
 
+
 #include "TestHarness.h"
 #include "MockSupport.h"
 #include "MockNamedValue.h"
 
 
 
-
-TEST_GROUP(CONNECTION_CONTEXT)
-{
-	void setup()
-	{
-
-	}
-
-	void teardown()
-	{
-		mock().clear();
-	}
-};
 
 
 class RsdMsgComparator : public MockNamedValueComparator
@@ -66,6 +54,20 @@ class ConnectionContextMock  : public ConnectionContext
 			mock().actualCall("findUdsConnection").withParameter("pluginNumber", pluginNumber);
 			return NULL;
 		}
+};
+
+
+TEST_GROUP(CONNECTION_CONTEXT)
+{
+	void setup()
+	{
+
+	}
+
+	void teardown()
+	{
+		mock().clear();
+	}
 };
 
 

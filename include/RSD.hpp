@@ -28,6 +28,11 @@
 #define MAX_CLIENTS 20
 #define MAIN_SLEEP_TIME 3 //sleep time for main loop
 
+#ifdef TESTMODE
+	#define TEST_VIRTUAL virtual
+#else
+	#define TEST_VIRTUAL
+#endif
 
 
 class RSD{
@@ -37,7 +42,7 @@ class RSD{
 
 		RSD();
 
-		~RSD();
+		virtual ~RSD();
 
 		/**
 		 * Will start the registry-server for plugins and a new Thread for accepting
@@ -47,12 +52,15 @@ class RSD{
 		void start();
 
 
+		void stop(){rsdActive = false;}
+
+
 		/**
 		 * Checks wether the TCP- or the UDS- connections of all known objects of connectioncontext
 		 * are deletable. If there are some deletable connection obects (TcpWorker or UdsComClient),
 		 * it will delete them.
 		 */
-		void checkForDeletableConnections();
+		TEST_VIRTUAL void checkForDeletableConnections();
 
 		/**
 		 * Adds a plugin to the list of all registered plugins.
