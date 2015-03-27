@@ -20,15 +20,11 @@ using namespace rapidjson;
 
 UdsRegWorker::UdsRegWorker(int socket)
 {
-	memset(receiveBuffer, '\0', BUFFER_SIZE);
-	this->listen_thread_active = false;
-	this->worker_thread_active = false;
-	this->recvSize = 0;
-	this->lthread = 0;
 	this->request = 0;
 	this->response = 0;
 	this->currentSocket = socket;
 	this->plugin = NULL;
+	this->pluginName = NULL;
 	this->state = NOT_ACTIVE;
 	this->json = new JsonRPC();
 
@@ -51,15 +47,11 @@ UdsRegWorker::~UdsRegWorker()
 
 	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
+
 	delete json;
-	if(plugin != NULL)
-		delete plugin;
-}
 
+	cleanup();
 
-string* UdsRegWorker::getPluginName()
-{
-	return plugin->getName();
 }
 
 
@@ -67,13 +59,9 @@ string* UdsRegWorker::getPluginName()
 void UdsRegWorker::thread_work(int socket)
 {
 	char* response = NULL;
-
-	memset(receiveBuffer, '\0', BUFFER_SIZE);
-
 	worker_thread_active = true;
 
-	//start the listenerthread and remember the theadId of it
-	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
+	StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
 
 	configSignals();
 
@@ -111,6 +99,7 @@ void UdsRegWorker::thread_work(int socket)
 
 						case REGISTERED:
 							RSD::addPlugin(plugin);
+							plugin = NULL;
 							break;
 
 						case ACTIVE:
@@ -124,11 +113,7 @@ void UdsRegWorker::thread_work(int socket)
 					popReceiveQueue();
 					string* errorString = e.getString();
 					state = NOT_ACTIVE;
-					if(plugin != NULL)
-					{
-						delete plugin;
-						plugin = NULL;
-					}
+					cleanup();
 					send(currentSocket, errorString->c_str(), errorString->size(), 0);
 
 				}
@@ -162,17 +147,13 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 
 	while(listen_thread_active)
 	{
-
-		memset(receiveBuffer, '\0', BUFFER_SIZE);
-
 		retval = pselect(socket+1, &rfds, NULL, NULL, NULL, &origmask);
 
 		if(retval < 0)
 		{
 			//Plugin itself invoked shutdown
-			worker_thread_active = false;
 			listen_thread_active = false;
-			pthread_kill(parent_th, SIGUSR2);
+			deletable = true;
 		}
 		else if(FD_ISSET(socket, &rfds))
 		{
@@ -192,6 +173,8 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 				listen_thread_active = false;
 			}
 		}
+
+		memset(receiveBuffer, '\0', BUFFER_SIZE);
 	}
 }
 
@@ -213,6 +196,7 @@ char* UdsRegWorker::handleAnnounceMsg(string* request)
 	currentParam = json->tryTogetParam("pluginNumber");
 	number = currentParam->GetInt();
 	plugin = new Plugin(name, number, udsFilePath);
+	pluginName = new string(name);
 
 	result.SetString("announceACK");
 	id = json->tryTogetId();
@@ -234,6 +218,23 @@ bool UdsRegWorker::handleRegisterMsg(string* request)
 	}
 
 	return true;
+}
+
+
+void UdsRegWorker::cleanup()
+{
+
+	if(pluginName != NULL)
+	{
+		delete pluginName;
+		pluginName = NULL;
+	}
+
+	if(plugin != NULL)
+	{
+		delete plugin;
+		plugin = NULL;
+	}
 }
 
 

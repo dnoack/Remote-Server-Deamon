@@ -42,6 +42,7 @@ class TcpWorker : public WorkerInterface, public WorkerThreads{
 		void checkComClientList();
 
 		int tcp_send(char* data, int size);
+		int tcp_send(const char* data, int size);
 		int tcp_send(RsdMsg* data);
 
 	private:
@@ -70,7 +71,7 @@ class TcpWorker : public WorkerInterface, public WorkerThreads{
 
 		static void cleanupWorker(void* arg)
 		{
-			TcpWorker* worker = static_cast<TcpWorker*>(arg);
+			//TcpWorker* worker = static_cast<TcpWorker*>(arg);
 			//TODO::worker->deleteComClientList();
 		};
 

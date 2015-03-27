@@ -223,7 +223,7 @@ void RSD::start()
 		regServer->checkForDeletableWorker();
 		//check TCP/workers
 		this->checkForDeletableConnections();
-		RsdMsg::printCounters();
+		//RsdMsg::printCounters();
 	}
 }
 

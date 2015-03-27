@@ -5,6 +5,7 @@
  *      Author: dnoack
  */
 
+
 #include "UdsComClient.hpp"
 #include "UdsComWorker.hpp"
 #include "errno.h"
@@ -12,11 +13,7 @@
 
 UdsComWorker::UdsComWorker(int socket,  UdsComClient* comClient)
 {
-	memset(receiveBuffer, '\0', BUFFER_SIZE);
-	this->listen_thread_active = false;
-	this->worker_thread_active = false;
-	this->recvSize = 0;
-	this->lthread = 0;
+
 	this->bufferOut = NULL;
 	this->jsonReturn = NULL;
 	this->jsonInput = NULL;
@@ -50,14 +47,12 @@ UdsComWorker::~UdsComWorker()
 
 void UdsComWorker::thread_work(int socket)
 {
-
 	worker_thread_active = true;
-	memset(receiveBuffer, '\0', BUFFER_SIZE);
-	pthread_cleanup_push(&UdsComWorker::cleanupWorker, NULL);
 
+	pthread_cleanup_push(&UdsComWorker::cleanupReceiveQueue, this);
 
 	//start the listenerthread and remember the theadId of it
-	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
+	StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
 
 	configSignals();
 
@@ -83,10 +78,9 @@ void UdsComWorker::thread_work(int socket)
 				printf("UdsComWorker: unkown signal \n");
 				break;
 		}
-
 	}
 	close(currentSocket);
-	pthread_cleanup_pop(NULL);
+	pthread_cleanup_pop(0);
 }
 
 
@@ -106,8 +100,6 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 
 	while(listen_thread_active)
 	{
-
-		memset(receiveBuffer, '\0', BUFFER_SIZE);
 
 		retval = pselect(socket+1, &rfds, NULL, NULL, NULL, &origmask);
 
@@ -139,5 +131,14 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 				comClient->markAsDeletable();
 			}
 		}
+
+		memset(receiveBuffer, '\0', BUFFER_SIZE);
 	}
+}
+
+
+void UdsComWorker::cleanupReceiveQueue(void* arg)
+{
+	UdsComWorker* worker = static_cast<UdsComWorker*>(arg);
+	worker->deleteReceiveQueue();
 }

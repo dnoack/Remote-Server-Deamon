@@ -50,6 +50,8 @@ public:
    {
 	   _worker = 0;
 	   _listener = 0;
+	   worker_thread_active = false;
+	   listen_thread_active = false;
 
    }
    /**Destructor*/
@@ -119,7 +121,8 @@ protected:
    /**This method has to be responsible for listening to incomming data and signaling the worker.*/
    virtual void thread_listen(pthread_t, int, char*)= 0;
 
-
+   bool worker_thread_active;
+   bool listen_thread_active;
 
 
 private:
@@ -145,11 +148,11 @@ private:
    }
 
 
-
    /** Id of the internal worker thread.*/
    pthread_t _worker;
    /** ID of the internal listener thread.*/
    pthread_t _listener;
+
 
 
    argStruct tempStruct;

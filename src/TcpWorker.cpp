@@ -131,7 +131,6 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 
 		retval = pselect(socket+1, &rfds, NULL, NULL, NULL, &origmask);
 
-		printf("receiv ?\n");
 		if(retval < 0 )
 		{
 			//error occured
@@ -161,8 +160,13 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 }
 
 
-
 int TcpWorker::tcp_send(char* data, int size)
+{
+	return send(currentSocket, data, size, 0);
+}
+
+
+int TcpWorker::tcp_send(const char* data, int size)
 {
 	return send(currentSocket, data, size, 0);
 }

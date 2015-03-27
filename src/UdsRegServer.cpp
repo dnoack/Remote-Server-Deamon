@@ -69,7 +69,6 @@ int UdsRegServer::call()
 void* UdsRegServer::uds_accept(void* param)
 {
 	int new_socket = 0;
-	UdsRegWorker* newWorker = NULL;
 
 	listen(connection_socket, 5);
 	accept_thread_active = true;

@@ -91,6 +91,8 @@
 								<option id="gnu.cpp.compiler.exe.release.option.debugging.level.1450582111" name="Debug Level" superClass="gnu.cpp.compiler.exe.release.option.debugging.level" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.1133600994" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/home/dnoack/libs/rapidjson/include/rapidjson"/>
+									<listOptionValue builtIn="false" value="/home/dnoack/cpputest-3.6/include/CppUTest"/>
+									<listOptionValue builtIn="false" value="/home/dnoack/cpputest-3.6/include/CppUTestExt"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1045851094" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
@@ -146,10 +148,10 @@
 								<option id="gnu.cpp.compiler.exe.debug.option.optimization.level.208023359" name="Optimization Level" superClass="gnu.cpp.compiler.exe.debug.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.exe.debug.option.debugging.level.477904807" name="Debug Level" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.632400133" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="/home/dnoack/libs/rapidjson/include/rapidjson"/>
 									<listOptionValue builtIn="false" value="/home/dnoack/cpputest-3.6/include"/>
 									<listOptionValue builtIn="false" value="/home/dnoack/cpputest-3.6/include/CppUTest"/>
 									<listOptionValue builtIn="false" value="/home/dnoack/cpputest-3.6/include/CppUTestExt"/>
-									<listOptionValue builtIn="false" value="/home/dnoack/libs/rapidjson/include/rapidjson"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.1374358904" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 ${CFLAGS}" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.dialect.std.2038771663" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
@@ -163,10 +165,12 @@
 								<option id="gnu.c.compiler.exe.debug.option.debugging.level.1580614702" name="Debug Level" superClass="gnu.c.compiler.exe.debug.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.172766215" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="/home/dnoack/libs/rapidjson/include/rapidjson"/>
+									<listOptionValue builtIn="false" value="/home/dnoack/cpputest-3.6/include"/>
 									<listOptionValue builtIn="false" value="/home/dnoack/cpputest-3.6/include/CppUTest"/>
 									<listOptionValue builtIn="false" value="/home/dnoack/cpputest-3.6/include/CppUTestExt"/>
 								</option>
 								<option id="gnu.c.compiler.option.dialect.std.953883198" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.misc.other.153376336" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 ${CFLAGS}" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.2130591801" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.379897913" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
@@ -229,4 +233,5 @@
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
+	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 </cproject>

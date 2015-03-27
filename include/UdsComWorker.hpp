@@ -16,17 +16,16 @@
 #include <unistd.h>
 #include <cstdio>
 #include <list>
-
-
-#include "JsonRPC.hpp"
 #include <pthread.h>
 #include "signal.h"
 
 
+#include "JsonRPC.hpp"
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
 
-#define BUFFER_SIZE 1024
+
+using namespace std;
 
 
 class UdsComClient;
@@ -38,18 +37,11 @@ class UdsComWorker : public WorkerInterface, WorkerThreads{
 		UdsComWorker(int socket, UdsComClient* comClient);
 		~UdsComWorker();
 
+		static void cleanupReceiveQueue(void* arg);
 
 	private:
 
-
-		//variables for listener
-		bool listen_thread_active;
-		char receiveBuffer[BUFFER_SIZE];
-		int recvSize;
-
-
 		//variables for worker
-		bool worker_thread_active;
 		char* bufferOut;
 		string* jsonInput;
 		string* identity;
@@ -58,7 +50,6 @@ class UdsComWorker : public WorkerInterface, WorkerThreads{
 
 
 		//not shared, more common
-		pthread_t lthread;
 		int currentSocket;
 		UdsComClient* comClient;
 		bool deletable;
@@ -67,11 +58,6 @@ class UdsComWorker : public WorkerInterface, WorkerThreads{
 		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);
 
 		virtual void thread_work(int socket);
-
-		static void cleanupWorker(void* arg)
-		{
-			printf("Uds Worker Thread beendet.\n");
-		};
 
 
 };

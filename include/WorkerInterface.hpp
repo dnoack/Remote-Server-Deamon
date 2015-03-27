@@ -14,6 +14,8 @@
 #include "signal.h"
 #include "RsdMsg.h"
 
+#define BUFFER_SIZE 1024
+
 
 using namespace std;
 
@@ -28,7 +30,8 @@ class WorkerInterface{
 			this->currentSig = 0;
 			this->ready = false;
 			this->deletable = false;
-
+			this->recvSize = 0;
+			memset(receiveBuffer, '\0', BUFFER_SIZE);
 		};
 
 
@@ -45,6 +48,9 @@ class WorkerInterface{
 		//receivequeue
 		list<RsdMsg*> receiveQueue;
 		pthread_mutex_t rQmutex;
+
+		char receiveBuffer[BUFFER_SIZE];
+		int recvSize;
 
 
 		//signal variables
@@ -83,7 +89,6 @@ class WorkerInterface{
 		void popReceiveQueueWithoutDelete()
 		{
 			pthread_mutex_lock(&rQmutex);
-
 				receiveQueue.pop_back();
 			pthread_mutex_unlock(&rQmutex);
 		}
@@ -92,7 +97,7 @@ class WorkerInterface{
 		void pushReceiveQueue(RsdMsg* data)
 		{
 			pthread_mutex_lock(&rQmutex);
-				receiveQueue.push_back(data); //was push front 18.03.2015
+				receiveQueue.push_back(data);
 			pthread_mutex_unlock(&rQmutex);
 		}
 
@@ -124,7 +129,6 @@ class WorkerInterface{
 
 			pthread_sigmask(SIG_BLOCK, &sigmask, &origmask);
 		}
-
 
 
 };

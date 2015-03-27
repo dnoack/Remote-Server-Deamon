@@ -5,8 +5,8 @@
  *      Author: dnoack
  */
 
-#ifndef INCLUDE_UDSCOMWORKER_HPP_
-#define INCLUDE_UDSCOMWORKER_HPP_
+#ifndef INCLUDE_UDSREGWORKER_HPP_
+#define INCLUDE_UDSREGWORKER_HPP_
 
 //unix domain socket definition
 #include <sys/un.h>
@@ -25,20 +25,13 @@
 
 
 
-
-#define BUFFER_SIZE 1024
-#define ADD_WORKER true
-#define DELETE_WORKER false
-
-
-
 class UdsRegWorker : public WorkerInterface, WorkerThreads{
 
 	public:
 		UdsRegWorker(int socket);
 		~UdsRegWorker();
 
-		string* getPluginName();
+		string* getPluginName(){return pluginName;}
 
 		static void cleanupReceiveQueue(void* arg);
 
@@ -47,21 +40,11 @@ class UdsRegWorker : public WorkerInterface, WorkerThreads{
 
 		JsonRPC* json;
 		Plugin* plugin;
-
-		//variables for listener
-		bool listen_thread_active;
-		char receiveBuffer[BUFFER_SIZE];
-		int recvSize;
-
-
-		//variables for worker
-		bool worker_thread_active;
+		string* pluginName;
 		string* request;
 		string* response;
 
 
-		//not shared, more common
-		pthread_t lthread;
 		int currentSocket;
 
 		enum REG_STATE{NOT_ACTIVE, ANNOUNCED, REGISTERED, ACTIVE, BROKEN};
@@ -71,6 +54,9 @@ class UdsRegWorker : public WorkerInterface, WorkerThreads{
 		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);
 
 		virtual void thread_work(int socket);
+
+
+		void cleanup();
 
 		//following methods are part of the registration process (in this order)
 
@@ -89,4 +75,4 @@ class UdsRegWorker : public WorkerInterface, WorkerThreads{
 
 
 
-#endif /* INCLUDE_UDSWORKER_HPP_ */
+#endif /* INCLUDE_UDSREGWORKER_HPP_ */
