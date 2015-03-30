@@ -38,8 +38,6 @@ class TcpWorker : public WorkerInterface, public WorkerThreads{
 		TcpWorker(ConnectionContext* context, int socket);
 		~TcpWorker();
 
-		void routeBack(RsdMsg* data);
-		void checkComClientList();
 
 		int tcp_send(char* data, int size);
 		int tcp_send(const char* data, int size);
@@ -68,13 +66,6 @@ class TcpWorker : public WorkerInterface, public WorkerThreads{
 		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);
 
 		virtual void thread_work(int socket);
-
-		static void cleanupWorker(void* arg)
-		{
-			//TcpWorker* worker = static_cast<TcpWorker*>(arg);
-			//TODO::worker->deleteComClientList();
-		};
-
 
 
 };
