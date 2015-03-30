@@ -7,6 +7,7 @@
 
 
 #include "RSD.hpp"
+#include "Plugin.hpp"
 
 
 #include "TestHarness.h"
@@ -56,12 +57,69 @@ TEST_GROUP(RSDwithMock)
 };
 
 
-TEST(RSD, startup_and_shutdown)
+
+TEST(RSD, deletePlugin_withNoPluginInList)
 {
-	//confusing ? stop sets the variable
-	//of the main loop to "false", so that it just runs 1 time
-	rsd->stop();
-	rsd->start();
+	string* pluginName = new string("blubber");
+	bool result = rsd->deletePlugin(pluginName);
+	if(result == true)
+		FAIL("Plugin should be not found but function returned true");
+
+	delete pluginName;
+}
+
+
+TEST(RSD, deletePlugin_withMorePluginsInList)
+{
+	string* pluginName = new string("SecondPlugin");
+
+	rsd->addPlugin("FirstPlugin", 1, "/tmp/firstPlugin.uds");
+	rsd->addPlugin("SecondPlugin", 2, "/tmp/secondPlugin.uds");
+	rsd->addPlugin("ThirdPlugin", 3, "/tmp/thirdPlugin.uds");
+	rsd->addPlugin(new Plugin("AnotherPlugin", 4, "/tmp/anotherPlugin.uds"));
+
+	CHECK(rsd->deletePlugin(pluginName));
+	delete pluginName;
+}
+
+
+TEST(RSD, deletePlugin_withPluginInList)
+{
+	string* pluginName = new string("SecondPlugin");
+	rsd->addPlugin("SecondPlugin", 2, "/tmp/secondPlugin.uds");
+	CHECK(rsd->deletePlugin(pluginName));
+	delete pluginName;
+
+}
+
+
+TEST(RSD, getPlugin_byName)
+{
+	Plugin* testPlugin = new Plugin("FirstPlugin", 1, "/tmp/FirstPlugin.uds");
+	rsd->addPlugin(testPlugin);
+
+	CHECK_EQUAL(testPlugin, rsd->getPlugin("FirstPlugin"));
+}
+
+
+TEST(RSD, getPlugin_byNumber)
+{
+	Plugin* testPlugin = new Plugin("FirstPlugin", 1, "/tmp/FirstPlugin.uds");
+	rsd->addPlugin(testPlugin);
+
+	CHECK_EQUAL(testPlugin, rsd->getPlugin(1));
+}
+
+
+TEST(RSD, addPluginWithObject)
+{
+	rsd->addPlugin(new Plugin("FirstPlugin", 1, "/tmp/firstPlugin.uds"));
+}
+
+
+TEST(RSD, addPlugin_byParams)
+{
+	rsd->addPlugin("FirstPlugin", 1, "/tmp/firstPlugin.uds");
 }
 
 
@@ -72,5 +130,14 @@ TEST(RSDwithMock, checkLoop)
 	rsd->start();
 	mock().checkExpectations();
 
+}
+
+
+TEST(RSD, startup_and_shutdown)
+{
+	//confusing ? stop sets the variable
+	//of the main loop to "false", so that it just runs 1 time
+	rsd->stop();
+	rsd->start();
 }
 

@@ -13,8 +13,9 @@
 int RSD::connection_socket;
 struct sockaddr_in RSD::address;
 socklen_t RSD::addrlen;
+bool RSD::accept_thread_active;
 
-vector<Plugin*> RSD::plugins;
+list<Plugin*> RSD::plugins;
 pthread_mutex_t RSD::pLmutex;
 
 list<ConnectionContext*> RSD::connectionContextList;
@@ -47,8 +48,12 @@ RSD::RSD()
 
 RSD::~RSD()
 {
+	accept_thread_active = false;
 	delete regServer;
+	deleteAllPlugins();
 	close(connection_socket);
+	if(accepter != 0)
+		pthread_cancel(accepter);
 
 	pthread_mutex_destroy(&pLmutex);
 	pthread_mutex_destroy(&connectionContextListMutex);
@@ -58,9 +63,10 @@ RSD::~RSD()
 void* RSD::accept_connections(void* data)
 {
 	listen(connection_socket, MAX_CLIENTS);
-	bool accept_thread_active = true;
 	int tcpSocket = 0;
 	ConnectionContext* context = NULL;
+
+	accept_thread_active = true;
 
 	while(accept_thread_active)
 	{
@@ -113,39 +119,47 @@ bool RSD::addPlugin(Plugin* newPlugin)
 
 bool RSD::deletePlugin(string* name)
 {
-	bool result = false;
+	bool found = false;
 	string* currentName = NULL;
 
 	pthread_mutex_lock(&pLmutex);
-	for(unsigned int i = 0; i < plugins.size() && result == false; i++)
+
+	list<Plugin*>::iterator i = plugins.begin();
+	while(i != plugins.end() && found == false)
 	{
-		currentName = plugins[i]->getName();
+		currentName = (*i)->getName();
 		if(currentName->compare(*name) == 0)
 		{
-			delete plugins[i];
-			plugins.erase(plugins.begin()+i);
-			result = true;
+			delete *i;
+			i = plugins.erase(i);
+			found = true;
 		}
+		++i;
 	}
-	pthread_mutex_unlock(&pLmutex);
 
-	return result;
+	pthread_mutex_unlock(&pLmutex);
+	return found;
 }
 
 
 Plugin* RSD::getPlugin(char* name)
 {
+	bool found = false;
 	Plugin* result = NULL;
 	string* currentName = NULL;
 
 	pthread_mutex_lock(&pLmutex);
-	for(unsigned int i = 0; i < plugins.size() && result == NULL; i++)
+	list<Plugin*>::iterator i = plugins.begin();
+
+	while(i != plugins.end() && found == false)
 	{
-		currentName = plugins[i]->getName();
+		currentName = (*i)->getName();
 		if(currentName->compare(name) == 0)
 		{
-			result = plugins[i];
+			result = *i;
+			found = true;
 		}
+		++i;
 	}
 	pthread_mutex_unlock(&pLmutex);
 
@@ -155,21 +169,38 @@ Plugin* RSD::getPlugin(char* name)
 
 Plugin* RSD::getPlugin(int pluginNumber)
 {
+	bool found = false;
 	Plugin* result = NULL;
 	int currentNumber = -1;
 
 	pthread_mutex_lock(&pLmutex);
-	for(unsigned int i = 0; i < plugins.size() && result == NULL; i++)
+
+	list<Plugin*>::iterator i = plugins.begin();
+	while(i != plugins.end() && found == false)
 	{
-		currentNumber = plugins[i]->getPluginNumber();
-		if(pluginNumber == currentNumber)
+		currentNumber = (*i)->getPluginNumber();
+		if(currentNumber == pluginNumber)
 		{
-			result = plugins[i];
+			result = *i;
+			found = true;
 		}
+		++i;
 	}
 	pthread_mutex_unlock(&pLmutex);
 
 	return result;
+}
+
+
+void RSD::deleteAllPlugins()
+{
+	list<Plugin*>::iterator i = plugins.begin();
+
+	while(i != plugins.end())
+	{
+		delete *i;
+		i = plugins.erase(i);
+	}
 }
 
 
@@ -207,6 +238,7 @@ void RSD::checkForDeletableConnections()
 	}
 	pthread_mutex_unlock(&connectionContextListMutex);
 }
+
 
 
 void RSD::start()

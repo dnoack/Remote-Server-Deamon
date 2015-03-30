@@ -19,7 +19,6 @@
 class ConnectionContext
 {
 	public:
-		ConnectionContext();
 		ConnectionContext(int tcpSocket);
 		virtual ~ConnectionContext();
 

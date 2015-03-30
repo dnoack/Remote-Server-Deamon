@@ -89,11 +89,8 @@ class RSD{
 		 */
 		static Plugin* getPlugin(int pluginNumber);
 
-		/**
-		 * Searches the list of all registered plugins for a plugin by the
-		 * given name and returns the position within the list.
-		 */
-		static int getPluginPos(char* name);
+
+		static void deleteAllPlugins();
 
 	private:
 
@@ -101,13 +98,14 @@ class RSD{
 		int optionflag;
 		pthread_t accepter;
 		UdsRegServer* regServer;
+		static bool accept_thread_active;
 
 
 		static int connection_socket;
 		static struct sockaddr_in address;
 		static socklen_t addrlen;
 
-		static vector<Plugin*> plugins;
+		static list<Plugin*> plugins;
 		static pthread_mutex_t pLmutex;
 
 		static list<ConnectionContext*> connectionContextList;

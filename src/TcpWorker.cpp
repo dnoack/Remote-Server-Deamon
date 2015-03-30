@@ -52,7 +52,6 @@ void TcpWorker::thread_work(int socket)
 	RsdMsg* errorMsg = NULL;
 	worker_thread_active = true;
 
-	pthread_cleanup_push(&TcpWorker::cleanupWorker, this);
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
 
 
@@ -108,7 +107,6 @@ void TcpWorker::thread_work(int socket)
 	}
 
 	close(currentSocket);
-	pthread_cleanup_pop(0);
 
 }
 
@@ -138,12 +136,13 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 		}
 		else if(FD_ISSET(socket, &rfds))
 		{
-			recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, MSG_DONTWAIT);
+			recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, 0);
 
 			if(recvSize > 0)
 			{
 				//add received data in buffer to queue
 				content = new string(receiveBuffer, recvSize);
+				printf("TcpListener: %s \n", content->c_str());
 				pushReceiveQueue(new RsdMsg(0, content));
 				//signal the worker
 				pthread_kill(parent_th, SIGUSR1);

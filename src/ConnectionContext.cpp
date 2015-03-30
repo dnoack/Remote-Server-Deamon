@@ -13,22 +13,6 @@
 
 
 
-ConnectionContext::ConnectionContext()
-{
-	pthread_mutex_init(&rIPMutex, NULL);
-	deletable = false;
-	udsCheck = false;
-	requestInProcess = false;
-	lastSender = -1;
-	jsonInput = NULL;
-	identity = NULL;
-	jsonReturn = NULL;
-	json = new JsonRPC();
-	tcpConnection = new TcpWorker(this, 0);
-}
-
-
-
 ConnectionContext::ConnectionContext(int tcpSocket)
 {
 	pthread_mutex_init(&rIPMutex, NULL);
@@ -112,6 +96,11 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 	{
 		setRequestNotInProcess();
 		delete msg;
+		if(methodNamespace != NULL)
+		{
+			delete[] methodNamespace;
+			methodNamespace = NULL;
+		}
 		throw;
 	}
 }
