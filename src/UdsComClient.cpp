@@ -65,7 +65,11 @@ void UdsComClient::routeBack(RsdMsg* msg)
 	}
 	catch(PluginError &e)
 	{
-		sendData(e.getString());
+		//this can happen if the plugin sends no correct json rpc response
+
+		//we need to delete the last request within the tcp queue and send
+		// a correct json rpc error response back to the client.
+		context->handleIncorrectPluginResponse(msg, e.get());
 	}
 }
 

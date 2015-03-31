@@ -75,8 +75,13 @@ void TcpWorker::thread_work(int socket)
 					{
 						try
 						{
+							if(receiveQueue.size() == 0)
+							{
+								printf("Halt.\n");
+							}
 							msg = receiveQueue.back();
-							printf("Tcp Queue Received: %s\n", msg->getContent()->c_str());
+							//printf("Tcp Queue Received: %s\n", msg->getContent()->c_str());
+							popReceiveQueueWithoutDelete();
 							context->processMsg(msg);
 						}
 						catch(PluginError &e)
@@ -90,8 +95,9 @@ void TcpWorker::thread_work(int socket)
 						{
 							printf("Unkown Exception.\n");
 						}
-						popReceiveQueueWithoutDelete();
 					}
+					else
+						printf("what ?\n");
 				}
 				break;
 
@@ -142,7 +148,7 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 			{
 				//add received data in buffer to queue
 				content = new string(receiveBuffer, recvSize);
-				printf("TcpListener: %s \n", content->c_str());
+				//printf("TcpListener: %s \n", content->c_str());
 				pushReceiveQueue(new RsdMsg(0, content));
 				//signal the worker
 				pthread_kill(parent_th, SIGUSR1);

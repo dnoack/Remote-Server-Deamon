@@ -18,6 +18,9 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	pthread_mutex_init(&rIPMutex, NULL);
 	deletable = false;
 	udsCheck = false;
+	error = NULL;
+	id = NULL;
+	currentClient = NULL;
 	requestInProcess = false;
 	lastSender = -1;
 	jsonInput = NULL;
@@ -25,6 +28,7 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	jsonReturn = NULL;
 	json = new JsonRPC();
 	tcpConnection = new TcpWorker(this, tcpSocket);
+
 }
 
 
@@ -36,11 +40,10 @@ ConnectionContext::~ConnectionContext()
 	pthread_mutex_destroy(&rIPMutex);
 }
 
-
+/*
 void ConnectionContext::processMsg(RsdMsg* msg)
 {
 	char* methodNamespace = NULL;
-	char* error = NULL;
 	int lastSender = 0;
 	RsdMsg* temp = NULL;
 	Value* id;
@@ -103,6 +106,109 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 		}
 		throw;
 	}
+	delete[] methodNamespace;
+	methodNamespace = NULL;
+}*/
+
+
+void ConnectionContext::processMsg(RsdMsg* msg)
+{
+
+	try
+	{
+		setRequestInProcess();
+		//parse to dom with jsonrpc
+		json->parse(msg->getContent());
+
+		//is it a request ?
+		if(json->isRequest())
+		{
+			handleRequest(msg);
+		}
+		//or is it a response ?
+		else if(json->isResponse())
+		{
+			handleResponse(msg);
+		}
+		//trash ?
+		else
+		{
+			handleResponse(msg);
+		}
+	}
+	catch(PluginError &e)
+	{
+		setRequestNotInProcess();
+		delete msg;
+		throw;
+	}
+}
+
+
+void ConnectionContext::handleRequest(RsdMsg* msg)
+{
+	char* methodNamespace = NULL;
+
+	methodNamespace = getMethodNamespace();
+	currentClient = findUdsConnection(methodNamespace);
+	delete[] methodNamespace;
+
+	if(currentClient != NULL)
+	{
+		requests.push_back(msg);
+		currentClient->sendData(msg->getContent());
+	}
+	else
+	{
+		id = json->tryTogetId();
+		error = json->generateResponseError(*id, -33011, "Plugin not found.");
+		throw PluginError(error);
+	}
+}
+
+
+void ConnectionContext::handleResponse(RsdMsg* msg)
+{
+	RsdMsg* lastMsg = requests.back();
+
+	lastSender = lastMsg->getSender();
+	if(lastSender != 0)
+	{
+		currentClient =  findUdsConnection(lastSender);
+		currentClient->sendData(msg->getContent());
+		delete lastMsg;
+		requests.pop_back();
+	}
+	else
+	{
+		delete lastMsg;
+		requests.pop_back();
+		setRequestNotInProcess();
+		tcp_send(msg);
+
+	}
+	delete msg;
+}
+
+
+void ConnectionContext::handleTrash(RsdMsg* msg)
+{
+
+}
+
+
+void ConnectionContext::handleIncorrectPluginResponse(RsdMsg* msg, const char* error)
+{
+	RsdMsg* temp = NULL;
+	Value* id = json->tryTogetId();
+	error = json->generateResponseError(*id, -99, "Incorrect Response from plugin.");
+	//TODO: send better error msg to client
+	setRequestNotInProcess();
+	temp = requests.back();
+	delete temp;
+	requests.pop_back();
+	tcp_send(msg);
+	delete msg;
 }
 
 
@@ -296,6 +402,7 @@ int ConnectionContext::tcp_send(RsdMsg* msg)
 {
 	return tcpConnection->tcp_send(msg);
 }
+
 
 
 bool ConnectionContext::isRequestInProcess()

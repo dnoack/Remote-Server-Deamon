@@ -243,6 +243,7 @@ void RSD::checkForDeletableConnections()
 
 void RSD::start()
 {
+	int count = 0;
 	regServer->start();
 
 	//start comListener
@@ -256,6 +257,7 @@ void RSD::start()
 		//check TCP/workers
 		this->checkForDeletableConnections();
 		//RsdMsg::printCounters();
+		count++;
 	}
 	while(rsdActive);
 

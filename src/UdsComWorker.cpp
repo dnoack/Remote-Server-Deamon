@@ -47,6 +47,7 @@ UdsComWorker::~UdsComWorker()
 
 void UdsComWorker::thread_work(int socket)
 {
+	RsdMsg* msg = NULL;
 	worker_thread_active = true;
 
 	pthread_cleanup_push(&UdsComWorker::cleanupReceiveQueue, this);
@@ -64,9 +65,11 @@ void UdsComWorker::thread_work(int socket)
 		switch(currentSig)
 		{
 			case SIGUSR1:
-					printf("Routeback: %s\n", receiveQueue.back()->getContent()->c_str());
-					comClient->routeBack(receiveQueue.back());
+					msg = receiveQueue.back();
+					//printf("Routeback: %s\n", msg->getContent()->c_str());
 					popReceiveQueueWithoutDelete();
+					comClient->routeBack(msg);
+
 
 				break;
 
@@ -119,6 +122,7 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 			{
 				//add received data in buffer to queue
 				content = new string(receiveBuffer, recvSize);
+				//printf("UdsCom/Listener: %s\n",content->c_str());
 				pushReceiveQueue(new RsdMsg(comClient->getPluginNumber(), content));
 
 				//signal the worker

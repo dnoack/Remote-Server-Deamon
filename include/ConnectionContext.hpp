@@ -28,6 +28,12 @@ class ConnectionContext
 
 		virtual void processMsg(RsdMsg* msg);
 
+		void handleRequest(RsdMsg* msg);
+
+		void handleResponse(RsdMsg* msg);
+
+		void handleTrash(RsdMsg* msg);
+
 		//A connectioNContext is deletable if there is no working tcp part
 		bool isDeletable();
 		bool isRequestInProcess();
@@ -42,7 +48,10 @@ class ConnectionContext
 
 		void arrangeUdsConnectionCheck();
 
+		void handleIncorrectPluginResponse(RsdMsg* msg, const char* error);
+
 		int tcp_send(RsdMsg* msg);
+		int tcp_send(string* msg);
 
 
 
@@ -52,16 +61,22 @@ class ConnectionContext
 		TcpWorker* tcpConnection;
 		list<UdsComClient*> udsConnections;
 		list<RsdMsg*> requests;
-		int lastSender;
+		pthread_mutex_t rIPMutex;
+		JsonRPC* json;
+
+
 		bool deletable;
 		bool udsCheck;
+		char* error;
+		Value* id;
+		UdsComClient* currentClient;
 		bool requestInProcess;
-		pthread_mutex_t rIPMutex;
-
-		JsonRPC* json;
+		int lastSender;
 		string* jsonInput;
 		string* identity;
 		string* jsonReturn;
+
+
 
 		void setRequestInProcess();
 		void setRequestNotInProcess();

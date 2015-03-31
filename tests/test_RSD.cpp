@@ -123,7 +123,7 @@ TEST(RSD, addPlugin_byParams)
 }
 
 
-TEST(RSDwithMock, checkLoop)
+IGNORE_TEST(RSDwithMock, checkLoop)
 {
 	mock().expectOneCall("checkForDeletableConnections");
 	rsd->stop();
