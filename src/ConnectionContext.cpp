@@ -9,6 +9,7 @@
 #include "Plugin.hpp"
 #include "Plugin_Error.h"
 #include "ConnectionContext.hpp"
+#include "Utils.h"
 
 
 
@@ -40,75 +41,7 @@ ConnectionContext::~ConnectionContext()
 	pthread_mutex_destroy(&rIPMutex);
 }
 
-/*
-void ConnectionContext::processMsg(RsdMsg* msg)
-{
-	char* methodNamespace = NULL;
-	int lastSender = 0;
-	RsdMsg* temp = NULL;
-	Value* id;
-	UdsComClient* currentClient = NULL;
 
-
-	try
-	{
-		setRequestInProcess();
-		//parse to dom with jsonrpc
-		json->parse(msg->getContent());
-
-
-		//is it a request ?
-		if(json->isRequest())
-		{
-			methodNamespace = getMethodNamespace();
-			currentClient = findUdsConnection(methodNamespace);
-
-			if(currentClient != NULL)
-			{
-				requests.push_back(msg);
-				currentClient->sendData(msg->getContent());
-			}
-			else
-			{
-				id = json->tryTogetId();
-				error = json->generateResponseError(*id, -33011, "Plugin not found.");
-				throw PluginError(error);
-			}
-		}
-		//or is it a response ?
-		else if(json->isResponse())
-		{
-			lastSender = requests.back()->getSender();
-			if(lastSender != 0)
-			{
-				currentClient =  findUdsConnection(lastSender);
-				currentClient->sendData(msg->getContent());
-			}
-			else
-			{
-				tcp_send(msg);
-				setRequestNotInProcess();
-			}
-			temp = requests.back();
-			delete temp;
-			delete msg;
-			requests.pop_back();
-		}
-	}
-	catch(PluginError &e)
-	{
-		setRequestNotInProcess();
-		delete msg;
-		if(methodNamespace != NULL)
-		{
-			delete[] methodNamespace;
-			methodNamespace = NULL;
-		}
-		throw;
-	}
-	delete[] methodNamespace;
-	methodNamespace = NULL;
-}*/
 
 
 void ConnectionContext::processMsg(RsdMsg* msg)
@@ -278,7 +211,7 @@ void ConnectionContext::checkUdsConnections()
 		{
 			delete *udsConnection;
 			udsConnection = udsConnections.erase(udsConnection);
-			printf("RSD: UdsComWorker deleted from list.Verbleibend: %d\n", udsConnections.size());
+			dyn_print("RSD: UdsComWorker deleted from list.Verbleibend: %d\n", udsConnections.size());
 			tcpConnection->tcp_send("Connection to AardvarkPlugin Aborted!\n", 39);
 		}
 		else

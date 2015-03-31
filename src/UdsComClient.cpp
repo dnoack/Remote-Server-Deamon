@@ -10,7 +10,7 @@
 #include "UdsComClient.hpp"
 #include "TcpWorker.hpp"
 #include "Plugin_Error.h"
-
+#include "Utils.h"
 
 
 UdsComClient::UdsComClient(ConnectionContext* context, string* udsFilePath, string* pluginName, int pluginNumber)
@@ -65,7 +65,7 @@ void UdsComClient::routeBack(RsdMsg* msg)
 	}
 	catch(PluginError &e)
 	{
-		//this can happen if the plugin sends no correct json rpc response
+		//TODO:this can happen if the plugin sends no correct json rpc response
 
 		//we need to delete the last request within the tcp queue and send
 		// a correct json rpc error response back to the client.
@@ -77,7 +77,7 @@ bool UdsComClient::tryToconnect()
 {
 	if( connect(currentSocket, (struct sockaddr*)&address, addrlen) < 0)
 	{
-		printf("Gewünschtes Plugin nicht gefunden.%s \n", strerror(errno));
+		dyn_print("Gewünschtes Plugin nicht gefunden.%s \n", strerror(errno));
 		return false;
 	}
 	else

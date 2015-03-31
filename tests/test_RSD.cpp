@@ -18,9 +18,11 @@
 class RSDMock : public RSD
 {
 	public:
-		virtual void checkForDeletableConnections()
+		virtual void checkForDeletableConnections_virt()
 		{
 			mock().actualCall("checkForDeletableConnections");
+			checkForDeletableConnections();
+
 		}
 };
 

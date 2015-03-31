@@ -28,11 +28,6 @@
 #define MAX_CLIENTS 20
 #define MAIN_SLEEP_TIME 3 //sleep time for main loop
 
-#ifdef TESTMODE
-	#define TEST_VIRTUAL virtual
-#else
-	#define TEST_VIRTUAL
-#endif
 
 
 class RSD{
@@ -60,7 +55,7 @@ class RSD{
 		 * are deletable. If there are some deletable connection obects (TcpWorker or UdsComClient),
 		 * it will delete them.
 		 */
-		TEST_VIRTUAL void checkForDeletableConnections();
+		void checkForDeletableConnections();
 
 		/**
 		 * Adds a plugin to the list of all registered plugins.
@@ -115,8 +110,6 @@ class RSD{
 		static void pushWorkerList(ConnectionContext* newWorker);
 		static void* accept_connections(void*);
 };
-
-
 
 
 

@@ -11,6 +11,7 @@
 #include "ConnectionContext.hpp"
 #include "UdsComClient.hpp"
 #include "Plugin_Error.h"
+#include "Utils.h"
 
 
 TcpWorker::TcpWorker(ConnectionContext* context, int socket)
@@ -75,12 +76,8 @@ void TcpWorker::thread_work(int socket)
 					{
 						try
 						{
-							if(receiveQueue.size() == 0)
-							{
-								printf("Halt.\n");
-							}
 							msg = receiveQueue.back();
-							//printf("Tcp Queue Received: %s\n", msg->getContent()->c_str());
+							dyn_print("Tcp Queue Received: %s\n", msg->getContent()->c_str());
 							popReceiveQueueWithoutDelete();
 							context->processMsg(msg);
 						}
@@ -93,21 +90,20 @@ void TcpWorker::thread_work(int socket)
 						}
 						catch(...)
 						{
-							printf("Unkown Exception.\n");
+							dyn_print("Unkown Exception.\n");
 						}
 					}
-					else
-						printf("what ?\n");
+
 				}
 				break;
 
 			case SIGUSR2:
-				printf("TcpComWorker: SIGUSR2\n");
+				dyn_print("TcpComWorker: SIGUSR2\n");
 				context->checkUdsConnections();
 				break;
 
 			default:
-				printf("TcpComWorker: unkown signal \n");
+				dyn_print("TcpComWorker: unkown signal \n");
 				break;
 		}
 	}
@@ -148,7 +144,7 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 			{
 				//add received data in buffer to queue
 				content = new string(receiveBuffer, recvSize);
-				//printf("TcpListener: %s \n", content->c_str());
+				dyn_print("TcpListener: %s \n", content->c_str());
 				pushReceiveQueue(new RsdMsg(0, content));
 				//signal the worker
 				pthread_kill(parent_th, SIGUSR1);

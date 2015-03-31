@@ -12,6 +12,7 @@
 #include "Plugin_Error.h"
 #include "document.h"
 #include "RsdMsg.h"
+#include "Utils.h"
 
 
 using namespace rapidjson;
@@ -77,7 +78,7 @@ void UdsRegWorker::thread_work(int socket)
 				try
 				{
 					request = receiveQueue.back()->getContent();
-					printf("RegWorker Received: %s\n", request->c_str());
+					dyn_print("RegWorker Received: %s\n", request->c_str());
 					switch(state)
 					{
 						case NOT_ACTIVE:
@@ -121,7 +122,7 @@ void UdsRegWorker::thread_work(int socket)
 
 
 			default:
-				printf("UdsRegWorker: unkown signal \n");
+				dyn_print("UdsRegWorker: unkown signal \n");
 				break;
 		}
 	}

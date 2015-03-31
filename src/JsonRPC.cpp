@@ -476,7 +476,6 @@ char* JsonRPC::generateResponse(Value &id, Value &response)
 
 	//write DOM to sBuffer
 	responseDOM->Accept(*jsonWriter);
-	//printf("\nResponseMsg: %s\n", sBuffer.GetString());
 
 	return (char*)sBuffer.GetString();
 }
@@ -502,7 +501,6 @@ char* JsonRPC::generateResponseError(Value &id, int code, const char* msg)
 	(*errorDOM)["error"]["data"].Swap(data);
 
 	errorDOM->Accept(*jsonWriter);
-	//printf("\nErrorMsg: %s\n", sBuffer.GetString());
 
 	return (char*)sBuffer.GetString();
 }

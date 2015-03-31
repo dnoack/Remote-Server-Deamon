@@ -8,6 +8,7 @@
 
 #include "RSD.hpp"
 #include "RsdMsg.h"
+#include "Utils.h"
 
 
 int RSD::connection_socket;
@@ -73,7 +74,7 @@ void* RSD::accept_connections(void* data)
 		tcpSocket = accept(connection_socket, (struct sockaddr*)&address, &addrlen);
 		if(tcpSocket >= 0)
 		{
-			printf("Client connected\n");
+			dyn_print("Client connected\n");
 			context = new ConnectionContext(tcpSocket);
 			pushWorkerList(context);
 		}
@@ -208,7 +209,7 @@ void RSD::pushWorkerList(ConnectionContext* context)
 {
 	pthread_mutex_lock(&connectionContextListMutex);
 		connectionContextList.push_back(context);
-		printf("Anzahl ConnectionContext: %d\n", connectionContextList.size());
+		dyn_print("Anzahl ConnectionContext: %d\n", connectionContextList.size());
 	pthread_mutex_unlock(&connectionContextListMutex);
 }
 
@@ -225,7 +226,7 @@ void RSD::checkForDeletableConnections()
 		{
 			delete *connection;
 			connection = connectionContextList.erase(connection);
-			printf("RSD: ConnectionContext deleted from list.Verbleibend: %d\n", connectionContextList.size());
+			dyn_print("RSD: ConnectionContext deleted from list. Verbleibend: %d\n", connectionContextList.size());
 		}
 		//maybe we got a working tcp connection but a plugin went down
 		else if((*connection)->isUdsCheckEnabled())

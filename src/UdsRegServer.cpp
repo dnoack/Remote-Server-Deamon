@@ -10,6 +10,7 @@
 #include "UdsRegServer.hpp"
 #include "JsonRPC.hpp"
 #include "Plugin_Error.h"
+#include "Utils.h"
 
 
 
@@ -106,7 +107,7 @@ void UdsRegServer::checkForDeletableWorker()
 			RSD::deletePlugin((*i)->getPluginName());
 			delete  *i;
 			i = workerList.erase(i);
-			printf("UdsRegServer: UdsRegWorker was deleted.\n");
+			dyn_print("UdsRegServer: UdsRegWorker was deleted.\n");
 		}
 		else
 			++i;

@@ -9,6 +9,7 @@
 #include "UdsComClient.hpp"
 #include "UdsComWorker.hpp"
 #include "errno.h"
+#include "Utils.h"
 
 
 UdsComWorker::UdsComWorker(int socket,  UdsComClient* comClient)
@@ -60,25 +61,22 @@ void UdsComWorker::thread_work(int socket)
 	while(worker_thread_active)
 	{
 		//wait for signals from listenerthread
-
 		sigwait(&sigmask, &currentSig);
 		switch(currentSig)
 		{
 			case SIGUSR1:
 					msg = receiveQueue.back();
-					//printf("Routeback: %s\n", msg->getContent()->c_str());
+					dyn_print("Routeback: %s\n", msg->getContent()->c_str());
 					popReceiveQueueWithoutDelete();
 					comClient->routeBack(msg);
-
-
 				break;
 
 			case SIGUSR2:
-				printf("UdsComWorker: SIGUSR2\n");
+				dyn_print("UdsComWorker: SIGUSR2\n");
 				break;
 
 			default:
-				printf("UdsComWorker: unkown signal \n");
+				dyn_print("UdsComWorker: unkown signal \n");
 				break;
 		}
 	}
@@ -122,7 +120,7 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 			{
 				//add received data in buffer to queue
 				content = new string(receiveBuffer, recvSize);
-				//printf("UdsCom/Listener: %s\n",content->c_str());
+				dyn_print("UdsCom/Listener: %s\n",content->c_str());
 				pushReceiveQueue(new RsdMsg(comClient->getPluginNumber(), content));
 
 				//signal the worker
@@ -135,7 +133,6 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 				comClient->markAsDeletable();
 			}
 		}
-
 		memset(receiveBuffer, '\0', BUFFER_SIZE);
 	}
 }
