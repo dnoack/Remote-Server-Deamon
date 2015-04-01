@@ -60,7 +60,7 @@ class RSD{
 		/**
 		 * Adds a plugin to the list of all registered plugins.
 		 */
-		static bool addPlugin(char* name, int pluginNumber, char* udsFilePath);
+		static bool addPlugin(const char* name, int pluginNumber, const char* udsFilePath);
 
 		/**
 		 * Adds a plugin to the list of all registered plugins.
@@ -76,7 +76,7 @@ class RSD{
 		 * Searches the list of all registered plugins for a plugin by the
 		 * given name and returns a pointer to it.
 		 */
-		static Plugin* getPlugin(char* name);
+		static Plugin* getPlugin(const char* name);
 
 		/**
 		 * Searches the list of all registered plugins for a plugin by the

@@ -211,7 +211,7 @@ bool ConnectionContext::isDeletable()
 		{
 			delete *udsConnection;
 			udsConnection = udsConnections.erase(udsConnection);
-			printf("RSD: UdsComworker deleted from list.Verbleibend: %d\n", udsConnections.size());
+			dyn_print("RSD: UdsComworker deleted from list.Verbleibend: %lu \n", udsConnections.size());
 		}
 	}
 	return deletable;

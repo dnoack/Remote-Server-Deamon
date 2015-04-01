@@ -84,7 +84,7 @@ void* RSD::accept_connections(void* data)
 }
 
 
-bool RSD::addPlugin(char* name, int pluginNumber, char* udsFilePath)
+bool RSD::addPlugin(const char* name, int pluginNumber, const char* udsFilePath)
 {
 	bool result = false;
 
@@ -143,7 +143,7 @@ bool RSD::deletePlugin(string* name)
 }
 
 
-Plugin* RSD::getPlugin(char* name)
+Plugin* RSD::getPlugin(const char* name)
 {
 	bool found = false;
 	Plugin* result = NULL;

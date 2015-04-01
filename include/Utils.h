@@ -16,9 +16,9 @@
 static int dyn_print(const char* data, ...)
 {
 	int printed = 0;
-	va_list arguments;
 
 	#ifdef DEBUG
+		va_list arguments;
 		va_start(arguments, data);
 		printed = vprintf(data, arguments);
 		va_end(arguments);
