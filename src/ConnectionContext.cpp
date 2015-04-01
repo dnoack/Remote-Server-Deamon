@@ -49,13 +49,13 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 
 	try
 	{
-		setRequestInProcess();
 		//parse to dom with jsonrpc
 		json->parse(msg->getContent());
 
 		//is it a request ?
 		if(json->isRequest())
 		{
+			setRequestInProcess();
 			handleRequest(msg);
 		}
 		//or is it a response ?
@@ -71,8 +71,6 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 	}
 	catch(PluginError &e)
 	{
-		setRequestNotInProcess();
-		delete msg;
 		throw;
 	}
 }
@@ -81,20 +79,23 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 void ConnectionContext::handleRequest(RsdMsg* msg)
 {
 	char* methodNamespace = NULL;
+	id = json->tryTogetId();
 
 	methodNamespace = getMethodNamespace();
 	currentClient = findUdsConnection(methodNamespace);
 	delete[] methodNamespace;
 
+	//OK
 	if(currentClient != NULL)
 	{
 		requests.push_back(msg);
 		currentClient->sendData(msg->getContent());
 	}
+	//BAD
 	else
 	{
-		id = json->tryTogetId();
 		error = json->generateResponseError(*id, -33011, "Plugin not found.");
+		setRequestNotInProcess();
 		throw PluginError(error);
 	}
 }
@@ -105,9 +106,12 @@ void ConnectionContext::handleResponse(RsdMsg* msg)
 	RsdMsg* lastMsg = requests.back();
 
 	lastSender = lastMsg->getSender();
+
+	//lastSender == 0 means, send response to tcp client
 	if(lastSender != 0)
 	{
 		currentClient =  findUdsConnection(lastSender);
+		//TODO: implement case that plugin went offline, like in handleRequest
 		currentClient->sendData(msg->getContent());
 		delete lastMsg;
 		requests.pop_back();
@@ -132,16 +136,30 @@ void ConnectionContext::handleTrash(RsdMsg* msg)
 
 void ConnectionContext::handleIncorrectPluginResponse(RsdMsg* msg, const char* error)
 {
-	RsdMsg* temp = NULL;
-	Value* id = json->tryTogetId();
+	RsdMsg* lastMsg = requests.back();
 	error = json->generateResponseError(*id, -99, "Incorrect Response from plugin.");
-	//TODO: send better error msg to client
-	setRequestNotInProcess();
-	temp = requests.back();
-	delete temp;
-	requests.pop_back();
-	tcp_send(msg);
+	//TODO: insert information from parameter error
+
+	//who was the sender of the last request
+	lastSender = lastMsg->getSender();
+	//lastSender == 0 means, send response to tcp client
+	if(lastSender != 0)
+	{
+		currentClient =  findUdsConnection(lastSender);
+		currentClient->sendData(error);
+		delete lastMsg;
+		requests.pop_back();
+	}
+	else
+	{
+		delete lastMsg;
+		requests.pop_back();
+		setRequestNotInProcess();
+		tcp_send(error);
+
+	}
 	delete msg;
+
 }
 
 
@@ -149,7 +167,6 @@ char* ConnectionContext::getMethodNamespace()
 {
 	const char* methodName = NULL;
 	char* methodNamespace = NULL;
-	char* error = NULL;
 	unsigned int namespacePos = 0;
 	Value* id;
 
@@ -162,6 +179,7 @@ char* ConnectionContext::getMethodNamespace()
 	{
 		id = json->tryTogetId();
 		error = json->generateResponseError(*id, -32010, "Methodname has no namespace.");
+		setRequestNotInProcess();
 		throw PluginError(error);
 	}
 	else
@@ -334,6 +352,12 @@ void ConnectionContext::arrangeUdsConnectionCheck()
 int ConnectionContext::tcp_send(RsdMsg* msg)
 {
 	return tcpConnection->tcp_send(msg);
+}
+
+
+int ConnectionContext::tcp_send(const char* msg)
+{
+	return tcpConnection->tcp_send(msg, strlen(msg));
 }
 
 

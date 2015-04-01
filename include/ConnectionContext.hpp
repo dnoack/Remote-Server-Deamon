@@ -51,7 +51,7 @@ class ConnectionContext
 		void handleIncorrectPluginResponse(RsdMsg* msg, const char* error);
 
 		int tcp_send(RsdMsg* msg);
-		int tcp_send(string* msg);
+		int tcp_send(const char* msg);
 
 
 
@@ -67,7 +67,7 @@ class ConnectionContext
 
 		bool deletable;
 		bool udsCheck;
-		char* error;
+		const char* error;
 		Value* id;
 		UdsComClient* currentClient;
 		bool requestInProcess;

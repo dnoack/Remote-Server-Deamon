@@ -39,6 +39,7 @@ class UdsComClient{
 
 
 		int sendData(string* data);
+		int sendData(const char* data);
 
 
 		string* getPluginName(){return pluginName;}

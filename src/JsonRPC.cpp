@@ -428,7 +428,7 @@ bool JsonRPC::hasResultOrError()
 }
 
 
-char* JsonRPC::generateRequest(Value &method, Value &params, Value &id)
+const char* JsonRPC::generateRequest(Value &method, Value &params, Value &id)
 {
 	Value* oldMethod;
 
@@ -456,13 +456,13 @@ char* JsonRPC::generateRequest(Value &method, Value &params, Value &id)
 
 	requestDOM->Accept(*jsonWriter);
 
-	return (char*)sBuffer.GetString();
+	return sBuffer.GetString();
 }
 
 
 
 
-char* JsonRPC::generateResponse(Value &id, Value &response)
+const char* JsonRPC::generateResponse(Value &id, Value &response)
 {
 	//clear buffer
 	Value* oldResult;
@@ -477,12 +477,12 @@ char* JsonRPC::generateResponse(Value &id, Value &response)
 	//write DOM to sBuffer
 	responseDOM->Accept(*jsonWriter);
 
-	return (char*)sBuffer.GetString();
+	return sBuffer.GetString();
 }
 
 
 
-char* JsonRPC::generateResponseError(Value &id, int code, const char* msg)
+const char* JsonRPC::generateResponseError(Value &id, int code, const char* msg)
 {
 	Value data;
 
@@ -502,7 +502,7 @@ char* JsonRPC::generateResponseError(Value &id, int code, const char* msg)
 
 	errorDOM->Accept(*jsonWriter);
 
-	return (char*)sBuffer.GetString();
+	return sBuffer.GetString();
 }
 
 

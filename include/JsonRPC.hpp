@@ -111,9 +111,9 @@ class JsonRPC {
 		bool hasResultOrError();
 
 
-		char* generateRequest(Value &method, Value &params, Value &id);
-		char* generateResponse(Value &id, Value &response);
-		char* generateResponseError(Value &id, int code, const char* msg);
+		const char* generateRequest(Value &method, Value &params, Value &id);
+		const char* generateResponse(Value &id, Value &response);
+		const char* generateResponseError(Value &id, int code, const char* msg);
 
 		Document* getRequestDOM() { return this->inputDOM;}
 		Document* getResponseDOM() { return this->responseDOM;}
@@ -151,8 +151,7 @@ class JsonRPC {
 
 		//result from the processed function
 		Value result;
-		char* responseMsg;
-		char* error;
+		const char* error;
 
 
 		void generateRequestDOM(Document &dom);

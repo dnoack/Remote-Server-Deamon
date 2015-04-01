@@ -83,6 +83,7 @@ void TcpWorker::thread_work(int socket)
 						}
 						catch(PluginError &e)
 						{
+							delete msg;
 							errorResponse = new string(e.get());
 							errorMsg = new RsdMsg(0, errorResponse);
 							tcp_send(errorMsg);

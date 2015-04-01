@@ -59,7 +59,7 @@ UdsRegWorker::~UdsRegWorker()
 
 void UdsRegWorker::thread_work(int socket)
 {
-	char* response = NULL;
+	const char* response = NULL;
 	worker_thread_active = true;
 
 	StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
@@ -180,7 +180,7 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 }
 
 
-char* UdsRegWorker::handleAnnounceMsg(string* request)
+const char* UdsRegWorker::handleAnnounceMsg(string* request)
 {
 	Value* currentParam = NULL;
 	Value result;
@@ -239,7 +239,7 @@ void UdsRegWorker::cleanup()
 }
 
 
-char* UdsRegWorker::createRegisterACKMsg()
+const char* UdsRegWorker::createRegisterACKMsg()
 {
 	Value result;
 	Value* id;
