@@ -60,15 +60,15 @@ class UdsRegWorker : public WorkerInterface, WorkerThreads{
 
 		//following methods are part of the registration process (in this order)
 
-		char* handleAnnounceMsg(string* request);
+		const char* handleAnnounceMsg(string* request);
 
 		//TODO: create announceACK, currently handled by handleAnnounceMsg
 
 		bool handleRegisterMsg(string* request);
 
-		char* createRegisterACKMsg();
+		const char* createRegisterACKMsg();
 
-		char* handleActiveMsg(string* request);
+		const char* handleActiveMsg(string* request);
 
 
 };

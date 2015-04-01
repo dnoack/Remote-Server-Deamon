@@ -55,6 +55,10 @@ int UdsComClient::sendData(string* data)
 }
 
 
+int UdsComClient::sendData(const char* data)
+{
+	return send(currentSocket, data, strlen(data), 0);
+}
 
 
 void UdsComClient::routeBack(RsdMsg* msg)
