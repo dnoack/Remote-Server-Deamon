@@ -12,6 +12,11 @@
 #include "Utils.h"
 
 
+unsigned short ConnectionContext::contextCounter;
+pthread_mutex_t ConnectionContext::contextCounterMutex;
+int ConnectionContext::indexLimit;
+int ConnectionContext::currentIndex;
+
 
 
 ConnectionContext::ConnectionContext(int tcpSocket)
@@ -27,6 +32,8 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	jsonInput = NULL;
 	identity = NULL;
 	jsonReturn = NULL;
+	contextNumber = getNewContextNumber();
+	//TODO: if no number is free, tcpworker has to send an error and close the connection
 	json = new JsonRPC();
 	tcpConnection = new TcpWorker(this, tcpSocket);
 
@@ -39,6 +46,20 @@ ConnectionContext::~ConnectionContext()
 	delete tcpConnection;
 	delete json;
 	pthread_mutex_destroy(&rIPMutex);
+}
+
+
+void ConnectionContext::init()
+{
+	pthread_mutex_init(&contextCounterMutex, NULL);
+	contextCounter = 1;
+	indexLimit = numeric_limits<short>::max();
+}
+
+
+void ConnectionContext::destroy()
+{
+	pthread_mutex_destroy(&contextCounterMutex);
 }
 
 
@@ -191,6 +212,29 @@ char* ConnectionContext::getMethodNamespace()
 
 	return methodNamespace;
 
+}
+
+
+short ConnectionContext::getNewContextNumber()
+{
+	short result = 0;
+	pthread_mutex_lock(&contextCounterMutex);
+
+	if(contextCounter < NUMBER_OF_CONNECTIONS)
+	{
+		if(!(currentIndex < indexLimit))
+			currentIndex = 1;
+
+		result = currentIndex;
+		++currentIndex;
+	}
+	else
+	{
+		result = -1;
+	}
+
+	pthread_mutex_unlock(&contextCounterMutex);
+	return result;
 }
 
 

@@ -11,6 +11,7 @@
 #include "Utils.h"
 
 
+
 int RSD::connection_socket;
 struct sockaddr_in RSD::address;
 socklen_t RSD::addrlen;
@@ -41,8 +42,12 @@ RSD::RSD()
 	setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag));
 	bind(connection_socket, (struct sockaddr*)&address, sizeof(address));
 
+
 	//create Registry Server
 	regServer = new UdsRegServer(REGISTRY_PATH, sizeof(REGISTRY_PATH));
+
+	//init static part of ConnectionContext
+	ConnectionContext::init();
 }
 
 
@@ -56,6 +61,7 @@ RSD::~RSD()
 	if(accepter != 0)
 		pthread_cancel(accepter);
 
+	ConnectionContext::destroy();
 	pthread_mutex_destroy(&pLmutex);
 	pthread_mutex_destroy(&connectionContextListMutex);
 }

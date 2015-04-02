@@ -10,9 +10,12 @@
 
 #include <list>
 #include <pthread.h>
+#include <limits>
 
 #include "TcpWorker.hpp"
 #include "UdsComClient.hpp"
+
+#define NUMBER_OF_CONNECTIONS 10
 
 
 
@@ -27,6 +30,10 @@ class ConnectionContext
 		virtual UdsComClient* findUdsConnection(int pluginNumber);
 
 		virtual void processMsg(RsdMsg* msg);
+
+		static void init();
+		static void destroy();
+
 
 		void handleRequest(RsdMsg* msg);
 
@@ -53,6 +60,8 @@ class ConnectionContext
 		int tcp_send(RsdMsg* msg);
 		int tcp_send(const char* msg);
 
+		short getContextNumber(){return contextNumber;}
+
 
 
 
@@ -75,12 +84,20 @@ class ConnectionContext
 		string* jsonInput;
 		string* identity;
 		string* jsonReturn;
+		short contextNumber;
 
 
+		static unsigned short contextCounter;
+		static int currentIndex;
+		static int indexLimit;
 
 		void setRequestInProcess();
 		void setRequestNotInProcess();
 		char* getMethodNamespace();
+
+		static pthread_mutex_t contextCounterMutex;
+
+		static short getNewContextNumber();
 
 
 };
