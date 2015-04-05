@@ -15,6 +15,7 @@
 
 #include <map>
 #include <vector>
+#include <list>
 
 
 //rapdijson includes
@@ -85,8 +86,11 @@ class JsonRPC {
 
 		bool isResponse();
 
+		bool isNotification();
+
 
 		Document* parse(string* msg);
+		list<string*>* splitMsg(string* msg);
 
 		Value* getParam(const char* name);
 		Value* tryTogetParam(const char* name);

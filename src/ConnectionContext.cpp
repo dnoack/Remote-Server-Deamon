@@ -45,6 +45,7 @@ ConnectionContext::~ConnectionContext()
 {
 	delete tcpConnection;
 	delete json;
+	//TODO: decrease context counter
 	pthread_mutex_destroy(&rIPMutex);
 }
 
@@ -52,7 +53,8 @@ ConnectionContext::~ConnectionContext()
 void ConnectionContext::init()
 {
 	pthread_mutex_init(&contextCounterMutex, NULL);
-	contextCounter = 1;
+	contextCounter = 0;
+	currentIndex = 1;
 	indexLimit = numeric_limits<short>::max();
 }
 
@@ -102,6 +104,7 @@ void ConnectionContext::handleRequest(RsdMsg* msg)
 	char* methodNamespace = NULL;
 	id = json->tryTogetId();
 
+
 	methodNamespace = getMethodNamespace();
 	currentClient = findUdsConnection(methodNamespace);
 	delete[] methodNamespace;
@@ -115,6 +118,7 @@ void ConnectionContext::handleRequest(RsdMsg* msg)
 	//BAD
 	else
 	{
+
 		error = json->generateResponseError(*id, -33011, "Plugin not found.");
 		setRequestNotInProcess();
 		throw PluginError(error);
@@ -215,6 +219,25 @@ char* ConnectionContext::getMethodNamespace()
 }
 
 
+const char* ConnectionContext::generateIdentificationMsg(int contextNumber)
+{
+	Value method;
+	Value params;
+	Value* id = NULL;
+	const char* msg = NULL;
+	Document* requestDOM = json->getRequestDOM();
+
+	method.SetString("setIdentification", requestDOM->GetAllocator());
+	params.SetObject();
+	params.AddMember("contextNumber", contextNumber, requestDOM->GetAllocator());
+
+
+	msg = json->generateRequest(method, params, *id);
+
+	return msg;
+}
+
+
 short ConnectionContext::getNewContextNumber()
 {
 	short result = 0;
@@ -227,6 +250,7 @@ short ConnectionContext::getNewContextNumber()
 
 		result = currentIndex;
 		++currentIndex;
+		//TODO: increase contextCOunter
 	}
 	else
 	{
@@ -317,6 +341,7 @@ UdsComClient* ConnectionContext::findUdsConnection(char* pluginName)
 			if(currentComClient->tryToconnect())
 			{
 				udsConnections.push_back(currentComClient);
+				currentComClient->sendData(generateIdentificationMsg(contextNumber));
 			}
 			else
 			{

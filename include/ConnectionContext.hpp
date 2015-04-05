@@ -94,10 +94,12 @@ class ConnectionContext
 		void setRequestInProcess();
 		void setRequestNotInProcess();
 		char* getMethodNamespace();
+		const char* generateIdentificationMsg(int contextNumber);
 
 		static pthread_mutex_t contextCounterMutex;
 
 		static short getNewContextNumber();
+
 
 
 };

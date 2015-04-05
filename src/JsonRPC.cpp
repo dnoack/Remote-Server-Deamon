@@ -20,6 +20,7 @@ Document* JsonRPC::parse(string* msg)
 		inputDOM->Parse(msg->c_str());
 		if(!inputDOM->HasParseError())
 			result = inputDOM;
+
 		else
 		{
 			nullId.SetInt(0);
@@ -30,6 +31,36 @@ Document* JsonRPC::parse(string* msg)
 
 	return result;
 }
+
+
+list<string*>* JsonRPC::splitMsg(string* msg)
+{
+
+	string* splitMsg = NULL;
+	int splitPos = 0;
+	list<string*>* msgList = new list<string*>();
+
+		inputDOM->Parse(msg->c_str());
+
+		if(!inputDOM->HasParseError())
+			msgList->push_front(msg);
+
+		else
+		{
+			while(inputDOM->GetParseError() == kParseErrorDocumentRootNotSingular)
+			{
+				splitPos = inputDOM->GetErrorOffset();
+				splitMsg = new string(*msg, 0, splitPos);
+				msg->erase(0,splitPos);
+
+				msgList->push_front(splitMsg);
+				inputDOM->Parse(msg->c_str());
+			}
+			msgList->push_front(new string(*msg));
+		}
+	return msgList;
+}
+
 
 
 Value* JsonRPC::getParam(const char* name)
@@ -213,6 +244,24 @@ bool JsonRPC::isResponse()
 		result = false;
 		throw;
 	}
+	return result;
+}
+
+
+bool JsonRPC::isNotification()
+{
+	bool result = false;
+
+	try
+	{
+		checkJsonRpc_RequestFormat();
+		result = true;
+	}
+	catch(PluginError &e)
+	{
+		result = false;
+	}
+
 	return result;
 }
 
@@ -430,8 +479,6 @@ bool JsonRPC::hasResultOrError()
 
 const char* JsonRPC::generateRequest(Value &method, Value &params, Value &id)
 {
-	Value* oldMethod;
-
 	sBuffer.Clear();
 	jsonWriter->Reset(sBuffer);
 
@@ -441,9 +488,10 @@ const char* JsonRPC::generateRequest(Value &method, Value &params, Value &id)
 	if(requestDOM->HasMember("id"))
 		requestDOM->RemoveMember("id");
 
-	//method swap
-	oldMethod = &((*requestDOM)["method"]);
-	oldMethod->Swap(method);
+	//we always got a method in a request
+	requestDOM->RemoveMember("method");
+	requestDOM->AddMember("method", method, requestDOM->GetAllocator());
+
 
 	//params insert as object (params is optional)
 	if(&params != NULL)
