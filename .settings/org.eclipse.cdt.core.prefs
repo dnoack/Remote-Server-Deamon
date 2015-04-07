@@ -18,6 +18,11 @@ environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432/CXXFLAGS/ope
 environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432/CXXFLAGS/value=${CFLAGS}
 environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432/append=true
 environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432/appendContributed=true
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165/CFLAGS/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165/CFLAGS/operation=append
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165/CFLAGS/value=-I../include -I"${HOME}/libs/rapidjson/include/rapidjson"-I"${HOME}/cpputest-3.6/include/CppUTest"-I"${HOME}/cpputest-3.6/include/CppUTestExt"
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165/append=true
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165/appendContributed=true
 environment/project/cdt.managedbuild.config.gnu.exe.release.512927165/CFLAGS/delimiter=\:
 environment/project/cdt.managedbuild.config.gnu.exe.release.512927165/CFLAGS/operation=append
 environment/project/cdt.managedbuild.config.gnu.exe.release.512927165/CFLAGS/value=-I../include -I"${HOME}/libs/rapidjson/include/rapidjson"-I"${HOME}/cpputest-3.6/include/CppUTest"-I"${HOME}/cpputest-3.6/include/CppUTestExt"
