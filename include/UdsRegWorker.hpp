@@ -19,13 +19,14 @@
 
 
 #include "JsonRPC.hpp"
+#include "RsdMsg.h"
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
 #include "Plugin.hpp"
 
 
 
-class UdsRegWorker : public WorkerInterface, WorkerThreads{
+class UdsRegWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
 
 	public:
 		UdsRegWorker(int socket);
