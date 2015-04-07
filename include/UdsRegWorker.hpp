@@ -39,41 +39,32 @@ class UdsRegWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
 
 	private:
 
-		JsonRPC* json;
-		Plugin* plugin;
-		string* pluginName;
-		string* request;
-		string* response;
-
-
-		int currentSocket;
-
-		enum REG_STATE{NOT_ACTIVE, ANNOUNCED, REGISTERED, ACTIVE, BROKEN};
-		unsigned int state;
-
-
 		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);
 
 		virtual void thread_work(int socket);
 
 
+		JsonRPC* json;
+		Plugin* plugin;
+		string* pluginName;
+		string* request;
+		string* response;
+		int currentSocket;
+		enum REG_STATE{NOT_ACTIVE, ANNOUNCED, REGISTERED, ACTIVE, BROKEN};
+		unsigned int state;
+
+
 		void cleanup();
 
 		//following methods are part of the registration process (in this order)
-
 		const char* handleAnnounceMsg(string* request);
 
 		//TODO: create announceACK, currently handled by handleAnnounceMsg
-
 		bool handleRegisterMsg(string* request);
-
 		const char* createRegisterACKMsg();
-
 		const char* handleActiveMsg(string* request);
 
-
 };
-
 
 
 #endif /* INCLUDE_UDSREGWORKER_HPP_ */
