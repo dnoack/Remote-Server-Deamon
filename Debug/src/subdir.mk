@@ -41,7 +41,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -DDEBUG -I/home/dnoack/libs/rapidjson/include/rapidjson -I"/home/dnoack/workspace/RSD-and-Plugin-lib/include" -O3 -Wall -c -fmessage-length=0 -I../include -I"/home/dnoack/libs/rapidjson/include/rapidjson"-I"/home/dnoack/cpputest-3.6/include/CppUTest"-I"/home/dnoack/cpputest-3.6/include/CppUTestExt" -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	g++ -I/home/dnoack/libs/rapidjson/include/rapidjson -I"/home/dnoack/workspace/RSD-and-Plugin-lib/include" -O3 -Wall -c -fmessage-length=0 ${CXXFLAGS} -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
