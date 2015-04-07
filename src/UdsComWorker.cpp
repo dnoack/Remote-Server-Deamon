@@ -15,7 +15,6 @@
 UdsComWorker::UdsComWorker(int socket,  UdsComClient* comClient)
 {
 
-	this->bufferOut = NULL;
 	this->jsonReturn = NULL;
 	this->jsonInput = NULL;
 	this->identity = NULL;
@@ -24,7 +23,6 @@ UdsComWorker::UdsComWorker(int socket,  UdsComClient* comClient)
 	this->deletable = false;
 
 	StartWorkerThread(currentSocket);
-
 }
 
 
@@ -41,7 +39,7 @@ UdsComWorker::~UdsComWorker()
 	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
 
-	cleanupReceiveQueue(this);
+	deleteReceiveQueue();
 
 }
 
@@ -135,9 +133,3 @@ void UdsComWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 	}
 }
 
-
-void UdsComWorker::cleanupReceiveQueue(void* arg)
-{
-	UdsComWorker* worker = static_cast<UdsComWorker*>(arg);
-	worker->deleteReceiveQueue();
-}

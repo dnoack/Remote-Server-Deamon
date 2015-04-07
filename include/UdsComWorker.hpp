@@ -39,12 +39,10 @@ class UdsComWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
 		UdsComWorker(int socket, UdsComClient* comClient);
 		~UdsComWorker();
 
-		static void cleanupReceiveQueue(void* arg);
 
 	private:
 
 		//variables for worker
-		char* bufferOut;
 		string* jsonInput;
 		string* identity;
 		string* jsonReturn;
@@ -61,9 +59,7 @@ class UdsComWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
 
 		virtual void thread_work(int socket);
 
-
 };
-
 
 
 #endif /* INCLUDE_UDSWORKER_HPP_ */
