@@ -21,8 +21,10 @@
 
 
 #include "JsonRPC.hpp"
+#include "RsdMsg.h"
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
+
 
 
 using namespace std;
@@ -31,7 +33,7 @@ using namespace std;
 class UdsComClient;
 
 
-class UdsComWorker : public WorkerInterface, WorkerThreads{
+class UdsComWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
 
 	public:
 		UdsComWorker(int socket, UdsComClient* comClient);

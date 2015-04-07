@@ -12,7 +12,7 @@
 #include <string>
 #include <pthread.h>
 #include "signal.h"
-#include "RsdMsg.h"
+
 
 #define BUFFER_SIZE 1024
 
@@ -20,9 +20,11 @@
 using namespace std;
 
 
+template <class TMsg>
 class WorkerInterface{
 
 	public:
+
 		WorkerInterface()
 		{
 			pthread_mutex_init(&rQmutex, NULL);
@@ -46,7 +48,7 @@ class WorkerInterface{
 	protected:
 
 		//receivequeue
-		list<RsdMsg*> receiveQueue;
+		list<TMsg*> receiveQueue;
 		pthread_mutex_t rQmutex;
 
 		char receiveBuffer[BUFFER_SIZE];
@@ -66,7 +68,8 @@ class WorkerInterface{
 
 		void deleteReceiveQueue()
 		{
-			list<RsdMsg*>::iterator i = receiveQueue.begin();
+			typename list<TMsg*>::iterator i;
+			i = receiveQueue.begin();
 			while(i != receiveQueue.end())
 			{
 				delete *i;
@@ -76,7 +79,7 @@ class WorkerInterface{
 
 		void popReceiveQueue()
 		{
-			RsdMsg* lastElement = NULL;
+			TMsg* lastElement = NULL;
 			pthread_mutex_lock(&rQmutex);
 				lastElement = receiveQueue.back();
 				receiveQueue.pop_back();
@@ -94,7 +97,7 @@ class WorkerInterface{
 		}
 
 
-		void pushReceiveQueue(RsdMsg* data)
+		void pushReceiveQueue(TMsg* data)
 		{
 			pthread_mutex_lock(&rQmutex);
 				receiveQueue.push_back(data);

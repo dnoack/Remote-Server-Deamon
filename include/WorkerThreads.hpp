@@ -55,7 +55,11 @@ public:
 
    }
    /**Destructor*/
-   virtual ~WorkerThreads() {/* empty */}
+   virtual ~WorkerThreads()
+   {
+	   worker_thread_active = false;
+	   listen_thread_active = false;
+   }
 
    /**
    Starts the worker thread, which start executing the thread_work() function.
@@ -126,6 +130,7 @@ protected:
 
 
 private:
+
 	/** Creates a new worker thread and starts executing thread_work within it.*/
    static void* thread_workEntryFunc(void * This)
    {
@@ -135,6 +140,8 @@ private:
 	   mtc->thread_work(socket);
 	   return NULL;
    }
+
+
    /** Creates a new listener thread and starts executing thread_listen within it.*/
    static void* thread_listenerEntryFunc(void* This)
    {
@@ -157,8 +164,6 @@ private:
 
    argStruct tempStruct;
 };
-
-
 
 
 #endif /* INCLUDE_WORKERTHREADS_HPP_ */

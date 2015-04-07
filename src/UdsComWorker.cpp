@@ -32,8 +32,6 @@ UdsComWorker::UdsComWorker(int socket,  UdsComClient* comClient)
 
 UdsComWorker::~UdsComWorker()
 {
-	worker_thread_active = false;
-	listen_thread_active = false;
 
 	close(currentSocket);
 

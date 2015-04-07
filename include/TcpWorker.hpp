@@ -23,16 +23,15 @@
 
 #include "WorkerInterface.hpp"
 #include <WorkerThreads.hpp>
+#include "RsdMsg.h"
 
 
 class ConnectionContext;
 class UdsComClient;
 
 
-#define BUFFER_SIZE 1024
 
-
-class TcpWorker : public WorkerInterface, public WorkerThreads{
+class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads{
 
 	public:
 		TcpWorker(ConnectionContext* context, int socket);
@@ -45,21 +44,7 @@ class TcpWorker : public WorkerInterface, public WorkerThreads{
 
 	private:
 		ConnectionContext* context;
-
-
-		//variables for listener
-		bool listen_thread_active;
-		char receiveBuffer[BUFFER_SIZE];
-		int recvSize;
-
-
-		//variables for worker
-		bool worker_thread_active;
 		char* bufferOut;
-
-
-		//not shared, more common
-		pthread_t lthread;
 		int currentSocket;
 
 

@@ -16,11 +16,6 @@
 
 TcpWorker::TcpWorker(ConnectionContext* context, int socket)
 {
-	memset(receiveBuffer, '\0', BUFFER_SIZE);
-	this->listen_thread_active = false;
-	this->worker_thread_active = false;
-	this->recvSize = 0;
-	this->lthread = 0;
 	this->bufferOut = NULL;
 	this->context = context;
 	this->currentSocket = socket;
@@ -34,8 +29,6 @@ TcpWorker::TcpWorker(ConnectionContext* context, int socket)
 
 TcpWorker::~TcpWorker()
 {
-	listen_thread_active = false;
-	worker_thread_active = false;
 
 	pthread_cancel(getListener());
 	pthread_cancel(getWorker());
@@ -57,7 +50,7 @@ void TcpWorker::thread_work(int socket)
 
 
 	//start the listenerthread and remember the theadId of it
-	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
+	StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
 
 	configSignals();
 
