@@ -51,6 +51,7 @@ UdsRegWorker::~UdsRegWorker()
 
 	delete json;
 
+	cleanupReceiveQueue(this);
 	cleanup();
 
 }
@@ -66,7 +67,6 @@ void UdsRegWorker::thread_work(int socket)
 
 	configSignals();
 
-	pthread_cleanup_push(&UdsRegWorker::cleanupReceiveQueue, this);
 
 	while(worker_thread_active)
 	{
@@ -120,7 +120,6 @@ void UdsRegWorker::thread_work(int socket)
 				}
 			break;
 
-
 			default:
 				dyn_print("UdsRegWorker: unkown signal \n");
 				break;
@@ -128,7 +127,6 @@ void UdsRegWorker::thread_work(int socket)
 	}
 
 	close(currentSocket);
-	pthread_cleanup_pop(0);
 }
 
 

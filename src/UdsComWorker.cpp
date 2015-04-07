@@ -40,6 +40,9 @@ UdsComWorker::~UdsComWorker()
 
 	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
+
+	cleanupReceiveQueue(this);
+
 }
 
 
@@ -48,8 +51,6 @@ void UdsComWorker::thread_work(int socket)
 {
 	RsdMsg* msg = NULL;
 	worker_thread_active = true;
-
-	pthread_cleanup_push(&UdsComWorker::cleanupReceiveQueue, this);
 
 	//start the listenerthread and remember the theadId of it
 	StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
@@ -79,7 +80,6 @@ void UdsComWorker::thread_work(int socket)
 		}
 	}
 	close(currentSocket);
-	pthread_cleanup_pop(0);
 }
 
 
