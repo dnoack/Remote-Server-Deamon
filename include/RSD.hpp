@@ -145,6 +145,7 @@ class RSD{
 
 
 		static bool showAllRegisteredPlugins(Value &params, Value &result);
+		static bool showAllKnownFunctions(Value &params, Value &result);
 };
 
 

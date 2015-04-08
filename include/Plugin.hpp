@@ -40,6 +40,7 @@ class Plugin{
 		string* getName(){return this->name;}
 		string* getUdsFilePath(){return this->udsFilePath;}
 		int getPluginNumber(){return this->pluginNumber;}
+		list<string*>* getMethods(){return &(this->methods);}
 
 
 	private:

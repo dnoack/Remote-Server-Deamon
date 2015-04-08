@@ -54,6 +54,8 @@ RSD::RSD()
 
 	funcMapPointer = &RSD::showAllRegisteredPlugins;
 	funcMap.insert(pair<const char*, afptr>("RSD.showAllRegisteredPlugins", funcMapPointer));
+	funcMapPointer = &RSD::showAllKnownFunctions;
+	funcMap.insert(pair<const char*, afptr>("RSD.showAllKownFunctions", funcMapPointer));
 }
 
 
@@ -68,6 +70,8 @@ RSD::~RSD()
 		pthread_cancel(accepter);
 
 	ConnectionContext::destroy();
+	funcMap.clear();
+
 	pthread_mutex_destroy(&pLmutex);
 	pthread_mutex_destroy(&connectionContextListMutex);
 }
@@ -278,16 +282,53 @@ bool RSD::showAllRegisteredPlugins(Value &params, Value &result)
 	{
 		tempValue = new Value((*plugin)->getName()->c_str(), dom.GetAllocator());
 		result.PushBack(*tempValue, dom.GetAllocator());
+		delete tempValue;
 		++plugin;
 	}
 	return true;
 }
 
 
+bool RSD::showAllKnownFunctions(Value &params, Value &result)
+{
+	Value* pluginName = NULL;
+	Value* tempValue = NULL;
+	Value tempArray;
+	Document dom;
+	list<string*>* methods = NULL;
+	list<string*>::iterator method;
+	list<Plugin*>::iterator plugin = plugins.begin();
+	result.SetObject();
+
+
+	while(plugin != plugins.end())
+	{
+		pluginName = new Value((*plugin)->getName()->c_str(), dom.GetAllocator());
+		methods = (*plugin)->getMethods();
+		method = methods->begin();
+		tempArray.SetArray();
+
+		while(method != methods->end())
+		{
+			tempValue = new Value((*method)->c_str(), dom.GetAllocator());
+			tempArray.PushBack(*tempValue, dom.GetAllocator());
+			delete tempValue;
+			++method;
+		}
+		result.AddMember(*pluginName, tempArray, dom.GetAllocator());
+		delete pluginName;
+		++plugin;
+
+	}
+
+	return true;
+
+}
+
+
 
 void RSD::start()
 {
-	int count = 0;
 	regServer->start();
 
 	//start comListener
@@ -301,7 +342,6 @@ void RSD::start()
 		//check TCP/workers
 		this->checkForDeletableConnections();
 		//RsdMsg::printCounters();
-		count++;
 	}
 	while(rsdActive);
 

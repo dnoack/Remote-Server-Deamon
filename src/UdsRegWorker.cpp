@@ -156,7 +156,7 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 		}
 		else if(FD_ISSET(socket, &rfds))
 		{
-			recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, 0); //MSG_DONTWAIT for nonblocking
+			recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, 0);
 			//data received
 			if(recvSize > 0)
 			{
