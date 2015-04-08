@@ -41,6 +41,8 @@ class ConnectionContext
 
 		void handleTrash(RsdMsg* msg);
 
+		void handleRSDCommand(RsdMsg* msg);
+
 		//A connectioNContext is deletable if there is no working tcp part
 		bool isDeletable();
 		bool isRequestInProcess();

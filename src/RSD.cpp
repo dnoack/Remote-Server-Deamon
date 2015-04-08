@@ -23,6 +23,9 @@ pthread_mutex_t RSD::pLmutex;
 list<ConnectionContext*> RSD::connectionContextList;
 pthread_mutex_t RSD::connectionContextListMutex;
 
+map<const char*, afptr, cmp_keys> RSD::funcMap;
+afptr RSD::funcMapPointer;
+
 
 
 RSD::RSD()
@@ -48,6 +51,9 @@ RSD::RSD()
 
 	//init static part of ConnectionContext
 	ConnectionContext::init();
+
+	funcMapPointer = &RSD::showAllRegisteredPlugins;
+	funcMap.insert(pair<const char*, afptr>("RSD.showAllRegisteredPlugins", funcMapPointer));
 }
 
 
@@ -130,7 +136,6 @@ bool RSD::deletePlugin(string* name)
 	string* currentName = NULL;
 
 	pthread_mutex_lock(&pLmutex);
-
 	list<Plugin*>::iterator i = plugins.begin();
 	while(i != plugins.end() && found == false)
 	{
@@ -244,6 +249,38 @@ void RSD::checkForDeletableConnections()
 			++connection;
 	}
 	pthread_mutex_unlock(&connectionContextListMutex);
+}
+
+
+bool RSD::executeFunction(Value &method, Value &params, Value &result)
+{
+	try{
+		funcMapPointer = funcMap[(char*)method.GetString()];
+		if(funcMapPointer == NULL)
+			throw PluginError("Function not found.",  __FILE__, __LINE__);
+		else
+			return (*funcMapPointer)(params, result);
+	}
+	catch(const PluginError &e)
+	{
+		throw;
+	}
+}
+
+
+bool RSD::showAllRegisteredPlugins(Value &params, Value &result)
+{
+	Value* tempValue = NULL;
+	Document dom;
+	list<Plugin*>::iterator plugin = plugins.begin();
+	result.SetArray();
+	while(plugin != plugins.end())
+	{
+		tempValue = new Value((*plugin)->getName()->c_str(), dom.GetAllocator());
+		result.PushBack(*tempValue, dom.GetAllocator());
+		++plugin;
+	}
+	return true;
 }
 
 

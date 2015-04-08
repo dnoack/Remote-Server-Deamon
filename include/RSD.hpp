@@ -8,6 +8,14 @@
 #ifndef INCLUDE_RSD_HPP_
 #define INCLUDE_RSD_HPP_
 
+
+#define REGISTRY_PATH "/tmp/RsdRegister.uds"
+#define TCP_PORT 1234
+#define MAX_CLIENTS 20
+#define MAIN_SLEEP_TIME 3 //sleep time for main loop
+
+
+#include <map>
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -17,9 +25,13 @@
 #include <unistd.h>
 #include <pthread.h>
 
+#include "document.h"
+#include "writer.h"
+
 #include "UdsRegServer.hpp"
 #include "ConnectionContext.hpp"
 #include "Plugin.hpp"
+#include "Plugin_Error.h"
 
 
 
@@ -28,6 +40,19 @@
 #define MAX_CLIENTS 20
 #define MAIN_SLEEP_TIME 3 //sleep time for main loop
 
+using namespace rapidjson;
+
+class RSD;
+
+typedef bool (*afptr)(Value&, Value&);
+
+struct cmp_keys
+{
+	bool operator()(char const* input, char const* key)
+	{
+		return strcmp(input, key) < 0;
+	}
+};
 
 
 class RSD{
@@ -87,12 +112,16 @@ class RSD{
 
 		static void deleteAllPlugins();
 
+		static bool executeFunction(Value &method, Value &params, Value &result);
+
 	private:
 
 		bool rsdActive;
 		int optionflag;
 		pthread_t accepter;
 		UdsRegServer* regServer;
+
+
 		static bool accept_thread_active;
 
 
@@ -106,10 +135,20 @@ class RSD{
 		static list<ConnectionContext*> connectionContextList;
 		static pthread_mutex_t connectionContextListMutex;
 
+		static map<const char*, afptr, cmp_keys> funcMap;
+		static afptr funcMapPointer;
+
+
 
 		static void pushWorkerList(ConnectionContext* newWorker);
 		static void* accept_connections(void*);
+
+
+		static bool showAllRegisteredPlugins(Value &params, Value &result);
 };
+
+
+
 
 
 

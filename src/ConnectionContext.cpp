@@ -45,7 +45,9 @@ ConnectionContext::~ConnectionContext()
 {
 	delete tcpConnection;
 	delete json;
-	//TODO: decrease context counter
+	pthread_mutex_lock(&contextCounterMutex);
+	--contextCounter;
+	pthread_mutex_unlock(&contextCounterMutex);
 	pthread_mutex_destroy(&rIPMutex);
 }
 
@@ -106,23 +108,39 @@ void ConnectionContext::handleRequest(RsdMsg* msg)
 
 
 	methodNamespace = getMethodNamespace();
-	currentClient = findUdsConnection(methodNamespace);
-	delete[] methodNamespace;
 
-	//OK
-	if(currentClient != NULL)
+	//Msg for RSD
+	if(strncmp(methodNamespace, "RSD", strlen(methodNamespace))== 0 )
 	{
-		requests.push_back(msg);
-		currentClient->sendData(msg->getContent());
+		handleRSDCommand(msg);
+		delete[] methodNamespace;
+		delete msg;
+		setRequestNotInProcess();
 	}
-	//BAD
+	//Msg for a Plugin
 	else
 	{
+		currentClient = findUdsConnection(methodNamespace);
+		delete[] methodNamespace;
 
-		error = json->generateResponseError(*id, -33011, "Plugin not found.");
-		setRequestNotInProcess();
-		throw PluginError(error);
+		//OK
+		if(currentClient != NULL)
+		{
+			requests.push_back(msg);
+			currentClient->sendData(msg->getContent());
+		}
+		//BAD
+		else
+		{
+
+			error = json->generateResponseError(*id, -33011, "Plugin not found.");
+			setRequestNotInProcess();
+			throw PluginError(error);
+		}
 	}
+
+
+
 }
 
 
@@ -156,6 +174,24 @@ void ConnectionContext::handleResponse(RsdMsg* msg)
 void ConnectionContext::handleTrash(RsdMsg* msg)
 {
 
+}
+
+
+void ConnectionContext::handleRSDCommand(RsdMsg* msg)
+{
+	Value* method = json->tryTogetMethod();
+	Value* params = NULL;
+	Value* id = json->tryTogetId();
+	Value resultValue;
+	const char* result = NULL;
+
+	RSD::executeFunction(*method, *params, resultValue);
+
+	//generate json rsponse msg via jsonRPC with resultValue !
+	result = json->generateResponse(*id, resultValue);
+
+	//send the generated msg back to client
+	tcp_send(result);
 }
 
 
@@ -250,7 +286,7 @@ short ConnectionContext::getNewContextNumber()
 
 		result = currentIndex;
 		++currentIndex;
-		//TODO: increase contextCOunter
+		++contextCounter;
 	}
 	else
 	{
