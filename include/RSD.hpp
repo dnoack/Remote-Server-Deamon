@@ -120,6 +120,7 @@ class RSD{
 		int optionflag;
 		pthread_t accepter;
 		UdsRegServer* regServer;
+		static Document dom;
 
 
 		static bool accept_thread_active;

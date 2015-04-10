@@ -25,6 +25,7 @@ pthread_mutex_t RSD::connectionContextListMutex;
 
 map<const char*, afptr, cmp_keys> RSD::funcMap;
 afptr RSD::funcMapPointer;
+Document RSD::dom;
 
 
 
@@ -275,7 +276,6 @@ bool RSD::executeFunction(Value &method, Value &params, Value &result)
 bool RSD::showAllRegisteredPlugins(Value &params, Value &result)
 {
 	Value* tempValue = NULL;
-	Document dom;
 	list<Plugin*>::iterator plugin = plugins.begin();
 	result.SetArray();
 	while(plugin != plugins.end())
@@ -294,7 +294,6 @@ bool RSD::showAllKnownFunctions(Value &params, Value &result)
 	Value* pluginName = NULL;
 	Value* tempValue = NULL;
 	Value tempArray;
-	Document dom;
 	list<string*>* methods = NULL;
 	list<string*>::iterator method;
 	list<Plugin*>::iterator plugin = plugins.begin();
