@@ -74,29 +74,33 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 
 	try
 	{
+		printf("Stacksize: %d", requests.size());
 		//parse to dom with jsonrpc
 		json->parse(msg->getContent());
 
 		//is it a request ?
 		if(json->isRequest())
 		{
+			printf("Request\n");
 			setRequestInProcess();
 			handleRequest(msg);
 		}
-		//or is it a response ?
-		else if(json->isResponse())
+		//or is it a response and is a requestInProcess ?
+		else if(json->isResponse() && isRequestInProcess())
 		{
+			printf("Response in process\n");
 			handleResponse(msg);
 		}
-		//trash ?
+		//trash or response msg but there is no RequestInProcess
 		else
 		{
-			handleResponse(msg);
+			printf("Trash: %s \n", msg->getContent()->c_str());
+			handleTrash(msg);
 		}
 	}
 	catch(PluginError &e)
 	{
-		printf("%s\n", e.get());
+		printf("Exception: %s\n", e.get());
 		throw;
 	}
 }
@@ -106,8 +110,6 @@ void ConnectionContext::handleRequest(RsdMsg* msg)
 {
 	char* methodNamespace = NULL;
 	id = json->tryTogetId();
-
-
 	methodNamespace = getMethodNamespace();
 
 	//Msg for RSD
@@ -133,15 +135,11 @@ void ConnectionContext::handleRequest(RsdMsg* msg)
 		//BAD
 		else
 		{
-
 			error = json->generateResponseError(*id, -33011, "Plugin not found.");
 			setRequestNotInProcess();
 			throw PluginError(error);
 		}
 	}
-
-
-
 }
 
 
@@ -159,7 +157,6 @@ void ConnectionContext::handleResponse(RsdMsg* msg)
 		delete lastMsg;
 		requests.pop_back();
 		currentClient->sendData(msg->getContent());
-
 	}
 	else
 	{
@@ -175,8 +172,21 @@ void ConnectionContext::handleResponse(RsdMsg* msg)
 
 void ConnectionContext::handleTrash(RsdMsg* msg)
 {
+	//client sent response / plugin send response but without a request
+	if(!isRequestInProcess())
+	{
+		//sender = client -> send back to client (like echo)
+		if(msg->getSender() == 0)
+			tcp_send(msg);
 
+		//sender = plugin ? -> just drop msg
+		delete msg;
+	}
+	//Request in process but received nonsense ? -> send this to last sender
+	else
+		handleResponse(msg);
 }
+
 
 
 void ConnectionContext::handleRSDCommand(RsdMsg* msg)

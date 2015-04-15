@@ -169,8 +169,8 @@ int TcpWorker::tcp_send(const char* data, int size)
 
 int TcpWorker::tcp_send(RsdMsg* msg)
 {
-	string* data = msg->getContent();
-	return send(currentSocket, data->c_str(), data->size(), 0);
+	printf("%s\n", msg->getContent()->c_str());
+	return send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);
 }
 
 
