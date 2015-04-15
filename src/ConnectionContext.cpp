@@ -96,6 +96,7 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 	}
 	catch(PluginError &e)
 	{
+		printf("%s\n", e.get());
 		throw;
 	}
 }
@@ -155,9 +156,10 @@ void ConnectionContext::handleResponse(RsdMsg* msg)
 	{
 		currentClient =  findUdsConnection(lastSender);
 		//TODO: implement case that plugin went offline, like in handleRequest
-		currentClient->sendData(msg->getContent());
 		delete lastMsg;
 		requests.pop_back();
+		currentClient->sendData(msg->getContent());
+
 	}
 	else
 	{
@@ -207,9 +209,9 @@ void ConnectionContext::handleIncorrectPluginResponse(RsdMsg* msg, const char* e
 	if(lastSender != 0)
 	{
 		currentClient =  findUdsConnection(lastSender);
-		currentClient->sendData(error);
 		delete lastMsg;
 		requests.pop_back();
+		currentClient->sendData(error);
 	}
 	else
 	{
@@ -217,10 +219,8 @@ void ConnectionContext::handleIncorrectPluginResponse(RsdMsg* msg, const char* e
 		requests.pop_back();
 		setRequestNotInProcess();
 		tcp_send(error);
-
 	}
 	delete msg;
-
 }
 
 
