@@ -14,11 +14,14 @@
 #include "Utils.h"
 
 
-TcpWorker::TcpWorker(ConnectionContext* context, int socket)
+TcpWorker::TcpWorker(ConnectionContext* context, TcpWorker** tcpWorker, int socket)
 {
 	this->bufferOut = NULL;
 	this->context = context;
 	this->currentSocket = socket;
+	this->sentBytes = 0;
+	*tcpWorker = this;
+
 
 	StartWorkerThread(currentSocket);
 
@@ -169,7 +172,6 @@ int TcpWorker::tcp_send(const char* data, int size)
 
 int TcpWorker::tcp_send(RsdMsg* msg)
 {
-	printf("%s\n", msg->getContent()->c_str());
 	return send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);
 }
 

@@ -20,6 +20,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -118,6 +119,7 @@ class RSD{
 
 		bool rsdActive;
 		int optionflag;
+		int usertimeout;
 		pthread_t accepter;
 		UdsRegServer* regServer;
 		static Document dom;

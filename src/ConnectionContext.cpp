@@ -35,7 +35,7 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	contextNumber = getNewContextNumber();
 	//TODO: if no number is free, tcpworker has to send an error and close the connection
 	json = new JsonRPC();
-	tcpConnection = new TcpWorker(this, tcpSocket);
+	new TcpWorker(this, &tcpConnection,tcpSocket);
 
 }
 
@@ -81,26 +81,23 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 		//is it a request ?
 		if(json->isRequest())
 		{
-			printf("Request\n");
 			setRequestInProcess();
 			handleRequest(msg);
 		}
 		//or is it a response and is a requestInProcess ?
 		else if(json->isResponse() && isRequestInProcess())
 		{
-			printf("Response in process\n");
 			handleResponse(msg);
 		}
 		//trash or response msg but there is no RequestInProcess
 		else
 		{
-			printf("Trash: %s \n", msg->getContent()->c_str());
 			handleTrash(msg);
 		}
 	}
 	catch(PluginError &e)
 	{
-		printf("Exception: %s\n", e.get());
+		dyn_print("Exception: %s\n", e.get());
 		throw;
 	}
 }
@@ -145,6 +142,7 @@ void ConnectionContext::handleRequest(RsdMsg* msg)
 
 void ConnectionContext::handleResponse(RsdMsg* msg)
 {
+
 	RsdMsg* lastMsg = requests.back();
 
 	lastSender = lastMsg->getSender();
@@ -164,7 +162,6 @@ void ConnectionContext::handleResponse(RsdMsg* msg)
 		requests.pop_back();
 		setRequestNotInProcess();
 		tcp_send(msg);
-
 	}
 	delete msg;
 }

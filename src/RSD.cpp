@@ -41,9 +41,11 @@ RSD::RSD()
 	address.sin_port = htons(TCP_PORT);
 	addrlen = sizeof(address);
 	optionflag = 1;
+	usertimeout = 5000;
 
 	connection_socket = socket(AF_INET, SOCK_STREAM, 0);
 	setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag));
+	//setsockopt(connection_socket, SOL_SOCKET, TCP_USER_TIMEOUT, &usertimeout, sizeof(usertimeout));
 	bind(connection_socket, (struct sockaddr*)&address, sizeof(address));
 
 

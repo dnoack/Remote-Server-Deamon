@@ -9,6 +9,7 @@
 #define INCLUDE_TCPWORKER_HPP_
 
 //unix domain socket definition
+#include "errno.h"
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -34,7 +35,7 @@ class UdsComClient;
 class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads{
 
 	public:
-		TcpWorker(ConnectionContext* context, int socket);
+		TcpWorker(ConnectionContext* context, TcpWorker** tcpWorker, int socket);
 		~TcpWorker();
 
 
@@ -46,6 +47,15 @@ class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads{
 		ConnectionContext* context;
 		char* bufferOut;
 		int currentSocket;
+		int sentBytes;
+
+		void helpme(int sentBytes)
+		{
+			if(sentBytes < 0)
+				printf("TCP send fail: %s\n", strerror(errno));
+			else
+				printf("Sent %d bytes to Client.", sentBytes);
+		}
 
 
 		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);
