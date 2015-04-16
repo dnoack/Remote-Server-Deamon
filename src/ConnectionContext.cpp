@@ -74,7 +74,6 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 
 	try
 	{
-		printf("Stacksize: %d", requests.size());
 		//parse to dom with jsonrpc
 		json->parse(msg->getContent());
 
@@ -188,19 +187,26 @@ void ConnectionContext::handleTrash(RsdMsg* msg)
 
 void ConnectionContext::handleRSDCommand(RsdMsg* msg)
 {
-	Value* method = json->tryTogetMethod();
-	Value* params = NULL;
-	Value* id = json->tryTogetId();
-	Value resultValue;
-	const char* result = NULL;
+	try{
+		Value* method = json->tryTogetMethod();
+		Value* params = NULL;
+		Value* id = json->tryTogetId();
+		Value resultValue;
+		const char* result = NULL;
 
-	RSD::executeFunction(*method, *params, resultValue);
+		RSD::executeFunction(*method, *params, resultValue);
 
-	//generate json rsponse msg via jsonRPC with resultValue !
-	result = json->generateResponse(*id, resultValue);
+		//generate json rsponse msg via jsonRPC with resultValue !
+		result = json->generateResponse(*id, resultValue);
 
-	//send the generated msg back to client
-	tcp_send(result);
+		//send the generated msg back to client
+		tcp_send(result);
+	}
+	catch(PluginError &e)
+	{
+		setRequestNotInProcess();
+		throw;
+	}
 }
 
 

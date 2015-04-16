@@ -41,11 +41,9 @@ RSD::RSD()
 	address.sin_port = htons(TCP_PORT);
 	addrlen = sizeof(address);
 	optionflag = 1;
-	usertimeout = 5000;
 
 	connection_socket = socket(AF_INET, SOCK_STREAM, 0);
 	setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag));
-	//setsockopt(connection_socket, SOL_SOCKET, TCP_USER_TIMEOUT, &usertimeout, sizeof(usertimeout));
 	bind(connection_socket, (struct sockaddr*)&address, sizeof(address));
 
 
@@ -85,7 +83,6 @@ void* RSD::accept_connections(void* data)
 	listen(connection_socket, MAX_CLIENTS);
 	int tcpSocket = 0;
 	ConnectionContext* context = NULL;
-
 	accept_thread_active = true;
 
 	while(accept_thread_active)
@@ -106,7 +103,6 @@ void* RSD::accept_connections(void* data)
 bool RSD::addPlugin(const char* name, int pluginNumber, const char* udsFilePath)
 {
 	bool result = false;
-
 
 	if(getPlugin(name) == NULL)
 	{
@@ -213,6 +209,7 @@ Plugin* RSD::getPlugin(int pluginNumber)
 
 void RSD::deleteAllPlugins()
 {
+	pthread_mutex_lock(&pLmutex);
 	list<Plugin*>::iterator i = plugins.begin();
 
 	while(i != plugins.end())
@@ -220,6 +217,7 @@ void RSD::deleteAllPlugins()
 		delete *i;
 		i = plugins.erase(i);
 	}
+	pthread_mutex_unlock(&pLmutex);
 }
 
 
@@ -261,7 +259,8 @@ void RSD::checkForDeletableConnections()
 
 bool RSD::executeFunction(Value &method, Value &params, Value &result)
 {
-	try{
+	try
+	{
 		funcMapPointer = funcMap[(char*)method.GetString()];
 		if(funcMapPointer == NULL)
 			throw PluginError("Function not found.",  __FILE__, __LINE__);
@@ -278,6 +277,7 @@ bool RSD::executeFunction(Value &method, Value &params, Value &result)
 bool RSD::showAllRegisteredPlugins(Value &params, Value &result)
 {
 	Value* tempValue = NULL;
+	pthread_mutex_lock(&pLmutex);
 	list<Plugin*>::iterator plugin = plugins.begin();
 	result.SetArray();
 	while(plugin != plugins.end())
@@ -287,6 +287,7 @@ bool RSD::showAllRegisteredPlugins(Value &params, Value &result)
 		delete tempValue;
 		++plugin;
 	}
+	pthread_mutex_unlock(&pLmutex);
 	return true;
 }
 
@@ -298,9 +299,10 @@ bool RSD::showAllKnownFunctions(Value &params, Value &result)
 	Value tempArray;
 	list<string*>* methods = NULL;
 	list<string*>::iterator method;
+
+	pthread_mutex_lock(&pLmutex);
 	list<Plugin*>::iterator plugin = plugins.begin();
 	result.SetObject();
-
 
 	while(plugin != plugins.end())
 	{
@@ -319,11 +321,9 @@ bool RSD::showAllKnownFunctions(Value &params, Value &result)
 		result.AddMember(*pluginName, tempArray, dom.GetAllocator());
 		delete pluginName;
 		++plugin;
-
 	}
-
+	pthread_mutex_unlock(&pLmutex);
 	return true;
-
 }
 
 
