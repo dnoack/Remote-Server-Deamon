@@ -1,10 +1,3 @@
-/*
- * ConnectionContext.cpp
- *
- *  Created on: 		23.03.2015
- *  Author: 			dnoack
- */
-
 #include "RSD.hpp"
 #include "Plugin.hpp"
 #include "Plugin_Error.h"
@@ -18,25 +11,20 @@ int ConnectionContext::indexLimit;
 int ConnectionContext::currentIndex;
 
 
-
 ConnectionContext::ConnectionContext(int tcpSocket)
 {
 	pthread_mutex_init(&rIPMutex, NULL);
-	deletable = false;
-	udsCheck = false;
-	error = NULL;
-	id = NULL;
-	currentClient = NULL;
-	requestInProcess = false;
-	lastSender = -1;
-	jsonInput = NULL;
-	identity = NULL;
-	jsonReturn = NULL;
+	this->deletable = false;
+	this->udsCheck = false;
+	this->error = NULL;
+	this->id = NULL;
+	this->currentClient = NULL;
+	this->requestInProcess = false;
+	this->lastSender = -1;
 	contextNumber = getNewContextNumber();
 	//TODO: if no number is free, tcpworker has to send an error and close the connection
-	json = new JsonRPC();
+	this->json = new JsonRPC();
 	new TcpWorker(this, &tcpConnection,tcpSocket);
-
 }
 
 
@@ -67,11 +55,8 @@ void ConnectionContext::destroy()
 }
 
 
-
-
 void ConnectionContext::processMsg(RsdMsg* msg)
 {
-
 	try
 	{
 		//parse to dom with jsonrpc
@@ -141,9 +126,7 @@ void ConnectionContext::handleRequest(RsdMsg* msg)
 
 void ConnectionContext::handleResponse(RsdMsg* msg)
 {
-
 	RsdMsg* lastMsg = requests.back();
-
 	lastSender = lastMsg->getSender();
 
 	//lastSender == 0 means, send response to tcp client
@@ -242,7 +225,6 @@ char* ConnectionContext::getMethodNamespace()
 	const char* methodName = NULL;
 	char* methodNamespace = NULL;
 	unsigned int namespacePos = 0;
-	Value* id;
 
 	// get method namespace
 	methodName = json->tryTogetMethod()->GetString();
@@ -251,7 +233,6 @@ char* ConnectionContext::getMethodNamespace()
 	//No '.' found -> no namespace
 	if(namespacePos == strlen(methodName) || namespacePos == 0)
 	{
-		id = json->tryTogetId();
 		error = json->generateResponseError(*id, -32010, "Methodname has no namespace.");
 		setRequestNotInProcess();
 		throw PluginError(error);
@@ -262,9 +243,7 @@ char* ConnectionContext::getMethodNamespace()
 		strncpy(methodNamespace, methodName, namespacePos);
 		methodNamespace[namespacePos] = '\0';
 	}
-
 	return methodNamespace;
-
 }
 
 
@@ -279,10 +258,7 @@ const char* ConnectionContext::generateIdentificationMsg(int contextNumber)
 	method.SetString("setIdentification", requestDOM->GetAllocator());
 	params.SetObject();
 	params.AddMember("contextNumber", contextNumber, requestDOM->GetAllocator());
-
-
 	msg = json->generateRequest(method, params, *id);
-
 	return msg;
 }
 
@@ -292,7 +268,7 @@ short ConnectionContext::getNewContextNumber()
 	short result = 0;
 	pthread_mutex_lock(&contextCounterMutex);
 
-	if(contextCounter < NUMBER_OF_CONNECTIONS)
+	if(contextCounter < MAX_CLIENTS)
 	{
 		if(!(currentIndex < indexLimit))
 			currentIndex = 1;
@@ -302,9 +278,7 @@ short ConnectionContext::getNewContextNumber()
 		++contextCounter;
 	}
 	else
-	{
 		result = -1;
-	}
 
 	pthread_mutex_unlock(&contextCounterMutex);
 	return result;
@@ -352,9 +326,7 @@ void ConnectionContext::checkUdsConnections()
 		else
 			++udsConnection;
 	}
-
 }
-
 
 
 UdsComClient* ConnectionContext::findUdsConnection(char* pluginName)
@@ -399,10 +371,8 @@ UdsComClient* ConnectionContext::findUdsConnection(char* pluginName)
 			}
 		}
 	}
-
 	return currentComClient;
 }
-
 
 
 UdsComClient* ConnectionContext::findUdsConnection(int pluginNumber)
@@ -444,7 +414,6 @@ UdsComClient* ConnectionContext::findUdsConnection(int pluginNumber)
 			}
 		}
 	}
-
 	return currentComClient;
 }
 
@@ -484,7 +453,7 @@ bool ConnectionContext::isRequestInProcess()
 {
 	bool result = false;
 	pthread_mutex_lock(&rIPMutex);
-		result = requestInProcess;
+	result = requestInProcess;
 	pthread_mutex_unlock(&rIPMutex);
 	return result;
 }

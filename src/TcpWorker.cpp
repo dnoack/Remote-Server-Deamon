@@ -16,12 +16,9 @@
 
 TcpWorker::TcpWorker(ConnectionContext* context, TcpWorker** tcpWorker, int socket)
 {
-	this->bufferOut = NULL;
 	this->context = context;
 	this->currentSocket = socket;
-	this->sentBytes = 0;
 	*tcpWorker = this;
-
 
 	StartWorkerThread(currentSocket);
 
@@ -32,7 +29,6 @@ TcpWorker::TcpWorker(ConnectionContext* context, TcpWorker** tcpWorker, int sock
 
 TcpWorker::~TcpWorker()
 {
-
 	pthread_cancel(getListener());
 	pthread_cancel(getWorker());
 
@@ -90,7 +86,6 @@ void TcpWorker::thread_work(int socket)
 							dyn_print("Unkown Exception.\n");
 						}
 					}
-
 				}
 				break;
 
@@ -174,5 +169,4 @@ int TcpWorker::tcp_send(RsdMsg* msg)
 {
 	return send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);
 }
-
 

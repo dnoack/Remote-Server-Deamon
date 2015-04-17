@@ -1,10 +1,3 @@
-/*
- * RSD.hpp
- *
- *  Created on: 	11.02.2015
- *  Author: 		dnoack
- */
-
 #ifndef INCLUDE_RSD_HPP_
 #define INCLUDE_RSD_HPP_
 
@@ -15,6 +8,7 @@
 #define MAIN_SLEEP_TIME 3 //sleep time for main loop
 #include "Plugin_Error.h"
 #define RAPIDJSON_ASSERT(x)    if((x) == 0 ){throw PluginError("Rapidjson assertion.", __FILE__, __LINE__);}
+
 
 #include <map>
 #include <sys/un.h>
@@ -33,7 +27,6 @@
 #include "UdsRegServer.hpp"
 #include "ConnectionContext.hpp"
 #include "Plugin.hpp"
-
 
 
 /* This path/file will be used for registering new Plugins to the server.*/
@@ -64,6 +57,14 @@ struct cmp_keys
 };
 
 
+/**
+ * \class RSD (Remote Server Deamon)
+ * \brief RSD is the main class for starting Remote Server Daemon, it starts the
+ * registration server an the server for accepting incomming new connections from client side.
+ * It got a list of all registered plugins and their functions and also a list of all open connection
+ * in the form of ConnectionContext objects. There are also Json-RPC functions from RSD itself.
+ * \author David Noack
+ */
 class RSD{
 
 
@@ -80,10 +81,8 @@ class RSD{
 		 */
 		void start();
 
-
 		/** Stops the server by setting rsdActive to false.*/
 		void stop(){rsdActive = false;}
-
 
 		/**
 		 * Checks whether the TCP- or the UDS- connections of all known objects of connectionContext
@@ -212,8 +211,6 @@ class RSD{
 		/*! Instance of the Registration server for registering new plugins to RSD.*/
 		UdsRegServer* regServer;
 };
-
-
 
 
 #endif /* INCLUDE_RSD_HPP_ */

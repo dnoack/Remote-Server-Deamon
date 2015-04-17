@@ -1,15 +1,6 @@
-/*
- * RSD.cpp
- *
- *  Created on: 	11.02.2015
- *  Author: 		dnoack
- */
-
-
 #include "RSD.hpp"
 #include "RsdMsg.h"
 #include "Utils.h"
-
 
 
 int RSD::connection_socket;
@@ -28,7 +19,6 @@ afptr RSD::funcMapPointer;
 Document RSD::dom;
 
 
-
 RSD::RSD()
 {
 	pthread_mutex_init(&pLmutex, NULL);
@@ -45,7 +35,6 @@ RSD::RSD()
 	connection_socket = socket(AF_INET, SOCK_STREAM, 0);
 	setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag));
 	bind(connection_socket, (struct sockaddr*)&address, sizeof(address));
-
 
 	//create Registry Server
 	regServer = new UdsRegServer(REGISTRY_PATH, sizeof(REGISTRY_PATH));
@@ -95,7 +84,6 @@ void* RSD::accept_connections(void* data)
 			pushWorkerList(context);
 		}
 	}
-
 	return 0;
 }
 
@@ -111,7 +99,6 @@ bool RSD::addPlugin(const char* name, int pluginNumber, const char* udsFilePath)
 		result = true;
 		pthread_mutex_unlock(&pLmutex);
 	}
-
 	return result;
 }
 
@@ -128,7 +115,6 @@ bool RSD::addPlugin(Plugin* newPlugin)
 		result = true;
 		pthread_mutex_unlock(&pLmutex);
 	}
-
 	return result;
 }
 
@@ -151,7 +137,6 @@ bool RSD::deletePlugin(string* name)
 		}
 		++i;
 	}
-
 	pthread_mutex_unlock(&pLmutex);
 	return found;
 }
@@ -177,7 +162,6 @@ Plugin* RSD::getPlugin(const char* name)
 		++i;
 	}
 	pthread_mutex_unlock(&pLmutex);
-
 	return result;
 }
 
@@ -202,7 +186,6 @@ Plugin* RSD::getPlugin(int pluginNumber)
 		++i;
 	}
 	pthread_mutex_unlock(&pLmutex);
-
 	return result;
 }
 
@@ -224,8 +207,8 @@ void RSD::deleteAllPlugins()
 void RSD::pushWorkerList(ConnectionContext* context)
 {
 	pthread_mutex_lock(&connectionContextListMutex);
-		connectionContextList.push_back(context);
-		dyn_print("Anzahl ConnectionContext: %d\n", connectionContextList.size());
+	connectionContextList.push_back(context);
+	dyn_print("Anzahl ConnectionContext: %d\n", connectionContextList.size());
 	pthread_mutex_unlock(&connectionContextListMutex);
 }
 
@@ -348,16 +331,12 @@ void RSD::start()
 
 }
 
-#ifndef TESTMODE
 
+#ifndef TESTMODE
 int main(int argc, char** argv)
 {
 	RSD* rsd = new RSD();
 	rsd->start();
 	delete rsd;
 }
-
 #endif
-
-
-
