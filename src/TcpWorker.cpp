@@ -20,7 +20,7 @@ TcpWorker::TcpWorker(ConnectionContext* context, TcpWorker** tcpWorker, int sock
 	this->currentSocket = socket;
 	*tcpWorker = this;
 
-	StartWorkerThread(currentSocket);
+	StartWorkerThread();
 
 	if(wait_for_listener_up() != 0)
 		throw PluginError("Creation of Listener/worker threads failed.");
@@ -38,7 +38,7 @@ TcpWorker::~TcpWorker()
 
 
 
-void TcpWorker::thread_work(int socket)
+void TcpWorker::thread_work()
 {
 	RsdMsg* msg = NULL;
 	string* errorResponse = NULL;
@@ -49,7 +49,7 @@ void TcpWorker::thread_work(int socket)
 
 
 	//start the listenerthread and remember the theadId of it
-	StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
+	StartListenerThread();
 
 	configSignals();
 
@@ -105,32 +105,32 @@ void TcpWorker::thread_work(int socket)
 }
 
 
-void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffer)
+void TcpWorker::thread_listen()
 {
 	listen_thread_active = true;
 	string* content = NULL;
 	int retval;
 	fd_set rfds;
-
+	pthread_t worker_thread = getWorker();
 	configSignals();
 
 	FD_ZERO(&rfds);
-	FD_SET(socket, &rfds);
+	FD_SET(currentSocket, &rfds);
 
 	while(listen_thread_active)
 	{
 		memset(receiveBuffer, '\0', BUFFER_SIZE);
 
-		retval = pselect(socket+1, &rfds, NULL, NULL, NULL, &origmask);
+		retval = pselect(currentSocket+1, &rfds, NULL, NULL, NULL, &origmask);
 
 		if(retval < 0 )
 		{
 			//error occured
 			context->checkUdsConnections();
 		}
-		else if(FD_ISSET(socket, &rfds))
+		else if(FD_ISSET(currentSocket, &rfds))
 		{
-			recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, 0);
+			recvSize = recv( currentSocket , receiveBuffer, BUFFER_SIZE, 0);
 
 			if(recvSize > 0)
 			{
@@ -139,7 +139,7 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 				dyn_print("TcpListener: %s \n", content->c_str());
 				pushReceiveQueue(new RsdMsg(0, content));
 				//signal the worker
-				pthread_kill(parent_th, SIGUSR1);
+				pthread_kill(worker_thread, SIGUSR1);
 			}
 			//connection closed
 			else

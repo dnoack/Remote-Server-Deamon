@@ -29,7 +29,7 @@ UdsRegWorker::UdsRegWorker(int socket)
 	this->state = NOT_ACTIVE;
 	this->json = new JsonRPC();
 
-	StartWorkerThread(currentSocket);
+	StartWorkerThread();
 
 	if(wait_for_listener_up() != 0)
 			throw PluginError("Creation of Listener/worker threads failed.");
@@ -45,7 +45,6 @@ UdsRegWorker::~UdsRegWorker()
 	pthread_cancel(getListener());
 	pthread_cancel(getWorker());
 
-
 	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
 
@@ -53,20 +52,17 @@ UdsRegWorker::~UdsRegWorker()
 
 	cleanupReceiveQueue(this);
 	cleanup();
-
 }
 
 
 
-void UdsRegWorker::thread_work(int socket)
+void UdsRegWorker::thread_work()
 {
 	const char* response = NULL;
 	worker_thread_active = true;
 
-	StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
-
+	StartListenerThread();
 	configSignals();
-
 
 	while(worker_thread_active)
 	{
@@ -131,7 +127,7 @@ void UdsRegWorker::thread_work(int socket)
 
 
 
-void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffer)
+void UdsRegWorker::thread_listen()
 {
 
 	listen_thread_active = true;
@@ -139,14 +135,15 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 	int retval;
 	fd_set rfds;
 
+	pthread_t worker_thread = getWorker();
 	configSignals();
 
 	FD_ZERO(&rfds);
-	FD_SET(socket, &rfds);
+	FD_SET(currentSocket, &rfds);
 
 	while(listen_thread_active)
 	{
-		retval = pselect(socket+1, &rfds, NULL, NULL, NULL, &origmask);
+		retval = pselect(currentSocket+1, &rfds, NULL, NULL, NULL, &origmask);
 
 		if(retval < 0)
 		{
@@ -154,9 +151,9 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 			listen_thread_active = false;
 			deletable = true;
 		}
-		else if(FD_ISSET(socket, &rfds))
+		else if(FD_ISSET(currentSocket, &rfds))
 		{
-			recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, 0);
+			recvSize = recv(currentSocket , receiveBuffer, BUFFER_SIZE, 0);
 			//data received
 			if(recvSize > 0)
 			{
@@ -164,7 +161,7 @@ void UdsRegWorker::thread_listen(pthread_t parent_th, int socket, char* workerBu
 				content = new string(receiveBuffer, recvSize);
 				pushReceiveQueue(new RsdMsg(0, content));
 				//signal the worker
-				pthread_kill(parent_th, SIGUSR1);
+				pthread_kill(worker_thread, SIGUSR1);
 			}
 			else
 			{

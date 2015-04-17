@@ -73,7 +73,7 @@ class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads{
 		 * \param socket Fd of the tcp socket which we use to for communication with the client.
 		 * \param workerBuffer
 		 */
-		virtual void thread_listen(pthread_t parent_th, int socket, char* workerBuffer);
+		virtual void thread_listen();
 
 		/*!
 		 * Gets RsdMsgs from receiveQueue (WorkerInterface) and sends them to ConnectionContext::processMsg().
@@ -83,7 +83,7 @@ class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads{
 		 * \note This function will run in a separate thread, which is created and managed through WorkerThreads.
 		 * \param socket Fd of the tcp socket which we use to for communication with the client.
 		 */
-		virtual void thread_work(int socket);
+		virtual void thread_work();
 
 };
 

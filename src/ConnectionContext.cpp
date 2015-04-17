@@ -66,6 +66,7 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 		if(json->isRequest())
 		{
 			setRequestInProcess();
+			requests.push_back(msg);
 			handleRequest(msg);
 		}
 		//or is it a response and is a requestInProcess ?
@@ -82,44 +83,55 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 	catch(PluginError &e)
 	{
 		dyn_print("Exception: %s\n", e.get());
+		printf("Stacksize: %d\n", requests.size());
 		throw;
 	}
+	printf("Stacksize: %d\n", requests.size());
 }
 
 
 void ConnectionContext::handleRequest(RsdMsg* msg)
 {
 	char* methodNamespace = NULL;
-	id = json->tryTogetId();
-	methodNamespace = getMethodNamespace();
-
-	//Msg for RSD
-	if(strncmp(methodNamespace, "RSD", strlen(methodNamespace))== 0 )
+	try
 	{
-		handleRSDCommand(msg);
-		delete[] methodNamespace;
-		delete msg;
-		setRequestNotInProcess();
-	}
-	//Msg for a Plugin
-	else
-	{
-		currentClient = findUdsConnection(methodNamespace);
-		delete[] methodNamespace;
+		id = json->tryTogetId();
+		methodNamespace = getMethodNamespace();
 
-		//OK
-		if(currentClient != NULL)
+		//Msg for RSD
+		if(strncmp(methodNamespace, "RSD", strlen(methodNamespace))== 0 )
 		{
-			requests.push_back(msg);
-			currentClient->sendData(msg->getContent());
+			handleRSDCommand(msg);
+			delete[] methodNamespace;
+			delete msg;
+			requests.pop_back();
+			setRequestNotInProcess();
 		}
-		//BAD
+		//Msg for a Plugin
 		else
 		{
-			error = json->generateResponseError(*id, -33011, "Plugin not found.");
-			setRequestNotInProcess();
-			throw PluginError(error);
+			currentClient = findUdsConnection(methodNamespace);
+			delete[] methodNamespace;
+
+			//OK
+			if(currentClient != NULL)
+			{
+				currentClient->sendData(msg->getContent());
+			}
+			//BAD
+			else
+			{
+				error = json->generateResponseError(*id, -33011, "Plugin not found.");
+				throw PluginError(error);
+			}
 		}
+	}
+	catch(PluginError &e)
+	{
+		requests.pop_back();
+		if(requests.empty())
+			setRequestNotInProcess();
+		throw;
 	}
 }
 
@@ -129,7 +141,7 @@ void ConnectionContext::handleResponse(RsdMsg* msg)
 	RsdMsg* lastMsg = requests.back();
 	lastSender = lastMsg->getSender();
 
-	//lastSender == 0 means, send response to tcp client
+	//back to a plugin
 	if(lastSender != 0)
 	{
 		currentClient =  findUdsConnection(lastSender);
@@ -138,6 +150,7 @@ void ConnectionContext::handleResponse(RsdMsg* msg)
 		requests.pop_back();
 		currentClient->sendData(msg->getContent());
 	}
+	//lastSender == 0 means, send response to tcp client
 	else
 	{
 		delete lastMsg;
@@ -201,7 +214,7 @@ void ConnectionContext::handleIncorrectPluginResponse(RsdMsg* msg, const char* e
 
 	//who was the sender of the last request
 	lastSender = lastMsg->getSender();
-	//lastSender == 0 means, send response to tcp client
+
 	if(lastSender != 0)
 	{
 		currentClient =  findUdsConnection(lastSender);
