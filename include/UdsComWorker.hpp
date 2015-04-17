@@ -55,9 +55,9 @@ class UdsComWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
 		bool deletable;
 
 
-		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);
+		virtual void thread_listen();
 
-		virtual void thread_work(int socket);
+		virtual void thread_work();
 
 };
 
