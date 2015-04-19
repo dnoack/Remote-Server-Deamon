@@ -18,6 +18,7 @@ class RsdMsg{
 	public:
 
 		RsdMsg(int sender, string* content);
+		RsdMsg(int sender, const char* content);
 
 
 		RsdMsg(RsdMsg* msg);

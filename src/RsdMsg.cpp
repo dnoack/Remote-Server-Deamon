@@ -20,6 +20,14 @@ RsdMsg::RsdMsg(int sender, string* content)
 };
 
 
+RsdMsg::RsdMsg(int sender, const char* content)
+{
+	this->sender = sender;
+	this->content = new string(content);
+	++countMalloc;
+};
+
+
 RsdMsg::RsdMsg(RsdMsg* msg)
 {
 	this->sender = msg->getSender();
