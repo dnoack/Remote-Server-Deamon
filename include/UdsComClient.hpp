@@ -48,7 +48,7 @@ class UdsComClient{
 
 		void markAsDeletable();
 		void routeBack(RsdMsg* data);
-		bool tryToconnect();
+		void tryToconnect();
 
 
 	private:

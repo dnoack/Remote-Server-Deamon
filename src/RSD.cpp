@@ -91,8 +91,11 @@ void* RSD::accept_connections(void* data)
 bool RSD::addPlugin(const char* name, int pluginNumber, const char* udsFilePath)
 {
 	bool result = false;
-
-	if(getPlugin(name) == NULL)
+	try
+	{
+		getPlugin(name);
+	}
+	catch(PluginError &e)
 	{
 		pthread_mutex_lock(&pLmutex);
 		plugins.push_back(new Plugin(name, pluginNumber, udsFilePath));
@@ -107,8 +110,11 @@ bool RSD::addPlugin(Plugin* newPlugin)
 {
 	bool result = false;
 	char* name = (char*)(newPlugin->getName()->c_str());
-
-	if(getPlugin(name) == NULL)
+	try
+	{
+		getPlugin(name);
+	}
+	catch(PluginError &e)
 	{
 		pthread_mutex_lock(&pLmutex);
 		plugins.push_back(newPlugin);
@@ -162,7 +168,11 @@ Plugin* RSD::getPlugin(const char* name)
 		++i;
 	}
 	pthread_mutex_unlock(&pLmutex);
-	return result;
+
+	if(!found)
+		throw PluginError(-33011, "Plugin not found.");
+	else
+		return result;
 }
 
 
@@ -186,7 +196,11 @@ Plugin* RSD::getPlugin(int pluginNumber)
 		++i;
 	}
 	pthread_mutex_unlock(&pLmutex);
-	return result;
+
+	if(!found)
+		throw PluginError(-33011, "Plugin not found.");
+	else
+		return result;
 }
 
 

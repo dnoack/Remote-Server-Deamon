@@ -1,12 +1,17 @@
 #ifndef INCLUDE_CONNECTIONCONTEXT_HPP_
 #define INCLUDE_CONNECTIONCONTEXT_HPP_
 
+#define CLIENT_SIDE 0
+
+
 #include <list>
 #include <pthread.h>
 #include <limits>
 
 #include "TcpWorker.hpp"
 #include "UdsComClient.hpp"
+#include "Plugin.hpp"
+#include "Plugin_Error.h"
 
 
 /*
@@ -62,6 +67,7 @@ class ConnectionContext
 		 */
 		virtual UdsComClient* findUdsConnection(int pluginNumber);
 
+
 		/**
 		 * Analysis the incomming message and calls the different methods for
 		 * request/response or trash messages.
@@ -82,14 +88,6 @@ class ConnectionContext
 		static void destroy();
 
 
-
-		void handleRequest(RsdMsg* msg);
-
-		void handleResponse(RsdMsg* msg);
-
-		void handleTrash(RsdMsg* msg);
-
-		void handleRSDCommand(RsdMsg* msg);
 
 
 		/**
@@ -133,13 +131,14 @@ class ConnectionContext
 
 
 		/**
-		 * Handles incorrect messages from plugins. For example answers which are no json-rpc.
-		 * The function will send a correct json-rpc error response to the corresponding
-		 * plugin or client which send the request.
-		 * \param msg The received message from a plugin (via UdsComWorker).
-		 * \param error The corresponding errorstring for this incorrect message.
-		 */
-		void handleIncorrectPluginResponse(RsdMsg* msg, const char* error);
+		* Handles incorrect messages from plugins. For example answers which are no json-rpc.
+		* The function will send a correct json-rpc error response to the corresponding
+		* plugin or client which send the request.
+		* \param msg The received message from a plugin (via UdsComWorker).
+		* \param error The corresponding errorstring for this incorrect message.
+		*/
+		void handleIncorrectPluginResponse(RsdMsg* msg, PluginError &error);
+
 
 		/**
 		 * Sends a message through the tcp-connections to the client.
@@ -236,6 +235,28 @@ class ConnectionContext
 		 * \return The json rpc notification message for identify the context.
 		 */
 		const char* generateIdentificationMsg(int contextNumber);
+
+
+		UdsComClient* createNewUdsComClient(Plugin* plugin);
+
+
+
+		void handleRequest(RsdMsg* msg);
+		void handleRequestFromClient(RsdMsg* msg);
+		void handleRequestFromPlugin(RsdMsg* msg);
+
+
+		void handleResponse(RsdMsg* msg);
+		void handleResponseFromPlugin(RsdMsg* msg);
+
+		void handleTrash(RsdMsg* msg);
+		void handleTrashFromPlugin(RsdMsg* msg);
+
+		void handleRSDCommand(RsdMsg* msg);
+
+
+		void handleParseError(RsdMsg* msg);
+
 
 		/*! Mutext to protect the contextCounter variable.*/
 		static pthread_mutex_t contextCounterMutex;

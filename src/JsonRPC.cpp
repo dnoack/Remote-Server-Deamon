@@ -15,19 +15,12 @@
 Document* JsonRPC::parse(string* msg)
 {
 	Document* result = NULL;
-	Value nullId;
 
 	inputDOM->Parse(msg->c_str());
 	if(!inputDOM->HasParseError())
 		result = inputDOM;
-
 	else
-	{
-		nullId.SetInt(0);
-		error = generateResponseError(nullId, -32700, "Error while parsing json rpc.");
-		result = NULL;
-		throw PluginError(error);
-	}
+		throw PluginError(-32700, "Error while parsing json rpc.");
 
 	return result;
 }
@@ -35,16 +28,10 @@ Document* JsonRPC::parse(string* msg)
 
 void JsonRPC::parse(string* msg, Document* dom)
 {
-	Value nullId;
-
 	dom->Parse(msg->c_str());
 
 	if(dom->HasParseError())
-	{
-		nullId.SetInt(0);
-		error = generateResponseError(nullId, -32700, "Error while parsing json rpc.");
-		throw PluginError(error);
-	}
+		throw PluginError(-32700, "Error while parsing json rpc.");
 }
 
 
@@ -104,14 +91,9 @@ Value* JsonRPC::tryTogetParam(const char* name)
 		hasParams();
 		params = &((*inputDOM)["params"]);
 		if(!params->HasMember(name))
-		{
-			error = generateResponseError(nullid, -32022, "Missing parameter.");
-			throw PluginError(error);
-		}
+			throw PluginError(-32022, "Missing parameter.");
 		else
-		{
 			result = getParam(name);
-		}
 
 	}
 	catch(PluginError &e)
@@ -258,7 +240,7 @@ bool JsonRPC::checkJsonRpcVersion(Document* dom)
 {
 
 	if(strcmp((*dom)["jsonrpc"].GetString(), JSON_PROTOCOL_VERSION) != 0)
-		throw PluginError("Inccorect jsonrpc version. Used version is 2.0");
+		throw PluginError(-32023, "Incorrect jsonrpc version. Used version is 2.0");
 
 	return true;
 }
@@ -359,7 +341,6 @@ bool JsonRPC::isNotification()
 bool JsonRPC::hasJsonRPCVersion(Document* dom)
 {
 	bool result = false;
-	Value nullid;
 
 	try
 	{
@@ -368,16 +349,11 @@ bool JsonRPC::hasJsonRPCVersion(Document* dom)
 			if((*dom)["jsonrpc"].IsString())
 				result = true;
 			else
-			{
-				error = generateResponseError(nullid, -32001, "Member \"jsonrpc\" has to be a string.");
-				throw PluginError(error);
-			}
+				throw PluginError(-32001, "Member -jsonrpc- has to be a string.");
+
 		}
 		else
-		{
-			error = generateResponseError(nullid, -32000, "Member \"jsonrpc\" is missing.");
-			throw PluginError(error);
-		}
+			throw PluginError(-32000, "Member -jsonrpc- is missing.");
 	}
 	catch(PluginError &e)
 	{
@@ -396,7 +372,6 @@ bool JsonRPC::hasJsonRPCVersion()
 bool JsonRPC::hasMethod(Document* dom)
 {
 	bool result = false;
-	Value nullid;
 
 	try
 	{
@@ -405,17 +380,10 @@ bool JsonRPC::hasMethod(Document* dom)
 			if((*dom)["method"].IsString())
 				result = true;
 			else
-			{
-				error = generateResponseError(nullid, -32011, "Member \"method\" has to be a string.");
-				throw PluginError(error);
-			}
-
+				throw PluginError(-32011, "Member -method- has to be a string.");
 		}
 		else
-		{
-			error = generateResponseError(nullid, -32010, "Member \"method\" is missing.");
-			throw PluginError(error);
-		}
+			throw PluginError(-32010, "Member -method- is missing.");
 	}
 	catch(PluginError &e)
 	{
@@ -423,7 +391,6 @@ bool JsonRPC::hasMethod(Document* dom)
 	}
 
 	return result;
-
 }
 
 
@@ -436,7 +403,6 @@ bool JsonRPC::hasMethod()
 bool JsonRPC::hasParams(Document* dom)
 {
 	bool result = false;
-	Value nullid;
 
 	try
 	{
@@ -446,16 +412,11 @@ bool JsonRPC::hasParams(Document* dom)
 				result = true;
 			else
 			{
-				error = generateResponseError(nullid, -32021, "Member \"params\" has to be an object.");
-				throw PluginError(error);
+				throw PluginError(-32021, "Member -params- has to be an object.");
 			}
-
 		}
 		else
-		{
-			error = generateResponseError(nullid, -32020, "Member \"params\" is missing.");
-			throw PluginError(error);
-		}
+			throw PluginError(-32020, "Member -params- is missing.");
 	}
 	catch(PluginError &e)
 	{
@@ -476,7 +437,7 @@ bool JsonRPC::hasParams()
 bool JsonRPC::hasId(Document* dom)
 {
 	bool result = false;
-	Value nullid;
+
 	//TODO: check: normally not NULL, no fractional pars
 	try
 	{
@@ -485,17 +446,10 @@ bool JsonRPC::hasId(Document* dom)
 			if((*dom)["id"].IsInt() || (*inputDOM)["id"].IsString())
 				result = true;
 			else
-			{
-				error = generateResponseError(nullid, -32031, "Member \"id\" has to be an integer or a string.");
-				throw PluginError(error);
-			}
-
+				throw PluginError(-32031, "Member -id- has to be an integer or a string.");
 		}
 		else
-		{
-			error = generateResponseError(nullid, -32030, "Member \"id\" is missing.");
-			throw PluginError(error);
-		}
+			throw PluginError(-32030, "Member -id- is missing.");
 	}
 	catch(PluginError &e)
 	{
@@ -517,20 +471,14 @@ bool JsonRPC::hasId()
 bool JsonRPC::hasResult(Document* dom)
 {
 	bool result = false;
-	Value nullid;
 
 	try
 	{
 		if(dom->HasMember("result"))
-		{
 			result = true;
 			//no checking for type, because the type of result is deetermined by the calling function
-		}
 		else
-		{
-			error = generateResponseError(nullid, -32040, "Member \"result\" is missing.");
-			throw PluginError(error);
-		}
+			throw PluginError(-32040, "Member -result- is missing.");
 	}
 	catch(PluginError &e)
 	{
@@ -550,7 +498,6 @@ bool JsonRPC::hasResult()
 bool JsonRPC::hasError(Document* dom)
 {
 	bool result = false;
-	Value nullid;
 
 	try
 	{
@@ -559,16 +506,10 @@ bool JsonRPC::hasError(Document* dom)
 			if((*dom)["error"].IsObject())
 				result = true;
 			else
-			{
-				error = generateResponseError(nullid, -32051, "Member \"error\" has to be an object.");
-				throw PluginError(error);
-			}
+				throw PluginError( -32051, "Member -error- has to be an object.");
 		}
 		else
-		{
-			error = generateResponseError(nullid, -32050, "Member \"error\" is missing.");
-			throw PluginError(error);
-		}
+			throw PluginError(-32050, "Member -error- is missing.");
 	}
 	catch(PluginError &e)
 	{

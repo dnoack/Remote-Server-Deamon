@@ -69,26 +69,21 @@ void UdsComClient::routeBack(RsdMsg* msg)
 	}
 	catch(PluginError &e)
 	{
-		//TODO:this can happen if the plugin sends no correct json rpc response
-
-		//we need to delete the last request within the tcp queue and send
-		// a correct json rpc error response back to the client.
-		context->handleIncorrectPluginResponse(msg, e.get());
+		/*this can happen if a plugin answers with a incorret msg.
+		Server will then get a parsing error and throw a PluginError*/
+		context->handleIncorrectPluginResponse(msg, e);
 	}
 }
 
-bool UdsComClient::tryToconnect()
+void UdsComClient::tryToconnect()
 {
 	if( connect(currentSocket, (struct sockaddr*)&address, addrlen) < 0)
 	{
 		dyn_print("Gewünschtes Plugin nicht gefunden.%s \n", strerror(errno));
-		return false;
+		throw PluginError("Could not connect to plugin.");
 	}
 	else
-	{
 		comWorker = new UdsComWorker(currentSocket, this);
-		return true;
-	}
 }
 
 

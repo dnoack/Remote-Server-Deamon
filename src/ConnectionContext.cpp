@@ -65,171 +65,53 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 		//is it a request ?
 		if(json->isRequest())
 		{
-			setRequestInProcess();
-			requests.push_back(msg);
+			id = json->getId();
 			handleRequest(msg);
 		}
-		//or is it a response and is a requestInProcess ?
-		else if(json->isResponse() && isRequestInProcess())
+		//or is it a response ?
+		else if(json->isResponse())
 		{
+			id = json->getId();
 			handleResponse(msg);
 		}
-		//trash or response msg but there is no RequestInProcess
+		//trash
 		else
 		{
+			//trash can be a message which is parsable but makes no sense at all, e.g. no method/response/ or error fields.
 			handleTrash(msg);
 		}
 	}
 	catch(PluginError &e)
 	{
 		dyn_print("Exception: %s\n", e.get());
-		printf("Stacksize: %d\n", requests.size());
-		throw;
+		dyn_print("Stacksize: %d\n", requests.size());
+
+		if(msg->getSender() == CLIENT_SIDE)
+		{
+			error = json->generateResponseError(*id, e.getErrorCode(), e.get());
+			throw PluginError(error);
+		}
+		else
+			throw;
+
 	}
-	printf("Stacksize: %d\n", requests.size());
+	dyn_print("Stacksize: %d\n", requests.size());
 }
 
 
 void ConnectionContext::handleRequest(RsdMsg* msg)
 {
-	char* methodNamespace = NULL;
 	try
 	{
-		id = json->tryTogetId();
-		methodNamespace = getMethodNamespace();
-
-		//Msg for RSD
-		if(strncmp(methodNamespace, "RSD", strlen(methodNamespace))== 0 )
-		{
-			handleRSDCommand(msg);
-			delete[] methodNamespace;
-			delete msg;
-			requests.pop_back();
-			setRequestNotInProcess();
-		}
-		//Msg for a Plugin
+		if(msg->getSender() == CLIENT_SIDE)
+			handleRequestFromClient(msg);
 		else
-		{
-			currentClient = findUdsConnection(methodNamespace);
-			delete[] methodNamespace;
-
-			//OK
-			if(currentClient != NULL)
-			{
-				currentClient->sendData(msg->getContent());
-			}
-			//BAD
-			else
-			{
-				error = json->generateResponseError(*id, -33011, "Plugin not found.");
-				throw PluginError(error);
-			}
-		}
+			handleRequestFromPlugin(msg);
 	}
 	catch(PluginError &e)
 	{
-		requests.pop_back();
-		if(requests.empty())
-			setRequestNotInProcess();
 		throw;
 	}
-}
-
-
-void ConnectionContext::handleResponse(RsdMsg* msg)
-{
-	RsdMsg* lastMsg = requests.back();
-	lastSender = lastMsg->getSender();
-
-	//back to a plugin
-	if(lastSender != 0)
-	{
-		currentClient =  findUdsConnection(lastSender);
-		//TODO: implement case that plugin went offline, like in handleRequest
-		delete lastMsg;
-		requests.pop_back();
-		currentClient->sendData(msg->getContent());
-	}
-	//lastSender == 0 means, send response to tcp client
-	else
-	{
-		delete lastMsg;
-		requests.pop_back();
-		setRequestNotInProcess();
-		tcp_send(msg);
-	}
-	delete msg;
-}
-
-
-void ConnectionContext::handleTrash(RsdMsg* msg)
-{
-	//client sent response / plugin send response but without a request
-	if(!isRequestInProcess())
-	{
-		//sender = client -> send back to client (like echo)
-		if(msg->getSender() == 0)
-			tcp_send(msg);
-
-		//sender = plugin ? -> just drop msg
-		delete msg;
-	}
-	//Request in process but received nonsense ? -> send this to last sender
-	else
-		handleResponse(msg);
-}
-
-
-
-void ConnectionContext::handleRSDCommand(RsdMsg* msg)
-{
-	try{
-		Value* method = json->tryTogetMethod();
-		Value* params = NULL;
-		Value* id = json->tryTogetId();
-		Value resultValue;
-		const char* result = NULL;
-
-		RSD::executeFunction(*method, *params, resultValue);
-
-		//generate json rsponse msg via jsonRPC with resultValue !
-		result = json->generateResponse(*id, resultValue);
-
-		//send the generated msg back to client
-		tcp_send(result);
-	}
-	catch(PluginError &e)
-	{
-		setRequestNotInProcess();
-		throw;
-	}
-}
-
-
-void ConnectionContext::handleIncorrectPluginResponse(RsdMsg* msg, const char* error)
-{
-	RsdMsg* lastMsg = requests.back();
-	error = json->generateResponseError(*id, -99, "Incorrect Response from plugin.");
-	//TODO: insert information from parameter error
-
-	//who was the sender of the last request
-	lastSender = lastMsg->getSender();
-
-	if(lastSender != 0)
-	{
-		currentClient =  findUdsConnection(lastSender);
-		delete lastMsg;
-		requests.pop_back();
-		currentClient->sendData(error);
-	}
-	else
-	{
-		delete lastMsg;
-		requests.pop_back();
-		setRequestNotInProcess();
-		tcp_send(error);
-	}
-	delete msg;
 }
 
 
@@ -246,9 +128,7 @@ char* ConnectionContext::getMethodNamespace()
 	//No '.' found -> no namespace
 	if(namespacePos == strlen(methodName) || namespacePos == 0)
 	{
-		error = json->generateResponseError(*id, -32010, "Methodname has no namespace.");
-		setRequestNotInProcess();
-		throw PluginError(error);
+		throw PluginError(-32010, "Methodname has no namespace.");
 	}
 	else
 	{
@@ -257,6 +137,204 @@ char* ConnectionContext::getMethodNamespace()
 		methodNamespace[namespacePos] = '\0';
 	}
 	return methodNamespace;
+}
+
+
+void ConnectionContext::handleRSDCommand(RsdMsg* msg)
+{
+	try
+	{
+		Value* method = json->getMethod();
+		Value* params = NULL;
+		Value* id = json->getId();
+		Value resultValue;
+		const char* result = NULL;
+
+		RSD::executeFunction(*method, *params, resultValue);
+
+		//generate json rsponse msg via jsonRPC with resultValue !
+		result = json->generateResponse(*id, resultValue);
+
+		//send the generated msg back to client
+		tcp_send(result);
+	}
+	catch(PluginError &e)
+	{
+		delete msg;
+		setRequestNotInProcess();
+		throw;
+	}
+}
+
+
+void ConnectionContext::handleRequestFromClient(RsdMsg* msg)
+{
+	char* methodNamespace = NULL;
+
+	try
+	{
+		methodNamespace = getMethodNamespace();
+		setRequestInProcess();
+
+		//Msg for RSD
+		if(strncmp(methodNamespace, "RSD", strlen(methodNamespace))== 0 )
+		{
+			handleRSDCommand(msg);
+			delete msg;
+			setRequestNotInProcess();
+		}
+		//Msg for a Plugin
+		else
+		{
+			currentClient = findUdsConnection(methodNamespace);
+			requests.push_back(msg);
+			currentClient->sendData(msg->getContent());
+		}
+		delete[] methodNamespace;
+	}
+	catch (PluginError &e)
+	{
+		if(e.getErrorCode() != -32010)
+		{
+			delete[] methodNamespace;
+			setRequestNotInProcess();
+		}
+		throw;
+	}
+}
+
+
+void ConnectionContext::handleRequestFromPlugin(RsdMsg* msg)
+{
+	char* methodNamespace = NULL;
+	try
+	{
+		requests.push_back(msg);
+		methodNamespace = getMethodNamespace();
+		currentClient = findUdsConnection(methodNamespace);
+		currentClient->sendData(msg->getContent());
+		delete[] methodNamespace;
+	}
+	catch (PluginError &e)
+	{
+		if(e.getErrorCode() != -32010)
+			delete[] methodNamespace;
+		throw;
+	}
+}
+
+
+void ConnectionContext::handleResponse(RsdMsg* msg)
+{
+	try
+	{
+		if(msg->getSender() == CLIENT_SIDE)
+		{
+			delete msg;
+			throw PluginError(-3303, "Response from Clientside is not allowed.");
+		}
+		else
+			handleResponseFromPlugin(msg);
+	}
+	catch(PluginError &e)
+	{
+		throw;
+	}
+}
+
+
+
+void ConnectionContext::handleResponseFromPlugin(RsdMsg* msg)
+{
+	RsdMsg* lastMsg = requests.back();
+	lastSender = lastMsg->getSender();
+
+	try
+	{
+		//back to a plugin
+		if(lastSender != CLIENT_SIDE)
+		{
+			currentClient =  findUdsConnection(lastSender);
+			//TODO: implement case that plugin went offline, like in handleRequest
+			delete lastMsg;
+			requests.pop_back();
+			currentClient->sendData(msg->getContent());
+		}
+		//lastSender == CLIENT_SIDE(0) means, send response to tcp client
+		else
+		{
+			delete lastMsg;
+			requests.pop_back();
+			tcp_send(msg);
+			setRequestNotInProcess();
+		}
+		delete msg;
+	}
+	catch(PluginError &e)
+	{
+		throw;
+	}
+}
+
+
+void ConnectionContext::handleTrash(RsdMsg* msg)
+{
+	try
+	{
+		if(msg->getSender() == CLIENT_SIDE)
+		{
+			delete msg;
+			throw PluginError(-3304, "Your Json-Rpc Message to to be a request.");
+		}
+		else
+			handleTrashFromPlugin(msg);
+	}
+	catch(PluginError &e)
+	{
+		throw;
+	}
+}
+
+
+void ConnectionContext::handleTrashFromPlugin(RsdMsg* msg)
+{
+	RsdMsg* errorResponse = NULL;
+	const char* errorResponseMsg = NULL;
+	Value id;
+	try
+	{
+		//get sender from old msg and create a new valid error response
+		errorResponseMsg = json->generateResponseError(id, -3305, "Json-Rpc got to be a request or response.");
+		errorResponse = new RsdMsg(msg->getSender(), errorResponseMsg);
+		delete msg;
+		handleResponseFromPlugin(errorResponse);
+	}
+	catch(PluginError &e)
+	{
+		throw;
+	}
+}
+
+
+void ConnectionContext::handleIncorrectPluginResponse(RsdMsg* msg, PluginError &error)
+{
+
+	RsdMsg* errorResponse = NULL;
+	const char* errorResponseMsg = NULL;
+	Value id;
+	try
+	{
+		error.append(msg->getContent());
+		//get sender from old msg and create a new valid error response
+		errorResponseMsg = json->generateResponseError(id, error.getErrorCode(), error.get());
+		errorResponse = new RsdMsg(msg->getSender(), errorResponseMsg);
+		handleResponseFromPlugin(errorResponse);
+	}
+	catch(PluginError &e)
+	{
+		throw;
+	}
+
 }
 
 
@@ -342,6 +420,28 @@ void ConnectionContext::checkUdsConnections()
 }
 
 
+UdsComClient* ConnectionContext::createNewUdsComClient(Plugin* plugin)
+{
+	UdsComClient* newUdsComClient = NULL;
+
+	try
+	{
+		//   create a new udsClient with this udsFilePath and push it to list
+		newUdsComClient = new UdsComClient(this, plugin->getUdsFilePath(), plugin->getName(), plugin->getPluginNumber());
+		newUdsComClient->tryToconnect();
+		udsConnections.push_back(newUdsComClient);
+		newUdsComClient->sendData(generateIdentificationMsg(contextNumber));
+	}
+	catch(PluginError &e)
+	{
+		if(newUdsComClient != NULL)
+			delete newUdsComClient;
+		throw;
+	}
+	return newUdsComClient;
+}
+
+
 UdsComClient* ConnectionContext::findUdsConnection(char* pluginName)
 {
 	UdsComClient* currentComClient = NULL;
@@ -349,40 +449,28 @@ UdsComClient* ConnectionContext::findUdsConnection(char* pluginName)
 	bool clientFound = false;
 	list<UdsComClient*>::iterator i = udsConnections.begin();
 
-
-	//  check if we already have a udsClient for this namespace/pluginName
-	while(i != udsConnections.end() && !clientFound)
+	try
 	{
-		currentComClient = *i;
-		if(currentComClient->getPluginName()->compare(pluginName) == 0)
+		while(i != udsConnections.end() && !clientFound)
 		{
-			clientFound = true;
-		}
-		else
-			++i;
-	}
-
-	//   IF NOT  -> check RSD plugin list for this namespace and get udsFilePath
-	if(!clientFound)
-	{
-		currentComClient = NULL;
-		currentPlugin = RSD::getPlugin(pluginName);
-
-		if(currentPlugin != NULL)
-		{
-			//   create a new udsClient with this udsFilePath and push it to list
-			currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName(), currentPlugin->getPluginNumber());
-			if(currentComClient->tryToconnect())
+			currentComClient = *i;
+			if(currentComClient->getPluginName()->compare(pluginName) == 0)
 			{
-				udsConnections.push_back(currentComClient);
-				currentComClient->sendData(generateIdentificationMsg(contextNumber));
+				clientFound = true;
 			}
 			else
-			{
-				delete currentComClient;
-				currentComClient = NULL;
-			}
+				++i;
 		}
+		if(!clientFound)
+		{
+			currentComClient = NULL;
+			currentPlugin = RSD::getPlugin(pluginName);
+			currentComClient = createNewUdsComClient(currentPlugin);
+		}
+	}
+	catch(PluginError &e)
+	{
+		throw;
 	}
 	return currentComClient;
 }
@@ -395,37 +483,27 @@ UdsComClient* ConnectionContext::findUdsConnection(int pluginNumber)
 	Plugin* currentPlugin = NULL;
 	list<UdsComClient*>::iterator i = udsConnections.begin();
 
-
-	// 3) check if we already have a udsClient for this namespace/pluginName
-	while(i != udsConnections.end() && !clientFound)
+	try
 	{
-		currentComClient = *i;
-		if(currentComClient->getPluginNumber() == pluginNumber)
+		while(i != udsConnections.end() && !clientFound)
 		{
-			clientFound = true;
-		}
-		else
-			++i;
-	}
-	if(!clientFound)
-	{
-		currentComClient = NULL;
-		currentPlugin = RSD::getPlugin(pluginNumber);
-
-		if(currentPlugin != NULL)
-		{
-			//   create a new udsClient with this udsFilePath and push it to list
-			currentComClient = new UdsComClient(this, currentPlugin->getUdsFilePath(), currentPlugin->getName(), currentPlugin->getPluginNumber());
-			if(currentComClient->tryToconnect())
+			currentComClient = *i;
+			if(currentComClient->getPluginNumber() == pluginNumber)
 			{
-				udsConnections.push_back(currentComClient);
+				clientFound = true;
 			}
 			else
-			{
-				delete currentComClient;
-				currentComClient = NULL;
-			}
+				++i;
 		}
+		if(!clientFound)
+		{
+			currentPlugin = RSD::getPlugin(pluginNumber);
+			currentComClient = createNewUdsComClient(currentPlugin);
+		}
+	}
+	catch(PluginError &e)
+	{
+		throw;
 	}
 	return currentComClient;
 }
