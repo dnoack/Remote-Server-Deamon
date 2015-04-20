@@ -1,9 +1,3 @@
-/*
- * UdsComWorker.cpp
- *
- *  Created on: 09.02.2015
- *      Author: dnoack
- */
 
 #include "errno.h"
 

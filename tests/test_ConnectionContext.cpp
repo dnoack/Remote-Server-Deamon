@@ -85,7 +85,6 @@ TEST(CONNECTION_CONTEXT, processMsg_OK)
 
 	CHECK_THROWS(PluginError, context->processMsg(testMsg));
 
-	delete testMsg;
 	delete context;
 
 }
@@ -100,7 +99,6 @@ TEST(CONNECTION_CONTEXT, processMsg_noNamespaceFail)
 
 	CHECK_THROWS(PluginError, context->processMsg(testMsg));
 
-	delete testMsg;
 	delete context;
 
 }
@@ -114,7 +112,6 @@ TEST(CONNECTION_CONTEXT, processMsg_parseFAIL)
 
 	CHECK_THROWS(PluginError, context->processMsg(testMsg));
 
-	delete testMsg;
 	delete context;
 
 }
