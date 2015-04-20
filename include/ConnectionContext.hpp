@@ -200,6 +200,8 @@ class ConnectionContext
 		const char* error;
 		/*! Contains the id of the last main request.*/
 		Value* id;
+		/*! Contains just 0, this Nullvalue is needed if we got a parse error.*/
+		Value nullId;
 		/*! Contains the current UdsComClient, which will be used in the process of handling the current message.*/
 		UdsComClient* currentClient;
 		/*! This flags signals if a main request (from a client) is in process.*/

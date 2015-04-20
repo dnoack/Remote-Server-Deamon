@@ -100,7 +100,7 @@ TEST(UdsRegServer, registerProcess_retry_aferFail_OK)
 
 	sendMsg(&incorrectMsg);
 	status = recv(currentSocket, recvBuffer, recvBufferSize,0);
-	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Server error\",\"data\":\"Error while parsing json rpc.\"},\"id\":0}", recvBuffer);
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Server error\",\"data\":\"Error while parsing json rpc.\"},\"id\":123}", recvBuffer);
 	memset(recvBuffer, '\0', recvBufferSize);
 
 
@@ -127,7 +127,7 @@ TEST(UdsRegServer, registerMsg_FAIL)
 	sendMsg(&registerMsg);
 
 	recv(currentSocket, recvBuffer, recvBufferSize,0);
-	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32022,\"message\":\"Server error\",\"data\":\"Missing parameter.\"},\"id\":0}", recvBuffer);
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32022,\"message\":\"Server error\",\"data\":\"Missing parameter.\"},\"id\":124}", recvBuffer);
 
 	close(currentSocket);
 }

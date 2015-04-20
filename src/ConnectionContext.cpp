@@ -18,6 +18,7 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	this->udsCheck = false;
 	this->error = NULL;
 	this->id = NULL;
+	nullId.SetInt(0);
 	this->currentClient = NULL;
 	this->requestInProcess = false;
 	this->lastSender = -1;
@@ -88,7 +89,7 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 
 		if(msg->getSender() == CLIENT_SIDE)
 		{
-			error = json->generateResponseError(*id, e.getErrorCode(), e.get());
+			error = json->generateResponseError(nullId, e.getErrorCode(), e.get());
 			throw PluginError(error);
 		}
 		else
@@ -229,10 +230,8 @@ void ConnectionContext::handleResponse(RsdMsg* msg)
 	try
 	{
 		if(msg->getSender() == CLIENT_SIDE)
-		{
-			delete msg;
 			throw PluginError(-3303, "Response from Clientside is not allowed.");
-		}
+
 		else
 			handleResponseFromPlugin(msg);
 	}

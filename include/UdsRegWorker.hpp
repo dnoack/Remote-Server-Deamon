@@ -49,6 +49,8 @@ class UdsRegWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
 		string* pluginName;
 		string* request;
 		string* response;
+		Value* id;
+		const char* error;
 		int currentSocket;
 		enum REG_STATE{NOT_ACTIVE, ANNOUNCED, REGISTERED, ACTIVE, BROKEN};
 		unsigned int state;

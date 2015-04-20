@@ -26,6 +26,8 @@ UdsRegWorker::UdsRegWorker(int socket)
 	this->currentSocket = socket;
 	this->plugin = NULL;
 	this->pluginName = NULL;
+	this->id = NULL;
+	this->error = NULL;
 	this->state = NOT_ACTIVE;
 	this->json = new JsonRPC();
 
@@ -108,10 +110,10 @@ void UdsRegWorker::thread_work()
 				catch(PluginError &e)
 				{
 					popReceiveQueue();
-					string* errorString = e.getString();
+					error = json->generateResponseError(*id, e.getErrorCode(), e.get());
 					state = NOT_ACTIVE;
 					cleanup();
-					send(currentSocket, errorString->c_str(), errorString->size(), 0);
+					send(currentSocket, error, strlen(error), 0);
 
 				}
 			break;
@@ -179,12 +181,12 @@ const char* UdsRegWorker::handleAnnounceMsg(string* request)
 {
 	Value* currentParam = NULL;
 	Value result;
-	Value* id;
 	const char* name = NULL;
 	int number;
 	const char* udsFilePath = NULL;
 
 	json->parse(request);
+	id = json->tryTogetId();
 	currentParam = json->tryTogetParam("pluginName");
 	name = currentParam->GetString();
 	currentParam = json->tryTogetParam("udsFilePath");
@@ -195,7 +197,7 @@ const char* UdsRegWorker::handleAnnounceMsg(string* request)
 	pluginName = new string(name);
 
 	result.SetString("announceACK");
-	id = json->tryTogetId();
+
 
 	return json->generateResponse(*id, result);
 
@@ -237,7 +239,6 @@ void UdsRegWorker::cleanup()
 const char* UdsRegWorker::createRegisterACKMsg()
 {
 	Value result;
-	Value* id;
 	result.SetString("registerACK");
 	id = json->getId();
 	return json->generateResponse(*id, result);
