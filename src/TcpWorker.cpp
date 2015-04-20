@@ -77,7 +77,7 @@ void TcpWorker::thread_work()
 						{
 							errorResponse = new string(e.get());
 							errorMsg = new RsdMsg(0, errorResponse);
-							tcp_send(errorMsg);
+							transmit(errorMsg);
 							delete errorMsg;
 						}
 						catch(...)
@@ -152,19 +152,19 @@ void TcpWorker::thread_listen()
 }
 
 
-int TcpWorker::tcp_send(char* data, int size)
+int TcpWorker::transmit(char* data, int size)
 {
 	return send(currentSocket, data, size, 0);
 }
 
 
-int TcpWorker::tcp_send(const char* data, int size)
+int TcpWorker::transmit(const char* data, int size)
 {
 	return send(currentSocket, data, size, 0);
 }
 
 
-int TcpWorker::tcp_send(RsdMsg* msg)
+int TcpWorker::transmit(RsdMsg* msg)
 {
 	return send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);
 }

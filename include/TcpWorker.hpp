@@ -42,7 +42,7 @@ class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads{
 		 * \param size Length of data.
 		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
 		*/
-		int tcp_send(char* data, int size);
+		int transmit(char* data, int size);
 
 		/**
 		 * Sends a message through the tcp-connections to the client.
@@ -50,14 +50,14 @@ class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads{
 		 * \param size Length of data.
 		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
 		*/
-		int tcp_send(const char* data, int size);
+		int transmit(const char* data, int size);
 
 		/**
 		 * Sends a message through the tcp-connections to the client.
 		 * \param msg Pointer to RsdMsg, which has to be send.
 		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
 		*/
-		int tcp_send(RsdMsg* data);
+		int transmit(RsdMsg* data);
 
 	private:
 

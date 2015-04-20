@@ -414,7 +414,7 @@ void ConnectionContext::checkUdsConnections()
 			delete *udsConnection;
 			udsConnection = udsConnections.erase(udsConnection);
 			dyn_print("RSD: UdsComWorker deleted from list.Verbleibend: %d\n", udsConnections.size());
-			tcpConnection->tcp_send("Connection to AardvarkPlugin Aborted!\n", 39);
+			tcpConnection->transmit("Connection to AardvarkPlugin Aborted!\n", 39);
 		}
 		else
 			++udsConnection;
@@ -531,13 +531,13 @@ void ConnectionContext::arrangeUdsConnectionCheck()
 
 int ConnectionContext::tcp_send(RsdMsg* msg)
 {
-	return tcpConnection->tcp_send(msg);
+	return tcpConnection->transmit(msg);
 }
 
 
 int ConnectionContext::tcp_send(const char* msg)
 {
-	return tcpConnection->tcp_send(msg, strlen(msg));
+	return tcpConnection->transmit(msg, strlen(msg));
 }
 
 

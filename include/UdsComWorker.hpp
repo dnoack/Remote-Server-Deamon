@@ -54,6 +54,9 @@ class UdsComWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
 		UdsComClient* comClient;
 		bool deletable;
 
+		int transmit(char* data, int size){return 1;};
+		int transmit(const char* data, int size){return 1;};
+		int transmit(RsdMsg* msg){return 1;};
 
 		virtual void thread_listen();
 

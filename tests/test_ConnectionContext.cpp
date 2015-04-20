@@ -81,7 +81,7 @@ TEST(CONNECTION_CONTEXT, processMsg_OK)
 {
 
 	context = new ConnectionContext(2);
-	RsdMsg* testMsg = new RsdMsg(0, new string("{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"Aaardvark.aa_close\", \"id\": 9}"));
+	RsdMsg* testMsg = new RsdMsg(0, "{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"Aaardvark.aa_close\", \"id\": 9}");
 
 	CHECK_THROWS(PluginError, context->processMsg(testMsg));
 
@@ -95,7 +95,7 @@ TEST(CONNECTION_CONTEXT, processMsg_noNamespaceFail)
 
 
 	context = new ConnectionContext(2);
-	RsdMsg* testMsg = new RsdMsg(0, new string("{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"aa_close\", \"id\": 9}"));
+	RsdMsg* testMsg = new RsdMsg(0, "{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"aa_close\", \"id\": 9}");
 
 	CHECK_THROWS(PluginError, context->processMsg(testMsg));
 
@@ -108,7 +108,7 @@ TEST(CONNECTION_CONTEXT, processMsg_parseFAIL)
 {
 
 	context = new ConnectionContext(2);
-	RsdMsg* testMsg = new RsdMsg(0, new string("test1"));
+	RsdMsg* testMsg = new RsdMsg(0, "test1");
 
 	CHECK_THROWS(PluginError, context->processMsg(testMsg));
 

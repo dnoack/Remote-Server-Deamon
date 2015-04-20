@@ -3,8 +3,8 @@
 
 #include "RSD.hpp"
 #include "UdsRegWorker.hpp"
+#include "Registration.hpp"
 #include "Plugin_Error.h"
-#include "document.h"
 #include "RsdMsg.h"
 #include "Utils.h"
 
@@ -15,15 +15,11 @@ using namespace rapidjson;
 
 UdsRegWorker::UdsRegWorker(int socket)
 {
-	this->request = 0;
-	this->response = 0;
+	this->msg = NULL;
 	this->currentSocket = socket;
-	this->plugin = NULL;
 	this->pluginName = NULL;
-	this->id = NULL;
-	this->error = NULL;
-	this->state = NOT_ACTIVE;
-	this->json = new JsonRPC();
+	this->registration = new Registration(this);
+	this->errorResponse = NULL;
 
 	StartWorkerThread();
 
@@ -35,8 +31,6 @@ UdsRegWorker::UdsRegWorker(int socket)
 
 UdsRegWorker::~UdsRegWorker()
 {
-	worker_thread_active = false;
-	listen_thread_active = false;
 
 	pthread_cancel(getListener());
 	pthread_cancel(getWorker());
@@ -44,17 +38,14 @@ UdsRegWorker::~UdsRegWorker()
 	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
 
-	delete json;
-
+	delete registration;
 	cleanupReceiveQueue(this);
-	cleanup();
 }
 
 
 
 void UdsRegWorker::thread_work()
 {
-	const char* response = NULL;
 	worker_thread_active = true;
 
 	StartListenerThread();
@@ -62,53 +53,23 @@ void UdsRegWorker::thread_work()
 
 	while(worker_thread_active)
 	{
-		//wait for signals from listenerthread
 		sigwait(&sigmask, &currentSig);
 		switch(currentSig)
 		{
 			case SIGUSR1:
-				try
+				while(getReceiveQueueSize() > 0)
 				{
-					request = receiveQueue.back()->getContent();
-					dyn_print("RegWorker Received: %s\n", request->c_str());
-					switch(state)
+					try
 					{
-						case NOT_ACTIVE:
-							//check for announce msg, create a plugin object in RSD central list
-							response = handleAnnounceMsg(request);
-							send(currentSocket, response,  strlen(response), 0);
-							state = ANNOUNCED;
-							break;
-
-						case ANNOUNCED:
-							//check for register msg, add all method names from msg to plugin object in central RSD list
-							if(handleRegisterMsg(request))
-							{
-								state = REGISTERED;
-								response = createRegisterACKMsg();
-								send(currentSocket, response, strlen(response), 0);
-							}
-							break;
-
-						case REGISTERED:
-							RSD::addPlugin(plugin);
-							plugin = NULL;
-							break;
-
-						case ACTIVE:
-
-							break;
+						msg = receiveQueue.back();
+						dyn_print("RegWorker Received: %s\n", msg->getContent()->c_str());
+						popReceiveQueueWithoutDelete();
+						registration->processMsg(msg);
 					}
-					popReceiveQueue();
-				}
-				catch(PluginError &e)
-				{
-					popReceiveQueue();
-					error = json->generateResponseError(*id, e.getErrorCode(), e.get());
-					state = NOT_ACTIVE;
-					cleanup();
-					send(currentSocket, error, strlen(error), 0);
-
+					catch(...)
+					{
+						dyn_print("Unkown Exception.\n");
+					}
 				}
 			break;
 
@@ -117,7 +78,6 @@ void UdsRegWorker::thread_work()
 				break;
 		}
 	}
-
 	close(currentSocket);
 }
 
@@ -171,78 +131,31 @@ void UdsRegWorker::thread_listen()
 }
 
 
-const char* UdsRegWorker::handleAnnounceMsg(string* request)
-{
-	Value* currentParam = NULL;
-	Value result;
-	const char* name = NULL;
-	int number;
-	const char* udsFilePath = NULL;
-
-	json->parse(request);
-	id = json->tryTogetId();
-	currentParam = json->tryTogetParam("pluginName");
-	name = currentParam->GetString();
-	currentParam = json->tryTogetParam("udsFilePath");
-	udsFilePath = currentParam->GetString();
-	currentParam = json->tryTogetParam("pluginNumber");
-	number = currentParam->GetInt();
-	plugin = new Plugin(name, number, udsFilePath);
-	pluginName = new string(name);
-
-	result.SetString("announceACK");
-
-
-	return json->generateResponse(*id, result);
-
-}
-
-bool UdsRegWorker::handleRegisterMsg(string* request)
-{
-	Document* dom;
-	string* methodName = NULL;
-
-	dom = json->parse(request);
-	for(Value::ConstMemberIterator i = (*dom)["params"].MemberBegin(); i != (*dom)["params"].MemberEnd(); ++i)
-	{
-		methodName = new string(i->value.GetString());
-		plugin->addMethod(methodName);
-	}
-
-	return true;
-}
-
-
-void UdsRegWorker::cleanup()
-{
-
-	if(pluginName != NULL)
-	{
-		delete pluginName;
-		pluginName = NULL;
-	}
-
-	if(plugin != NULL)
-	{
-		delete plugin;
-		plugin = NULL;
-	}
-}
-
-
-const char* UdsRegWorker::createRegisterACKMsg()
-{
-	Value result;
-	result.SetString("registerACK");
-	id = json->getId();
-	return json->generateResponse(*id, result);
-}
 
 
 void UdsRegWorker::cleanupReceiveQueue(void* arg)
 {
 	UdsRegWorker* worker = static_cast<UdsRegWorker*>(arg);
 	worker->deleteReceiveQueue();
+}
+
+
+int UdsRegWorker::transmit(char* data, int size)
+{
+	return send(currentSocket, data, size, 0);
+}
+
+
+int UdsRegWorker::transmit(const char* data, int size)
+{
+	return send(currentSocket, data, size, 0);
+}
+
+
+int UdsRegWorker::transmit(RsdMsg* msg)
+{
+	string* data = msg->getContent();
+	return send(currentSocket, data->c_str(), data->size(), 0);
 }
 
 
