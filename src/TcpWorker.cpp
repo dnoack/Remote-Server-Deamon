@@ -75,7 +75,6 @@ void TcpWorker::thread_work()
 						}
 						catch(PluginError &e)
 						{
-							delete msg;
 							errorResponse = new string(e.get());
 							errorMsg = new RsdMsg(0, errorResponse);
 							tcp_send(errorMsg);

@@ -89,11 +89,15 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 
 		if(msg->getSender() == CLIENT_SIDE)
 		{
+			delete msg;
 			error = json->generateResponseError(nullId, e.getErrorCode(), e.get());
 			throw PluginError(error);
 		}
 		else
+		{
+			delete msg;
 			throw;
+		}
 
 	}
 	dyn_print("Stacksize: %d\n", requests.size());
@@ -161,7 +165,6 @@ void ConnectionContext::handleRSDCommand(RsdMsg* msg)
 	}
 	catch(PluginError &e)
 	{
-		delete msg;
 		setRequestNotInProcess();
 		throw;
 	}
