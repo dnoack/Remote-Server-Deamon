@@ -15,7 +15,7 @@ int RsdMsg::countMalloc;
 RsdMsg::RsdMsg(int sender, string* content)
 {
 	this->sender = sender;
-	this->content = content;
+	this->content = new string(*content);
 	++countMalloc;
 };
 
