@@ -12,6 +12,7 @@
 
 using namespace std;
 
+#define REGISTRATION_TIMEOUT 3
 
 class Registration
 {
@@ -21,7 +22,27 @@ class Registration
 
 		void processMsg(RsdMsg* msg);
 
+		/**
+		 * Checks if a json rpc request from CLIENT is currently in process.
+		 * \return Returns true if a request is in process, otherwise it returns false.
+		 */
+		bool isRequestInProcess();
+
+		string* getPluginName(){ return this->pluginName;}
+
+		void cleanup();
+
 	private:
+
+		struct _timeout
+		{
+			Registration* ptr;
+			int limit;
+		};
+
+		static void* timer(void* limit);
+		void startTimer(int limit);
+		void cancelTimer();
 
 		/*! Instance of json-rpc modul.*/
 		JsonRPC* json;
@@ -37,6 +58,10 @@ class Registration
 		Value* id;
 		Value result;
 		Value nullId;
+		pthread_mutex_t rIPMutex;
+		bool requestInProcess;
+		pthread_t timerThread;
+		_timeout timerParams;
 
 
 		/*! After an exception was thrown, this variable can be user to generate json-rpc error responses.*/
@@ -46,12 +71,18 @@ class Registration
 		enum REG_STATE{NOT_ACTIVE, ANNOUNCED, REGISTERED, ACTIVE, BROKEN};
 		unsigned int state;
 
+		/*! Sets the requestInProcess flag to true.
+		 * \note This functions uses rIPMutex to access requestInProcess.
+		*/
+		bool setRequestInProcess();
 
-		/**
-		 * After an exception was thrown, we want to check if some variables where allocated.
-		 * If needed they will be deallocated.
-		 */
-		void cleanup();
+		/*! Sets the requestInProcess flag to false.
+		 * \note This functions uses rIPMutex to access requestInProcess.
+		*/
+		void setRequestNotInProcess();
+
+
+
 		//following methods are part of the registration process (in this order)
 		const char* handleAnnounceMsg(RsdMsg* msg);
 		//TODO: create announceACK, currently handled by handleAnnounceMsg

@@ -17,7 +17,6 @@ UdsRegWorker::UdsRegWorker(int socket)
 {
 	this->msg = NULL;
 	this->currentSocket = socket;
-	this->pluginName = NULL;
 	this->registration = new Registration(this);
 	this->errorResponse = NULL;
 
@@ -43,6 +42,12 @@ UdsRegWorker::~UdsRegWorker()
 }
 
 
+string* UdsRegWorker::getPluginName()
+{
+	return registration->getPluginName();
+}
+
+
 
 void UdsRegWorker::thread_work()
 {
@@ -59,16 +64,19 @@ void UdsRegWorker::thread_work()
 			case SIGUSR1:
 				while(getReceiveQueueSize() > 0)
 				{
-					try
+					if(!registration->isRequestInProcess())
 					{
-						msg = receiveQueue.back();
-						dyn_print("RegWorker Received: %s\n", msg->getContent()->c_str());
-						popReceiveQueueWithoutDelete();
-						registration->processMsg(msg);
-					}
-					catch(...)
-					{
-						dyn_print("Unkown Exception.\n");
+						try
+						{
+							msg = receiveQueue.back();
+							dyn_print("RegWorker Received: %s\n", msg->getContent()->c_str());
+							popReceiveQueueWithoutDelete();
+							registration->processMsg(msg);
+						}
+						catch(...)
+						{
+							dyn_print("Unkown Exception.\n");
+						}
 					}
 				}
 			break;

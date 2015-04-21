@@ -95,7 +95,6 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 		}
 		else
 		{
-			delete msg;
 			throw;
 		}
 

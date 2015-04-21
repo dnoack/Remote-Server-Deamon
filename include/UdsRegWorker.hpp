@@ -30,7 +30,7 @@ class UdsRegWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
 
 		static void cleanupReceiveQueue(void* arg);
 
-		string* getPluginName(){return pluginName;}
+		string* getPluginName();
 
 		int transmit(char* data, int size);
 		int transmit(const char* data, int size);
@@ -45,7 +45,6 @@ class UdsRegWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
 
 
 		/*! Contains the corresponding pluginname, this is later used for deleting the right plugin within RSD plugins list.*/
-		string* pluginName;
 		Registration* registration;
 		int currentSocket;
 		RsdMsg* msg;

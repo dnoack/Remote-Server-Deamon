@@ -7,7 +7,7 @@
 #define MAX_CLIENTS 20
 #define MAIN_SLEEP_TIME 3 //sleep time for main loop
 #include "Plugin_Error.h"
-//#define RAPIDJSON_ASSERT(x)    if((x) == 0 ){throw PluginError("Rapidjson assertion.", __FILE__, __LINE__);}
+#define RAPIDJSON_ASSERT(x)    if((x) == 0 ){throw PluginError("Rapidjson assertion.", __FILE__, __LINE__);}
 
 
 #include <map>
