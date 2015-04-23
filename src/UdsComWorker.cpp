@@ -23,6 +23,9 @@ UdsComWorker::UdsComWorker(int socket,  UdsComClient* comClient)
 	this->deletable = false;
 
 	StartWorkerThread();
+
+	if(wait_for_listener_up() != 0)
+			throw PluginError("Creation of Listener/worker threads failed.");
 }
 
 

@@ -16,7 +16,7 @@ static Registration* reg;
 static WorkerInterfaceMock wMock;
 
 static string announceMsg = "{\"jsonrpc\": \"2.0\", \"params\": { \"pluginName\": \"UnitTest\", \"udsFilePath\": \"/tmp/unitTest.uds\", \"pluginNumber\": 99 }, \"method\": \"announce\", \"id\": 123}";
-static string registerMsg = "{\"jsonrpc\": \"2.0\", \"params\": {\"functions\" : [\"foooo\", \"baaar\"] }, \"method\": \"register\", \"id\": 124}";
+static string registerMsg = "{\"jsonrpc\": \"2.0\", \"params\": { \"functions\" : [\"foooo\", \"baaar\"] }, \"method\": \"register\", \"id\": 124}";
 static string activeMsg = "{\"jsonrpc\": \"2.0\", \"method\": \"pluginActive\"}";
 static string incorrectMsg = "amidoinitright";
 
