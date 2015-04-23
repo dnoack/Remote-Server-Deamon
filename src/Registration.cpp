@@ -125,15 +125,15 @@ const char* Registration::handleAnnounceMsg(RsdMsg* msg)
 
 bool Registration::handleRegisterMsg(RsdMsg* msg)
 {
-	string* methodName = NULL;
-	Document* dom = json->getRequestDOM();
+	string* functionName = NULL;
+	Value* functionArray = json->tryTogetParam("functions");
 
 	try
 	{
-		for(Value::ConstMemberIterator i = (*dom)["params"].MemberBegin(); i != (*dom)["params"].MemberEnd(); ++i)
+		for(unsigned int i = 0; i < functionArray->Size(); i++)
 		{
-			methodName = new string(i->value.GetString());
-			plugin->addMethod(methodName);
+			functionName = new string(((*functionArray)[i]).GetString());
+			plugin->addMethod(functionName);
 		}
 		delete msg;
 	}
