@@ -24,6 +24,7 @@
 #include "RsdMsg.h"
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
+#include "Plugin_Error.h"
 
 
 
