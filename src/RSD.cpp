@@ -237,9 +237,10 @@ void RSD::checkForDeletableConnections()
 		//is a tcp connection down ?
 		if((*connection)->isDeletable())
 		{
+			dyn_print("RSD: ConnectionContext %d deleted from list. Verbleibend: %d\n", (*connection)->getContextNumber(), connectionContextList.size()+1);
 			delete *connection;
 			connection = connectionContextList.erase(connection);
-			dyn_print("RSD: ConnectionContext deleted from list. Verbleibend: %d\n", connectionContextList.size());
+
 		}
 		//maybe we got a working tcp connection but a plugin went down
 		else if((*connection)->isUdsCheckEnabled())

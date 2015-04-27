@@ -23,6 +23,7 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	this->requestInProcess = false;
 	this->lastSender = -1;
 	contextNumber = getNewContextNumber();
+	dyn_print("CC-----> New ConnectionContext: %d\n", contextNumber);
 	//TODO: if no number is free, tcpworker has to send an error and close the connection
 	this->json = new JsonRPC();
 	new TcpWorker(this, &tcpConnection,tcpSocket);
@@ -84,8 +85,8 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 	}
 	catch(PluginError &e)
 	{
-		dyn_print("Exception: %s\n", e.get());
-		dyn_print("Stacksize: %d\n", requests.size());
+		dyn_print("CC----->  Exception: %s\n", e.get());
+		dyn_print("CC----->  Stacksize: %d\n", requests.size());
 
 		if(msg->getSender() == CLIENT_SIDE)
 		{
@@ -99,7 +100,7 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 		}
 
 	}
-	dyn_print("Stacksize: %d\n", requests.size());
+	dyn_print("CC-----> Stacksize: %d\n", requests.size());
 }
 
 
@@ -394,7 +395,7 @@ bool ConnectionContext::isDeletable()
 		{
 			delete *udsConnection;
 			udsConnection = udsConnections.erase(udsConnection);
-			dyn_print("RSD: UdsComworker deleted from list.Verbleibend: %lu \n", udsConnections.size());
+			dyn_print("CC-----> UdsComworker deleted from context %d. Verbleibend: %lu \n", contextNumber, udsConnections.size());
 		}
 	}
 	return deletable;
@@ -412,7 +413,7 @@ void ConnectionContext::checkUdsConnections()
 		{
 			delete *udsConnection;
 			udsConnection = udsConnections.erase(udsConnection);
-			dyn_print("RSD: UdsComWorker deleted from list.Verbleibend: %d\n", udsConnections.size());
+			dyn_print("CC-----> UdsComworker deleted from context %d. Verbleibend: %lu \n", udsConnections.size(), contextNumber);
 			tcpConnection->transmit("Connection to AardvarkPlugin Aborted!\n", 39);
 		}
 		else

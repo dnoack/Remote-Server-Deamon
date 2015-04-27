@@ -51,7 +51,13 @@ void UdsComClient::markAsDeletable()
 
 int UdsComClient::sendData(string* data)
 {
-	return send(currentSocket, data->c_str(), data->size(), 0);
+	int result = 0;
+	dyn_print("Uds-------> %s\n", data->c_str());
+	result = send(currentSocket, data->c_str(), data->size(), 0);
+	if(result < 0)
+		dyn_print("Uds-------> senderror: %s", strerror(errno));
+
+	return result;
 }
 
 
@@ -79,7 +85,7 @@ void UdsComClient::tryToconnect()
 {
 	if( connect(currentSocket, (struct sockaddr*)&address, addrlen) < 0)
 	{
-		dyn_print("Gewünschtes Plugin nicht gefunden.%s \n", strerror(errno));
+		dyn_print("Uds-------> Gewünschtes Plugin nicht gefunden.%s \n", strerror(errno));
 		throw PluginError("Could not connect to plugin.");
 	}
 	else

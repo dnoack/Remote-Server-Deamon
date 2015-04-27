@@ -62,7 +62,7 @@ void UdsComWorker::thread_work()
 		{
 			case SIGUSR1:
 					msg = receiveQueue.back();
-					dyn_print("Routeback: %s\n", msg->getContent()->c_str());
+					dyn_print("<---Uds %s\n", msg->getContent()->c_str());
 					popReceiveQueueWithoutDelete();
 					comClient->routeBack(msg);
 				break;
@@ -116,7 +116,6 @@ void UdsComWorker::thread_listen()
 			{
 				//add received data in buffer to queue
 				content = new string(receiveBuffer, recvSize);
-				dyn_print("UdsCom/Listener: %s\n",content->c_str());
 				pushReceiveQueue(new RsdMsg(comClient->getPluginNumber(), content));
 
 				//signal the worker

@@ -69,7 +69,7 @@ void TcpWorker::thread_work()
 						try
 						{
 							msg = receiveQueue.back();
-							dyn_print("Tcp Queue Received: %s\n", msg->getContent()->c_str());
+							dyn_print("TCP---> %s\n", msg->getContent()->c_str());
 							popReceiveQueueWithoutDelete();
 							context->processMsg(msg);
 						}
@@ -135,7 +135,6 @@ void TcpWorker::thread_listen()
 			{
 				//add received data in buffer to queue
 				content = new string(receiveBuffer, recvSize);
-				dyn_print("TcpListener: %s \n", content->c_str());
 				pushReceiveQueue(new RsdMsg(0, content));
 				//signal the worker
 				pthread_kill(worker_thread, SIGUSR1);
@@ -154,18 +153,21 @@ void TcpWorker::thread_listen()
 
 int TcpWorker::transmit(char* data, int size)
 {
+	dyn_print("<-------TCP %s\n", data);
 	return send(currentSocket, data, size, 0);
 }
 
 
 int TcpWorker::transmit(const char* data, int size)
 {
+	dyn_print("<-------TCP %s\n", data);
 	return send(currentSocket, data, size, 0);
 }
 
 
 int TcpWorker::transmit(RsdMsg* msg)
 {
+	dyn_print("<-------TCP %s\n", msg->getContent()->c_str());
 	return send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);
 }
 
