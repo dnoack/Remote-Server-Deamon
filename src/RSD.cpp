@@ -32,6 +32,12 @@ RSD::RSD()
 	addrlen = sizeof(address);
 	optionflag = 1;
 
+	sigemptyset(&origmask);
+	sigemptyset(&sigmask);
+	sigaddset(&sigmask, SIGUSR1);
+	sigaddset(&sigmask, SIGUSR2);
+	pthread_sigmask(SIG_BLOCK, &sigmask, &origmask);
+
 	connection_socket = socket(AF_INET, SOCK_STREAM, 0);
 	setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag));
 	bind(connection_socket, (struct sockaddr*)&address, sizeof(address));
@@ -237,7 +243,7 @@ void RSD::checkForDeletableConnections()
 		//is a tcp connection down ?
 		if((*connection)->isDeletable())
 		{
-			dyn_print("RSD: ConnectionContext %d deleted from list. Verbleibend: %d\n", (*connection)->getContextNumber(), connectionContextList.size()+1);
+			dyn_print("RSD: ConnectionContext %d deleted from list. Verbleibend: %d\n", (*connection)->getContextNumber(), connectionContextList.size()-1);
 			delete *connection;
 			connection = connectionContextList.erase(connection);
 

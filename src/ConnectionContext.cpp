@@ -20,13 +20,14 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	this->id = NULL;
 	nullId.SetInt(0);
 	this->currentClient = NULL;
+	this->tcpConnection = NULL;
 	this->requestInProcess = false;
 	this->lastSender = -1;
 	contextNumber = getNewContextNumber();
-	dyn_print("CC-----> New ConnectionContext: %d\n", contextNumber);
 	//TODO: if no number is free, tcpworker has to send an error and close the connection
 	this->json = new JsonRPC();
-	new TcpWorker(this, &tcpConnection,tcpSocket);
+	new TcpWorker(this, &(this->tcpConnection),tcpSocket);
+	dyn_print("CC-----> New ConnectionContext: %d\n", contextNumber);
 }
 
 
@@ -413,7 +414,7 @@ void ConnectionContext::checkUdsConnections()
 		{
 			delete *udsConnection;
 			udsConnection = udsConnections.erase(udsConnection);
-			dyn_print("CC-----> UdsComworker deleted from context %d. Verbleibend: %lu \n", udsConnections.size(), contextNumber);
+			dyn_print("CC-----> UdsComworker deleted from context %d. Verbleibend: %lu \n" , contextNumber, udsConnections.size());
 			tcpConnection->transmit("Connection to AardvarkPlugin Aborted!\n", 39);
 		}
 		else

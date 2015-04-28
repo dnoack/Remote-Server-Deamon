@@ -24,6 +24,8 @@ TcpWorker::TcpWorker(ConnectionContext* context, TcpWorker** tcpWorker, int sock
 
 	if(wait_for_listener_up() != 0)
 		throw PluginError("Creation of Listener/worker threads failed.");
+	else
+		dyn_print("TCP---> Created TcpWorker for context %d with socket %d.", context->getContextNumber(), currentSocket);
 }
 
 
@@ -49,14 +51,14 @@ void TcpWorker::thread_work()
 
 
 	//start the listenerthread and remember the theadId of it
+	configSignals();
 	StartListenerThread();
 
-	configSignals();
+
 
 	while(worker_thread_active)
 	{
 		//wait for signals from listenerthread
-
 		sigwait(&sigmask, &currentSig);
 		switch(currentSig)
 		{
@@ -86,7 +88,7 @@ void TcpWorker::thread_work()
 						}
 					}
 				}
-				break;
+			break;
 
 			case SIGUSR2:
 				dyn_print("TcpComWorker: SIGUSR2\n");
@@ -111,7 +113,7 @@ void TcpWorker::thread_listen()
 	int retval;
 	fd_set rfds;
 	pthread_t worker_thread = getWorker();
-	configSignals();
+	//configSignals();
 
 	FD_ZERO(&rfds);
 	FD_SET(currentSocket, &rfds);

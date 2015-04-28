@@ -210,6 +210,9 @@ class RSD{
 		pthread_t accepter;
 		/*! Instance of the Registration server for registering new plugins to RSD.*/
 		UdsRegServer* regServer;
+
+		sigset_t sigmask;
+		sigset_t origmask;
 };
 
 

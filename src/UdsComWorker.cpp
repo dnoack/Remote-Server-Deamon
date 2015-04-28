@@ -51,8 +51,9 @@ void UdsComWorker::thread_work()
 	RsdMsg* msg = NULL;
 	worker_thread_active = true;
 
-	StartListenerThread();
 	configSignals();
+	StartListenerThread();
+
 
 	while(worker_thread_active)
 	{
@@ -90,7 +91,6 @@ void UdsComWorker::thread_listen()
 	fd_set rfds;
 	pthread_t worker_thread = getWorker();
 
-	configSignals();
 
 	FD_ZERO(&rfds);
 	FD_SET(currentSocket, &rfds);
