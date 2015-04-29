@@ -349,6 +349,7 @@ int RSD::start(int argc, char** argv)
 		{
 			case 'l':
 				lvalue = optarg;
+				lnumber = (int)strtol(lvalue, NULL, 10);
 				break;
 			case '?':
 				return 1;
@@ -358,7 +359,7 @@ int RSD::start(int argc, char** argv)
 		}
 	}
 
-	lnumber = (int)strtol(lvalue, NULL, 10);
+
 	if( lnumber < 5)
 		LogUnit::setGlobalLogLevel(lnumber);
 
