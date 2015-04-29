@@ -19,6 +19,8 @@ UdsComClient::UdsComClient(ConnectionContext* context, string* udsFilePath, stri
 	this->comWorker = NULL;
 	this->deletable = false;
 	this->context = context;
+	this->logName = "UDS OUT:";
+	this->localLogLevel = 2;
 	this->pluginNumber = pluginNumber;
 	this->udsFilePath = new string(*udsFilePath);
 	this->pluginName = new string(*pluginName);
@@ -52,10 +54,12 @@ void UdsComClient::markAsDeletable()
 int UdsComClient::sendData(string* data)
 {
 	int result = 0;
-	dyn_print("Uds-------> %s\n", data->c_str());
+
+	log(data, logName);
 	result = send(currentSocket, data->c_str(), data->size(), 0);
+
 	if(result < 0)
-		dyn_print("Uds-------> senderror: %s", strerror(errno));
+		dlog(logName, "Error while sending: %s", strerror(errno));
 
 	return result;
 }
@@ -85,7 +89,7 @@ void UdsComClient::tryToconnect()
 {
 	if( connect(currentSocket, (struct sockaddr*)&address, addrlen) < 0)
 	{
-		dyn_print("Uds-------> Gewünschtes Plugin nicht gefunden.%s \n", strerror(errno));
+		dlog(logName, "Plugin not found, errno: %s ", strerror(errno));
 		throw PluginError("Could not connect to plugin.");
 	}
 	else

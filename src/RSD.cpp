@@ -1,6 +1,7 @@
 #include "RSD.hpp"
 #include "RsdMsg.h"
 #include "Utils.h"
+#include "LogUnit.hpp"
 
 
 int RSD::connection_socket;
@@ -17,6 +18,8 @@ pthread_mutex_t RSD::connectionContextListMutex;
 map<const char*, afptr, cmp_keys> RSD::funcMap;
 afptr RSD::funcMapPointer;
 Document RSD::dom;
+
+int LogUnit::globalLogLevel = 0;
 
 
 RSD::RSD()
@@ -47,6 +50,7 @@ RSD::RSD()
 
 	//init static part of ConnectionContext
 	ConnectionContext::init();
+	LogUnit::setGlobalLogLevel(0);
 
 	funcMapPointer = &RSD::showAllRegisteredPlugins;
 	funcMap.insert(pair<const char*, afptr>("RSD.showAllRegisteredPlugins", funcMapPointer));
@@ -332,8 +336,32 @@ bool RSD::showAllKnownFunctions(Value &params, Value &result)
 
 
 
-void RSD::start()
+int RSD::start(int argc, char** argv)
 {
+
+	char* lvalue = NULL;
+	int lnumber = 5;
+	int c;
+
+	while(( c = getopt(argc, argv, "l:")) != -1)
+	{
+		switch(c)
+		{
+			case 'l':
+				lvalue = optarg;
+				break;
+			case '?':
+				return 1;
+
+			default:
+				abort();
+		}
+	}
+
+	lnumber = (int)strtol(lvalue, NULL, 10);
+	if( lnumber < 5)
+		LogUnit::setGlobalLogLevel(lnumber);
+
 	regServer->start();
 
 	//start comListener
@@ -350,6 +378,7 @@ void RSD::start()
 	}
 	while(rsdActive);
 
+	return 0;
 }
 
 
@@ -357,7 +386,7 @@ void RSD::start()
 int main(int argc, char** argv)
 {
 	RSD* rsd = new RSD();
-	rsd->start();
+	rsd->start(argc, argv);
 	delete rsd;
 }
 #endif

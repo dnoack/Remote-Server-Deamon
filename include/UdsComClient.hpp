@@ -22,6 +22,7 @@
 
 #include "UdsComWorker.hpp"
 #include "RsdMsg.h"
+#include "LogUnit.hpp"
 
 using namespace std;
 
@@ -30,7 +31,7 @@ class ConnectionContext;
 class UdsComWorker;
 
 
-class UdsComClient{
+class UdsComClient : public LogUnit{
 
 
 	public:
@@ -67,6 +68,7 @@ class UdsComClient{
 	int pluginNumber;
 
 	bool deletable;
+	const char* logName;
 
 
 };

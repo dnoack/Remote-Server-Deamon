@@ -12,6 +12,7 @@
 #include "UdsComClient.hpp"
 #include "Plugin.hpp"
 #include "Plugin_Error.h"
+#include "LogUnit.hpp"
 
 
 /*
@@ -34,7 +35,7 @@
  *   - close and delete UdsComClients which are not needed anymore.
  * \author David Noack
  */
-class ConnectionContext
+class ConnectionContext : public LogUnit
 {
 	public:
 
@@ -210,6 +211,7 @@ class ConnectionContext
 		int lastSender;
 		/*! Contains the unique contextNumber of this ConnectionContext.*/
 		short contextNumber;
+		const char* logName;
 
 
 		/*! Sets the requestInProcess flag to true.

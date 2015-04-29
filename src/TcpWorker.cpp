@@ -1,10 +1,3 @@
-/*
- * UdsWorker.cpp
- *
- *  Created on: 	09.02.2015
- *  Author: 		dnoack
- */
-
 #include "errno.h"
 
 #include <TcpWorker.hpp>
@@ -18,6 +11,9 @@ TcpWorker::TcpWorker(ConnectionContext* context, TcpWorker** tcpWorker, int sock
 {
 	this->context = context;
 	this->currentSocket = socket;
+	this->localLogLevel = 2;
+	this->logNameIn = "TCP IN:";
+	this->logNameOut = "TCP OUT:";
 	*tcpWorker = this;
 
 	StartWorkerThread();
@@ -25,7 +21,7 @@ TcpWorker::TcpWorker(ConnectionContext* context, TcpWorker** tcpWorker, int sock
 	if(wait_for_listener_up() != 0)
 		throw PluginError("Creation of Listener/worker threads failed.");
 	else
-		dyn_print("TCP---> Created TcpWorker for context %d with socket %d.", context->getContextNumber(), currentSocket);
+		dlog(logNameIn, "Created TcpWorker for context %d with socket %d.", context->getContextNumber(), currentSocket);
 }
 
 
@@ -71,7 +67,7 @@ void TcpWorker::thread_work()
 						try
 						{
 							msg = receiveQueue.back();
-							dyn_print("TCP---> %s\n", msg->getContent()->c_str());
+							log(msg->getContent(), logNameIn);
 							popReceiveQueueWithoutDelete();
 							context->processMsg(msg);
 						}
@@ -84,19 +80,19 @@ void TcpWorker::thread_work()
 						}
 						catch(...)
 						{
-							dyn_print("Unkown Exception.\n");
+							log("Unkown Exception.", logNameIn);
 						}
 					}
 				}
 			break;
 
 			case SIGUSR2:
-				dyn_print("TcpComWorker: SIGUSR2\n");
+				log("TcpComWorker: SIGUSR2", logNameIn);
 				context->checkUdsConnections();
 				break;
 
 			default:
-				dyn_print("TcpComWorker: unkown signal \n");
+				log("TcpComWorker: unkown signal", logNameIn);
 				break;
 		}
 	}
@@ -155,21 +151,22 @@ void TcpWorker::thread_listen()
 
 int TcpWorker::transmit(char* data, int size)
 {
-	dyn_print("<-------TCP %s\n", data);
+	log(data, logNameOut);
 	return send(currentSocket, data, size, 0);
 }
 
 
 int TcpWorker::transmit(const char* data, int size)
 {
-	dyn_print("<-------TCP %s\n", data);
+
+	log((char*)data, logNameOut);
 	return send(currentSocket, data, size, 0);
 }
 
 
 int TcpWorker::transmit(RsdMsg* msg)
 {
-	dyn_print("<-------TCP %s\n", msg->getContent()->c_str());
+	log(msg->getContent(), logNameOut);
 	return send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);
 }
 

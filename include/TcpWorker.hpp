@@ -17,6 +17,7 @@
 #include "WorkerInterface.hpp"
 #include <WorkerThreads.hpp>
 #include "RsdMsg.h"
+#include "LogUnit.hpp"
 
 
 class ConnectionContext;
@@ -29,11 +30,11 @@ class UdsComClient;
  * \implements WorkerInterface, WorkerThreads
  * \author David Noack
  */
-class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads{
+class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, public LogUnit{
 
 	public:
 		TcpWorker(ConnectionContext* context, TcpWorker** tcpWorker, int socket);
-		~TcpWorker();
+		virtual ~TcpWorker();
 
 
 		/**

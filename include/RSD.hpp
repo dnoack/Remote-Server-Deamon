@@ -79,7 +79,7 @@ class RSD{
 		 * incoming TCP-connections. After that, it enters a loop which checks every
 		 * MAIN_SLEEP_TIME seconds if there are some TCP or UDS connections closed.
 		 */
-		void start();
+		int start(int argc, char** argv);
 
 		/** Stops the server by setting rsdActive to false.*/
 		void stop(){rsdActive = false;}

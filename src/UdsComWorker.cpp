@@ -18,6 +18,9 @@ UdsComWorker::UdsComWorker(int socket,  UdsComClient* comClient)
 	this->jsonReturn = NULL;
 	this->jsonInput = NULL;
 	this->identity = NULL;
+	this->logNameIn = "UDS IN:";
+	this->logNameOut = "UDS OUT:";
+	this->localLogLevel = 2;
 	this->comClient = comClient;
 	this->currentSocket = socket;
 	this->deletable = false;
@@ -63,7 +66,7 @@ void UdsComWorker::thread_work()
 		{
 			case SIGUSR1:
 					msg = receiveQueue.back();
-					dyn_print("<---Uds %s\n", msg->getContent()->c_str());
+					log(msg->getContent(), logNameIn);
 					popReceiveQueueWithoutDelete();
 					comClient->routeBack(msg);
 				break;
