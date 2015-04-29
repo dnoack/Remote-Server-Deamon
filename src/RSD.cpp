@@ -362,6 +362,14 @@ int RSD::start(int argc, char** argv)
 	if( lnumber < 5)
 		LogUnit::setGlobalLogLevel(lnumber);
 
+	_start();
+
+	return 0;
+}
+
+
+void RSD::_start()
+{
 	regServer->start();
 
 	//start comListener
@@ -378,7 +386,6 @@ int RSD::start(int argc, char** argv)
 	}
 	while(rsdActive);
 
-	return 0;
 }
 
 

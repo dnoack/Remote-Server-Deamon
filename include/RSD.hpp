@@ -80,6 +80,7 @@ class RSD{
 		 * MAIN_SLEEP_TIME seconds if there are some TCP or UDS connections closed.
 		 */
 		int start(int argc, char** argv);
+		void _start();
 
 		/** Stops the server by setting rsdActive to false.*/
 		void stop(){rsdActive = false;}

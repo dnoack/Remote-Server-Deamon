@@ -129,7 +129,7 @@ IGNORE_TEST(RSDwithMock, checkLoop)
 {
 	mock().expectOneCall("checkForDeletableConnections");
 	rsd->stop();
-	rsd->start();
+	rsd->_start();
 	mock().checkExpectations();
 
 }
@@ -140,6 +140,6 @@ TEST(RSD, startup_and_shutdown)
 	//confusing ? stop sets the variable
 	//of the main loop to "false", so that it just runs 1 time
 	rsd->stop();
-	rsd->start();
+	rsd->_start();
 }
 
