@@ -1,10 +1,3 @@
-/*
- * UdsComWorker.hpp
- *
- *  Created on: 09.02.2015
- *      Author: dnoack
- */
-
 #ifndef INCLUDE_UDSCOMWORKER_HPP_
 #define INCLUDE_UDSCOMWORKER_HPP_
 
@@ -25,6 +18,7 @@
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
 #include "Plugin_Error.h"
+#include "LogUnit.hpp"
 
 
 
@@ -34,7 +28,7 @@ using namespace std;
 class UdsComClient;
 
 
-class UdsComWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
+class UdsComWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, public LogUnit{
 
 	public:
 		UdsComWorker(int socket, UdsComClient* comClient);
