@@ -108,17 +108,26 @@ const char* Registration::handleAnnounceMsg(RsdMsg* msg)
 		udsFilePath = currentParam->GetString();
 		currentParam = json->tryTogetParam("pluginNumber");
 		number = currentParam->GetInt();
+
+
 		plugin = new Plugin(name, number, udsFilePath);
 		pluginName = new string(name);
 
 		result.SetString("announceACK");
 		response = json->generateResponse(*id, result);
-		delete msg;
+
+
+		//check if there is already a plugin with this number registered.
+		if(RSD::getPlugin(number) != NULL)
+			throw PluginError(-32701, "Plugin already registered.");
+
 	}
 	catch(PluginError &e)
 	{
-		throw;
+		if(e.getErrorCode() != -33011)
+			throw;
 	}
+	delete msg;
 
 	return response;
 }
