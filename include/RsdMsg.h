@@ -9,6 +9,7 @@
 #define INCLUDE_RSDMSG_H_
 
 #include <string>
+#include "Utils.h"
 
 using namespace std;
 
