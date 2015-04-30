@@ -211,7 +211,6 @@ class ConnectionContext : public LogUnit
 		int lastSender;
 		/*! Contains the unique contextNumber of this ConnectionContext.*/
 		short contextNumber;
-		const char* logName;
 
 
 		/*! Sets the requestInProcess flag to true.

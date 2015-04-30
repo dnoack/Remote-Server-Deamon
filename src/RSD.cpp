@@ -7,6 +7,7 @@
 int RSD::connection_socket;
 struct sockaddr_in RSD::address;
 socklen_t RSD::addrlen;
+int RSD::optionflag;
 bool RSD::accept_thread_active;
 
 list<Plugin*> RSD::plugins;
@@ -41,9 +42,6 @@ RSD::RSD()
 	sigaddset(&sigmask, SIGUSR2);
 	pthread_sigmask(SIG_BLOCK, &sigmask, &origmask);
 
-	connection_socket = socket(AF_INET, SOCK_STREAM, 0);
-	setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag));
-	bind(connection_socket, (struct sockaddr*)&address, sizeof(address));
 
 	//create Registry Server
 	regServer = new UdsRegServer(REGISTRY_PATH, sizeof(REGISTRY_PATH));
@@ -79,9 +77,13 @@ RSD::~RSD()
 
 void* RSD::accept_connections(void* data)
 {
-	listen(connection_socket, MAX_CLIENTS);
 	int tcpSocket = 0;
 	ConnectionContext* context = NULL;
+
+	connection_socket = socket(AF_INET, SOCK_STREAM, 0);
+	setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag));
+	bind(connection_socket, (struct sockaddr*)&address, sizeof(address));
+	listen(connection_socket, MAX_CLIENTS);
 	accept_thread_active = true;
 
 	while(accept_thread_active)
@@ -340,16 +342,23 @@ int RSD::start(int argc, char** argv)
 {
 
 	char* lvalue = NULL;
-	int lnumber = 5;
+	char* pvalue = NULL;
+	unsigned int logLevel = 5;
+	int port = 1234;
 	int c;
 
-	while(( c = getopt(argc, argv, "l:")) != -1)
+	while(( c = getopt(argc, argv, "p:l:")) != -1)
 	{
 		switch(c)
 		{
+			case 'p':
+				pvalue = optarg;
+				port = (int)strtol(pvalue, NULL, 10);
+				break;
+
 			case 'l':
 				lvalue = optarg;
-				lnumber = (int)strtol(lvalue, NULL, 10);
+				logLevel = strtol(lvalue, NULL, 2);
 				break;
 			case '?':
 				return 1;
@@ -360,8 +369,14 @@ int RSD::start(int argc, char** argv)
 	}
 
 
-	if( lnumber < 5)
-		LogUnit::setGlobalLogLevel(lnumber);
+	if( logLevel < 8)
+		LogUnit::setGlobalLogLevel(logLevel);
+
+	if(port > 1023)
+	{
+		address.sin_port = htons(port);
+		addrlen = sizeof(address);
+	}
 
 	_start();
 

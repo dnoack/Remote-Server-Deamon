@@ -11,9 +11,12 @@ TcpWorker::TcpWorker(ConnectionContext* context, TcpWorker** tcpWorker, int sock
 {
 	this->context = context;
 	this->currentSocket = socket;
-	this->localLogLevel = 2;
-	this->logNameIn = "TCP IN:";
-	this->logNameOut = "TCP OUT:";
+	this->logInfoIn.logLevel = LOG_INPUT;
+	this->logInfoIn.logName = "TCP IN:";
+	this->logInfoOut.logLevel = LOG_OUTPUT;
+	this->logInfoOut.logName = "TCP OUT:";
+	this->logInfo.logName = "TcpWorker:";
+
 	*tcpWorker = this;
 
 	StartWorkerThread();
@@ -21,7 +24,7 @@ TcpWorker::TcpWorker(ConnectionContext* context, TcpWorker** tcpWorker, int sock
 	if(wait_for_listener_up() != 0)
 		throw PluginError("Creation of Listener/worker threads failed.");
 	else
-		dlog(logNameIn, "Created TcpWorker for context %d with socket %d.", context->getContextNumber(), currentSocket);
+		dlog(logInfo, "Created TcpWorker for context %d with socket %d.", context->getContextNumber(), currentSocket);
 }
 
 
@@ -67,7 +70,7 @@ void TcpWorker::thread_work()
 						try
 						{
 							msg = receiveQueue.back();
-							log(msg->getContent(), logNameIn);
+							log(logInfoIn, msg->getContent());
 							popReceiveQueueWithoutDelete();
 							context->processMsg(msg);
 						}
@@ -80,25 +83,18 @@ void TcpWorker::thread_work()
 						}
 						catch(...)
 						{
-							log("Unkown Exception.", logNameIn);
+							log(logInfo, "Unkown Exception.");
 						}
 					}
 				}
 			break;
 
-			case SIGUSR2:
-				log("TcpComWorker: SIGUSR2", logNameIn);
-				context->checkUdsConnections();
-				break;
-
 			default:
-				log("TcpComWorker: unkown signal", logNameIn);
-				break;
+				log(logInfo, "TcpComWorker: unkown signal");
+			break;
 		}
 	}
-
 	close(currentSocket);
-
 }
 
 
@@ -151,7 +147,7 @@ void TcpWorker::thread_listen()
 
 int TcpWorker::transmit(char* data, int size)
 {
-	log(data, logNameOut);
+	log(logInfoOut, data);
 	return send(currentSocket, data, size, 0);
 }
 
@@ -159,14 +155,14 @@ int TcpWorker::transmit(char* data, int size)
 int TcpWorker::transmit(const char* data, int size)
 {
 
-	log((char*)data, logNameOut);
+	log(logInfoOut, data);
 	return send(currentSocket, data, size, 0);
 }
 
 
 int TcpWorker::transmit(RsdMsg* msg)
 {
-	log(msg->getContent(), logNameOut);
+	log(logInfoOut, msg->getContent());
 	return send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);
 }
 

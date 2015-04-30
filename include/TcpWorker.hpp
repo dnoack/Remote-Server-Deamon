@@ -67,6 +67,10 @@ class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, public L
 		/*! fd of current tcp socket.*/
 		int currentSocket;
 
+		LogInformation logInfoIn;
+		LogInformation logInfoOut;
+
+
 		/*! Receives data over a tcp socket which was accepted trough RSD. A new RsdMsg with the content
 		 * of the received data will be created and put into the receiveQueue (WorkerInterface).
 		 * \note This function will run in a separate thread, which is created and managed through WorkerThreads.

@@ -68,7 +68,7 @@ class UdsComClient : public LogUnit{
 	int pluginNumber;
 
 	bool deletable;
-	const char* logName;
+	LogInformation logInfoOut;
 
 
 };

@@ -22,13 +22,12 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	this->tcpConnection = NULL;
 	this->requestInProcess = false;
 	this->lastSender = -1;
-	this->localLogLevel = 3;
-	this->logName = "CC:";
+	this->logInfo.logName = "CC:";
 	contextNumber = getNewContextNumber();
 	//TODO: if no number is free, tcpworker has to send an error and close the connection
 	this->json = new JsonRPC();
 	new TcpWorker(this, &(this->tcpConnection),tcpSocket);
-	dlog(logName, "New ConnectionContext: %d",  contextNumber);
+	dlog(logInfo, "New ConnectionContext: %d",  contextNumber);
 }
 
 
@@ -87,8 +86,8 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 	}
 	catch(PluginError &e)
 	{
-		dlog(logName,  "Exception: %s", e.get());
-		dlog(logName, "Stacksize: %d", requests.size());
+		dlog(logInfo,  "Exception: %s", e.get());
+		dlog(logInfo, "Stacksize: %d", requests.size());
 
 		if(msg->getSender() == CLIENT_SIDE)
 		{
@@ -102,7 +101,7 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 		}
 
 	}
-	dlog(logName, "Stacksize: %d", requests.size());
+	dlog(logInfo, "Stacksize: %d", requests.size());
 }
 
 
@@ -398,7 +397,7 @@ bool ConnectionContext::isDeletable()
 			delete *udsConnection;
 			udsConnection = udsConnections.erase(udsConnection);
 
-			dlog(logName, "UdsComworker deleted from context %d. Verbleibend: %lu ", contextNumber, udsConnections.size());
+			dlog(logInfo, "UdsComworker deleted from context %d. Verbleibend: %lu ", contextNumber, udsConnections.size());
 		}
 	}
 	return deletable;
@@ -416,7 +415,7 @@ void ConnectionContext::checkUdsConnections()
 		{
 			delete *udsConnection;
 			udsConnection = udsConnections.erase(udsConnection);
-			dlog(logName,  "UdsComworker deleted from context %d. Verbleibend: %lu " , contextNumber, udsConnections.size());
+			dlog(logInfo,  "UdsComworker deleted from context %d. Verbleibend: %lu " , contextNumber, udsConnections.size());
 			tcpConnection->transmit("Connection to AardvarkPlugin Aborted!\n", 39);
 		}
 		else

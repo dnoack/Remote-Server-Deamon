@@ -158,6 +158,8 @@ class RSD{
 		static bool accept_thread_active;
 		/*! Socket which accepts new connections.*/
 		static int connection_socket;
+		/*! Optionflag for setting socket options to connection_socket.*/
+		static int optionflag;
 		/*! Server address configuration.*/
 		static struct sockaddr_in address;
 		/*! Size of server address configuration.*/
@@ -205,8 +207,6 @@ class RSD{
 
 		/*! As long as this is true, the server will run.*/
 		bool rsdActive;
-		/*! Optionflag for setting socket options to connection_socket.*/
-		int optionflag;
 		/*! Thread id of thread for accept_connections.*/
 		pthread_t accepter;
 		/*! Instance of the Registration server for registering new plugins to RSD.*/

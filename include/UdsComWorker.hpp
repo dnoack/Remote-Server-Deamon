@@ -43,11 +43,12 @@ class UdsComWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, publi
 		string* jsonReturn;
 
 
-
 		//not shared, more common
 		int currentSocket;
 		UdsComClient* comClient;
 		bool deletable;
+		LogInformation logInfoIn;
+
 
 		int transmit(char* data, int size){return 1;};
 		int transmit(const char* data, int size){return 1;};

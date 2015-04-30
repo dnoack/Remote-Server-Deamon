@@ -10,7 +10,7 @@
 #include "UdsComClient.hpp"
 #include "TcpWorker.hpp"
 #include "Plugin_Error.h"
-#include "Utils.h"
+
 
 
 UdsComClient::UdsComClient(ConnectionContext* context, string* udsFilePath, string* pluginName, int pluginNumber)
@@ -19,8 +19,9 @@ UdsComClient::UdsComClient(ConnectionContext* context, string* udsFilePath, stri
 	this->comWorker = NULL;
 	this->deletable = false;
 	this->context = context;
-	this->logName = "UDS OUT:";
-	this->localLogLevel = 2;
+	this->logInfoOut.logLevel = LOG_OUTPUT;
+	this->logInfoOut.logName = "UDS OUT:";
+	this->logInfo.logName = "UdsComClient:";
 	this->pluginNumber = pluginNumber;
 	this->udsFilePath = new string(*udsFilePath);
 	this->pluginName = new string(*pluginName);
@@ -55,11 +56,11 @@ int UdsComClient::sendData(string* data)
 {
 	int result = 0;
 
-	log(data, logName);
+	log(logInfoOut, data);
 	result = send(currentSocket, data->c_str(), data->size(), 0);
 
 	if(result < 0)
-		dlog(logName, "Error while sending: %s", strerror(errno));
+		dlog(logInfo, "Error while sending: %s", strerror(errno));
 
 	return result;
 }
@@ -89,7 +90,7 @@ void UdsComClient::tryToconnect()
 {
 	if( connect(currentSocket, (struct sockaddr*)&address, addrlen) < 0)
 	{
-		dlog(logName, "Plugin not found, errno: %s ", strerror(errno));
+		dlog(logInfoOut, "Plugin not found, errno: %s ", strerror(errno));
 		throw PluginError("Could not connect to plugin.");
 	}
 	else
