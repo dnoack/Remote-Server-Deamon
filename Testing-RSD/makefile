@@ -39,19 +39,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: Remote-Server-Deamon
+all: Remote-Server-Daemon
 
 # Tool invocations
-Remote-Server-Deamon: $(OBJS) $(USER_OBJS)
+Remote-Server-Daemon: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ ${LDFLAGS} -o "Remote-Server-Deamon" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ ${LDFLAGS} -o "Remote-Server-Daemon" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) Remote-Server-Deamon
+	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) Remote-Server-Daemon
 	-@echo ' '
 
 .PHONY: all clean dependents
