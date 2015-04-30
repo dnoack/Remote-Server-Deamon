@@ -2,6 +2,9 @@
 #include "RsdMsg.h"
 #include "Utils.h"
 #include "LogUnit.hpp"
+#include <iostream>
+#include <fstream>
+#include <string>
 
 
 int RSD::connection_socket;
@@ -337,6 +340,50 @@ bool RSD::showAllKnownFunctions(Value &params, Value &result)
 }
 
 
+void RSD::startPluginsDuringStartup(const char* plugins)
+{
+	string fileName;
+	string pluginName;
+	string filePath;
+	int posOfName = 0;
+	ifstream myfile(plugins);
+
+
+	if(myfile.is_open())
+	{
+		while(getline(myfile, fileName))
+		{
+
+			//look for last slash
+			posOfName = fileName.find_last_of('/', fileName.size());
+
+			//test if filename contains "-Plugin"
+			if(fileName.find("-Plugin", posOfName) > 0)
+			{
+				filePath = fileName;
+				fileName = filePath.substr(posOfName+1, string::npos);
+
+				cout << "Filepath: " << filePath << " and fileName: " << fileName << '\n';
+				//make a fork
+				if(fork() == 0)
+				{
+					//within child process, try to execlp the plugin
+					int ret = execlp(filePath.c_str(), fileName.c_str(), NULL);
+
+					if(ret < 0)
+						cout << "Error while xeclp: " << strerror(errno) << '\n';
+
+					exit(EXIT_FAILURE);
+				}
+			}
+		}
+		myfile.close();
+	}
+
+
+}
+
+
 
 int RSD::start(int argc, char** argv)
 {
@@ -386,13 +433,22 @@ int RSD::start(int argc, char** argv)
 
 void RSD::_start()
 {
+
 	regServer->start();
 
 	//start comListener
 	pthread_create(&accepter, NULL, accept_connections, NULL);
 
+	while(!accept_thread_active)
+	{
+		sleep(1);
+	}
+
+	startPluginsDuringStartup("plugins.txt");
+
 	do
 	{
+
 		sleep(MAIN_SLEEP_TIME);
 		//check uds registry workers
 		regServer->checkForDeletableWorker();
@@ -401,7 +457,6 @@ void RSD::_start()
 		//RsdMsg::printCounters();
 	}
 	while(rsdActive);
-
 }
 
 

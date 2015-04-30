@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <pthread.h>
 
+
 #include "document.h"
 #include "writer.h"
 
@@ -204,6 +205,8 @@ class RSD{
 		 * \note This function uses pLmutex for access to plugins (list).
 		 */
 		static bool showAllKnownFunctions(Value &params, Value &result);
+
+		void startPluginsDuringStartup(const char* pluginFile);
 
 		/*! As long as this is true, the server will run.*/
 		bool rsdActive;
