@@ -1,14 +1,8 @@
-/*
- * UdsRegWorker.hpp
- *
- *  Created on: 09.02.2015
- *      Author: dnoack
- */
 
 #ifndef INCLUDE_UDSREGWORKER_HPP_
 #define INCLUDE_UDSREGWORKER_HPP_
 
-//unix domain socket definition
+
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -19,60 +13,43 @@
 
 
 #include "JsonRPC.hpp"
+#include "RsdMsg.h"
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
 #include "Plugin.hpp"
 
+class Registration;
 
 
-class UdsRegWorker : public WorkerInterface, WorkerThreads{
+class UdsRegWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
 
 	public:
 		UdsRegWorker(int socket);
-		~UdsRegWorker();
+		virtual ~UdsRegWorker();
 
-		string* getPluginName(){return pluginName;}
 
 		static void cleanupReceiveQueue(void* arg);
+
+		string* getPluginName();
+
+		int transmit(char* data, int size);
+		int transmit(const char* data, int size);
+		int transmit(RsdMsg* msg);
 
 
 	private:
 
-		JsonRPC* json;
-		Plugin* plugin;
-		string* pluginName;
-		string* request;
-		string* response;
+		virtual void thread_listen();
+
+		virtual void thread_work();
 
 
+		/*! Contains the corresponding pluginname, this is later used for deleting the right plugin within RSD plugins list.*/
+		Registration* registration;
 		int currentSocket;
-
-		enum REG_STATE{NOT_ACTIVE, ANNOUNCED, REGISTERED, ACTIVE, BROKEN};
-		unsigned int state;
-
-
-		virtual void thread_listen(pthread_t partent_th, int socket, char* workerBuffer);
-
-		virtual void thread_work(int socket);
-
-
-		void cleanup();
-
-		//following methods are part of the registration process (in this order)
-
-		char* handleAnnounceMsg(string* request);
-
-		//TODO: create announceACK, currently handled by handleAnnounceMsg
-
-		bool handleRegisterMsg(string* request);
-
-		char* createRegisterACKMsg();
-
-		char* handleActiveMsg(string* request);
-
-
+		RsdMsg* msg;
+		string* errorResponse;
 };
-
 
 
 #endif /* INCLUDE_UDSREGWORKER_HPP_ */

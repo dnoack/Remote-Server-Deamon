@@ -1,16 +1,7 @@
-/*
- * UdsRegServer.h
- *
- *  Created on: 26.02.2015
- *      Author: David Noack
- */
-
 #ifndef INCLUDE_UDSREGSERVER_HPP_
 #define INCLUDE_UDSREGSERVER_HPP_
 
 
-
-//unix domain socket definition
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -26,7 +17,6 @@
 
 
 
-
 class UdsRegServer{
 
 	public:
@@ -35,14 +25,9 @@ class UdsRegServer{
 
 		~UdsRegServer();
 
-
-		int call();
-
-		void start();
-
-		void checkForDeletableWorker();
 		static void deleteWorkerList();
-
+		void start();
+		void checkForDeletableWorker();
 
 
 	private:
@@ -67,9 +52,7 @@ class UdsRegServer{
 
 		static void pushWorkerList(int new_socket);
 
-
 };
-
 
 
 #endif /* INCLUDE_UDSSERVER_HPP_ */

@@ -8,6 +8,7 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include tests/subdir.mk
 -include src/subdir.mk
 -include subdir.mk
 -include objects.mk
@@ -38,19 +39,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: Remote-Server-Daemon
+all: Remote-Server-Deamon
 
 # Tool invocations
-Remote-Server-Daemon: $(OBJS) $(USER_OBJS)
+Remote-Server-Deamon: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++  -o "Remote-Server-Daemon" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ ${LDFLAGS} -o "Remote-Server-Deamon" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) Remote-Server-Daemon
+	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) Remote-Server-Deamon
 	-@echo ' '
 
 .PHONY: all clean dependents
