@@ -1,41 +1,32 @@
-/*
- * UdsWorker.cpp
- *
- *  Created on: 	09.02.2015
- *  Author: 		dnoack
- */
-
 #include "errno.h"
 
 #include <TcpWorker.hpp>
 #include "ConnectionContext.hpp"
 #include "UdsComClient.hpp"
 #include "Plugin_Error.h"
+#include "Utils.h"
 
 
-TcpWorker::TcpWorker(ConnectionContext* context, int socket)
+TcpWorker::TcpWorker(ConnectionContext* context, TcpWorker** tcpWorker, int socket)
 {
-	memset(receiveBuffer, '\0', BUFFER_SIZE);
-	this->listen_thread_active = false;
-	this->worker_thread_active = false;
-	this->recvSize = 0;
-	this->lthread = 0;
-	this->bufferOut = NULL;
 	this->context = context;
 	this->currentSocket = socket;
+	this->localLogLevel = 2;
+	this->logNameIn = "TCP IN:";
+	this->logNameOut = "TCP OUT:";
+	*tcpWorker = this;
 
-	StartWorkerThread(currentSocket);
+	StartWorkerThread();
 
 	if(wait_for_listener_up() != 0)
 		throw PluginError("Creation of Listener/worker threads failed.");
+	else
+		dlog(logNameIn, "Created TcpWorker for context %d with socket %d.", context->getContextNumber(), currentSocket);
 }
 
 
 TcpWorker::~TcpWorker()
 {
-	listen_thread_active = false;
-	worker_thread_active = false;
-
 	pthread_cancel(getListener());
 	pthread_cancel(getWorker());
 
@@ -45,26 +36,25 @@ TcpWorker::~TcpWorker()
 
 
 
-void TcpWorker::thread_work(int socket)
+void TcpWorker::thread_work()
 {
 	RsdMsg* msg = NULL;
 	string* errorResponse = NULL;
 	RsdMsg* errorMsg = NULL;
 	worker_thread_active = true;
 
-	pthread_cleanup_push(&TcpWorker::cleanupWorker, this);
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
 
 
 	//start the listenerthread and remember the theadId of it
-	lthread = StartListenerThread(pthread_self(), currentSocket, receiveBuffer);
-
 	configSignals();
+	StartListenerThread();
+
+
 
 	while(worker_thread_active)
 	{
 		//wait for signals from listenerthread
-
 		sigwait(&sigmask, &currentSig);
 		switch(currentSig)
 		{
@@ -77,68 +67,67 @@ void TcpWorker::thread_work(int socket)
 						try
 						{
 							msg = receiveQueue.back();
-							printf("Tcp Queue Received: %s\n", msg->getContent()->c_str());
+							log(msg->getContent(), logNameIn);
+							popReceiveQueueWithoutDelete();
 							context->processMsg(msg);
 						}
 						catch(PluginError &e)
 						{
 							errorResponse = new string(e.get());
 							errorMsg = new RsdMsg(0, errorResponse);
-							tcp_send(errorMsg);
+							transmit(errorMsg);
 							delete errorMsg;
 						}
 						catch(...)
 						{
-							printf("Unkown Exception.\n");
+							log("Unkown Exception.", logNameIn);
 						}
-						popReceiveQueueWithoutDelete();
 					}
 				}
-				break;
+			break;
 
 			case SIGUSR2:
-				printf("TcpComWorker: SIGUSR2\n");
+				log("TcpComWorker: SIGUSR2", logNameIn);
 				context->checkUdsConnections();
 				break;
 
 			default:
-				printf("TcpComWorker: unkown signal \n");
+				log("TcpComWorker: unkown signal", logNameIn);
 				break;
 		}
 	}
 
 	close(currentSocket);
-	pthread_cleanup_pop(0);
 
 }
 
 
-void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffer)
+void TcpWorker::thread_listen()
 {
 	listen_thread_active = true;
 	string* content = NULL;
 	int retval;
 	fd_set rfds;
-
-	configSignals();
+	pthread_t worker_thread = getWorker();
+	//configSignals();
 
 	FD_ZERO(&rfds);
-	FD_SET(socket, &rfds);
+	FD_SET(currentSocket, &rfds);
 
 	while(listen_thread_active)
 	{
 		memset(receiveBuffer, '\0', BUFFER_SIZE);
 
-		retval = pselect(socket+1, &rfds, NULL, NULL, NULL, &origmask);
+		retval = pselect(currentSocket+1, &rfds, NULL, NULL, NULL, &origmask);
 
 		if(retval < 0 )
 		{
 			//error occured
 			context->checkUdsConnections();
 		}
-		else if(FD_ISSET(socket, &rfds))
+		else if(FD_ISSET(currentSocket, &rfds))
 		{
-			recvSize = recv( socket , receiveBuffer, BUFFER_SIZE, MSG_DONTWAIT);
+			recvSize = recv( currentSocket , receiveBuffer, BUFFER_SIZE, 0);
 
 			if(recvSize > 0)
 			{
@@ -146,7 +135,7 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 				content = new string(receiveBuffer, recvSize);
 				pushReceiveQueue(new RsdMsg(0, content));
 				//signal the worker
-				pthread_kill(parent_th, SIGUSR1);
+				pthread_kill(worker_thread, SIGUSR1);
 			}
 			//connection closed
 			else
@@ -160,22 +149,24 @@ void TcpWorker::thread_listen(pthread_t parent_th, int socket, char* workerBuffe
 }
 
 
-int TcpWorker::tcp_send(char* data, int size)
+int TcpWorker::transmit(char* data, int size)
 {
+	log(data, logNameOut);
 	return send(currentSocket, data, size, 0);
 }
 
 
-int TcpWorker::tcp_send(const char* data, int size)
+int TcpWorker::transmit(const char* data, int size)
 {
+
+	log((char*)data, logNameOut);
 	return send(currentSocket, data, size, 0);
 }
 
 
-int TcpWorker::tcp_send(RsdMsg* msg)
+int TcpWorker::transmit(RsdMsg* msg)
 {
-	string* data = msg->getContent();
-	return send(currentSocket, data->c_str(), data->size(), 0);
+	log(msg->getContent(), logNameOut);
+	return send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);
 }
-
 

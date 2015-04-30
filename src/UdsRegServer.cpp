@@ -1,15 +1,9 @@
-/*
- * Uds.cpp
- *
- *  Created on: 04.02.2015
- *      Author: dnoack
- */
-
 
 #include "RSD.hpp"
 #include "UdsRegServer.hpp"
 #include "JsonRPC.hpp"
 #include "Plugin_Error.h"
+#include "Utils.h"
 
 
 
@@ -40,30 +34,20 @@ UdsRegServer::UdsRegServer( const char* udsFile, int nameSize)
 	unlink(udsFile);
 	setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag));
 	bind(connection_socket, (struct sockaddr*)&address, addrlen);
-
 }
-
 
 
 UdsRegServer::~UdsRegServer()
 {
-
 	if(accepter != 0)
 		pthread_cancel(accepter);
 
 	deleteWorkerList();
-
 	close(connection_socket);
 
 	pthread_mutex_destroy(&wLmutex);
 }
 
-
-int UdsRegServer::call()
-{
-	connect(connection_socket, (struct sockaddr*) &address, addrlen);
-	return 0;
-}
 
 
 void* UdsRegServer::uds_accept(void* param)
@@ -81,7 +65,6 @@ void* UdsRegServer::uds_accept(void* param)
 			pushWorkerList(new_socket);
 		}
 	}
-
 	return 0;
 }
 
@@ -106,7 +89,7 @@ void UdsRegServer::checkForDeletableWorker()
 			RSD::deletePlugin((*i)->getPluginName());
 			delete  *i;
 			i = workerList.erase(i);
-			printf("UdsRegServer: UdsRegWorker was deleted.\n");
+			dyn_print("UdsRegServer: UdsRegWorker was deleted.\n");
 		}
 		else
 			++i;
@@ -137,7 +120,6 @@ void UdsRegServer::deleteWorkerList()
 		delete *i;
 		i = workerList.erase(i);
 	}
-
 	pthread_mutex_unlock(&wLmutex);
 }
 

@@ -15,10 +15,10 @@
 #include "MockSupport.h"
 #include "MockNamedValue.h"
 
+static ConnectionContext* context = NULL;
 
 
-
-
+/*
 class RsdMsgComparator : public MockNamedValueComparator
 {
 	public:
@@ -35,14 +35,18 @@ class RsdMsgComparator : public MockNamedValueComparator
 			return StringFrom(object->print());
 		}
 
-};
-
+};*/
 
 
 
 class ConnectionContextMock  : public ConnectionContext
 {
 	public:
+
+		ConnectionContextMock(int socket) : ConnectionContext(socket)
+		{
+
+		}
 
 		virtual void processMsg(RsdMsg* msg)
 		{
@@ -73,27 +77,68 @@ TEST_GROUP(CONNECTION_CONTEXT)
 
 
 
-IGNORE_TEST(CONNECTION_CONTEXT, firstTest)
+TEST(CONNECTION_CONTEXT, processMsg_OK)
 {
-	RsdMsgComparator comparator;
-	mock().installComparator("RsdMsg", comparator);
 
-	ConnectionContext* testmock = new ConnectionContextMock;
-	RsdMsg* testMsg = new RsdMsg(0, new string("{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 }, \"method\": \"Aardvark.aa_unique_id\", \"id\": 2}"));
+	context = new ConnectionContext(2);
+	RsdMsg* testMsg = new RsdMsg(0, "{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"Aaardvark.aa_close\", \"id\": 9}");
 
-	mock().expectOneCall("processMsg").withParameterOfType("RsdMsg", "msg", testMsg);
+	CHECK_THROWS(PluginError, context->processMsg(testMsg));
 
-	testmock->processMsg(testMsg);
+	delete context;
 
-	//mock().expectOneCall("findUdsConnection").withParameter("pluginNumber", 0);
+}
 
-	//testmock->findUdsConnection(0);
 
-	mock().checkExpectations();
-	mock().removeAllComparators();
+TEST(CONNECTION_CONTEXT, processMsg_noNamespaceFail)
+{
 
-	delete testMsg;
-	delete testmock;
+
+	context = new ConnectionContext(2);
+	RsdMsg* testMsg = new RsdMsg(0, "{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"aa_close\", \"id\": 9}");
+
+	CHECK_THROWS(PluginError, context->processMsg(testMsg));
+
+	delete context;
+
+}
+
+
+TEST(CONNECTION_CONTEXT, processMsg_parseFAIL)
+{
+
+	context = new ConnectionContext(2);
+	RsdMsg* testMsg = new RsdMsg(0, "test1");
+
+	CHECK_THROWS(PluginError, context->processMsg(testMsg));
+
+	delete context;
+
+}
+
+
+
+TEST(CONNECTION_CONTEXT, isDeletable)
+{
+
+
+	context = new ConnectionContext(2);
+
+	sleep(1);
+
+	if(context->isDeletable() == true)
+		FAIL("Context should not be deletable.\n");
+
+	delete context;
+}
+
+
+
+TEST(CONNECTION_CONTEXT, start_and_close)
+{
+
+	context = new ConnectionContext(2);
+	delete context;
 }
 
 

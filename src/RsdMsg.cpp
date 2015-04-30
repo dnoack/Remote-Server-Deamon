@@ -7,6 +7,7 @@
 
 #include "RsdMsg.h"
 #include <stdio.h>
+#include "Utils.h"
 
 int RsdMsg::countDealloc;
 int RsdMsg::countMalloc;
@@ -14,7 +15,15 @@ int RsdMsg::countMalloc;
 RsdMsg::RsdMsg(int sender, string* content)
 {
 	this->sender = sender;
-	this->content = content;
+	this->content = new string(*content);
+	++countMalloc;
+};
+
+
+RsdMsg::RsdMsg(int sender, const char* content)
+{
+	this->sender = sender;
+	this->content = new string(content);
 	++countMalloc;
 };
 
@@ -36,5 +45,5 @@ RsdMsg::~RsdMsg()
 
 void RsdMsg::printCounters()
 {
-	printf("Malloc: %d | Dealloc: %d \n", countMalloc, countDealloc);
+	dyn_print("Malloc: %d | Dealloc: %d \n", countMalloc, countDealloc);
 }
