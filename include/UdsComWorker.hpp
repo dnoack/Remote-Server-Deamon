@@ -25,14 +25,25 @@
 using namespace std;
 
 
-class UdsComClient;
+class ConnectionContext;
 
 
 class UdsComWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, public LogUnit{
 
 	public:
-		UdsComWorker(int socket, UdsComClient* comClient);
+		UdsComWorker(ConnectionContext* context, string* udsFilePath, string* pluginName, int pluginNumber);
 		~UdsComWorker();
+
+		string* getPluginName(){return pluginName;}
+		bool isDeletable(){return deletable;}
+		int getPluginNumber(){return pluginNumber;}
+
+		void routeBack(RsdMsg* data);
+		void tryToconnect();
+
+		int transmit(char* data, int size);
+		int transmit(const char* data, int size);
+		int transmit(RsdMsg* msg);
 
 
 	private:
@@ -45,14 +56,23 @@ class UdsComWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, publi
 
 		//not shared, more common
 		int currentSocket;
-		UdsComClient* comClient;
 		bool deletable;
 		LogInformation logInfoIn;
+		LogInformation logInfoOut;
+
+		ConnectionContext* context;
+
+		struct sockaddr_un address;
+		socklen_t addrlen;
+		int optionflag;
 
 
-		int transmit(char* data, int size){return 1;};
-		int transmit(const char* data, int size){return 1;};
-		int transmit(RsdMsg* msg){return 1;};
+		string* udsFilePath;
+		string* pluginName;
+		int pluginNumber;
+
+
+
 
 		virtual void thread_listen();
 
