@@ -1,26 +1,35 @@
 
-#include "UdsComClient.hpp"
+
 #include "UdsComWorker.hpp"
+#include "ConnectionContext.hpp"
 
 
 
-UdsComWorker::UdsComWorker(int socket,  UdsComClient* comClient)
+
+UdsComWorker::UdsComWorker(ConnectionContext* context, string* udsFilePath, string* pluginName, int pluginNumber)
 {
-
+	this->optionflag = 1;
+	this->deletable = false;
 	this->jsonReturn = NULL;
 	this->jsonInput = NULL;
 	this->identity = NULL;
 	this->logInfoIn.logLevel = LOG_INPUT;
 	this->logInfoIn.logName = "UDS IN:";
 	this->logInfo.logName = "UdsComWorker:";
-	this->comClient = comClient;
-	this->currentSocket = socket;
-	this->deletable = false;
+	this->logInfoOut.logLevel = LOG_OUTPUT;
+	this->logInfoOut.logName = "UDS OUT:";
+	this->logInfo.logName = "UdsComWorker:";
+	this->pluginNumber = pluginNumber;
+	this->context = context;
+	this->udsFilePath = new string(*udsFilePath);
+	this->pluginName = new string(*pluginName);
 
-	StartWorkerThread();
+	currentSocket = socket(AF_UNIX, SOCK_STREAM, 0);
+	address.sun_family = AF_UNIX;
+	memset(address.sun_path, '\0', sizeof(address.sun_path));
+	strncpy(address.sun_path, udsFilePath->c_str(), udsFilePath->size());
+	addrlen = sizeof(address);
 
-	if(wait_for_listener_up() != 0)
-			throw PluginError("Creation of Listener/worker threads failed.");
 }
 
 
@@ -35,6 +44,9 @@ UdsComWorker::~UdsComWorker()
 
 	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
+
+	delete udsFilePath;
+	delete pluginName;
 
 	deleteReceiveQueue();
 }
@@ -60,7 +72,7 @@ void UdsComWorker::thread_work()
 					msg = receiveQueue.back();
 					log(logInfoIn, msg->getContent());
 					popReceiveQueueWithoutDelete();
-					comClient->routeBack(msg);
+					routeBack(msg);
 				break;
 
 			case SIGUSR2:
@@ -111,7 +123,7 @@ void UdsComWorker::thread_listen()
 			{
 				//add received data in buffer to queue
 				content = new string(receiveBuffer, recvSize);
-				pushReceiveQueue(new RsdMsg(comClient->getPluginNumber(), content));
+				pushReceiveQueue(new RsdMsg(pluginNumber, content));
 
 				//signal the worker
 				pthread_kill(worker_thread, SIGUSR1);
@@ -120,10 +132,63 @@ void UdsComWorker::thread_listen()
 			{
 				listen_thread_active = false;
 				deletable = true;
-				comClient->markAsDeletable();
 			}
 		}
 		memset(receiveBuffer, '\0', BUFFER_SIZE);
 	}
+}
+
+
+void UdsComWorker::routeBack(RsdMsg* msg)
+{
+	try
+	{
+		context->processMsg(msg);
+	}
+	catch(PluginError &e)
+	{
+		/*this can happen if a plugin answers with a incorret msg.
+		Server will then get a parsing error and throw a PluginError*/
+		context->handleIncorrectPluginResponse(msg, e);
+	}
+}
+
+
+void UdsComWorker::tryToconnect()
+{
+	if( connect(currentSocket, (struct sockaddr*)&address, addrlen) < 0)
+	{
+		dlog(logInfoOut, "Plugin not found, errno: %s ", strerror(errno));
+		throw PluginError("Could not connect to plugin.");
+	}
+	else
+	{
+		StartWorkerThread();
+
+		if(wait_for_listener_up() != 0)
+			throw PluginError("Creation of Listener/worker threads failed.");
+	}
+}
+
+
+int UdsComWorker::transmit(char* data, int size)
+{
+	log(logInfoOut, data);
+	return send(currentSocket, data, size, 0);
+}
+
+
+int UdsComWorker::transmit(const char* data, int size)
+{
+
+	log(logInfoOut, data);
+	return send(currentSocket, data, size, 0);
+}
+
+
+int UdsComWorker::transmit(RsdMsg* msg)
+{
+	log(logInfoOut, msg->getContent());
+	return send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);
 }
 

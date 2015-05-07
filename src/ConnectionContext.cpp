@@ -17,7 +17,7 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	this->error = NULL;
 	this->id = NULL;
 	nullId.SetInt(0);
-	this->currentClient = NULL;
+	this->currentWorker = NULL;
 	this->tcpConnection = NULL;
 	this->requestInProcess = false;
 	this->lastSender = -1;
@@ -190,9 +190,9 @@ void ConnectionContext::handleRequestFromClient(RsdMsg* msg)
 		//Msg for a Plugin
 		else
 		{
-			currentClient = findUdsConnection(methodNamespace);
+			currentWorker = findUdsConnection(methodNamespace);
 			requests.push_back(msg);
-			currentClient->sendData(msg->getContent());
+			currentWorker->transmit(msg);
 		}
 		delete[] methodNamespace;
 	}
@@ -215,8 +215,8 @@ void ConnectionContext::handleRequestFromPlugin(RsdMsg* msg)
 	{
 		requests.push_back(msg);
 		methodNamespace = getMethodNamespace();
-		currentClient = findUdsConnection(methodNamespace);
-		currentClient->sendData(msg->getContent());
+		currentWorker = findUdsConnection(methodNamespace);
+		currentWorker->transmit(msg);
 		delete[] methodNamespace;
 	}
 	catch (PluginError &e)
@@ -256,11 +256,11 @@ void ConnectionContext::handleResponseFromPlugin(RsdMsg* msg)
 		//back to a plugin
 		if(lastSender != CLIENT_SIDE)
 		{
-			currentClient =  findUdsConnection(lastSender);
+			currentWorker =  findUdsConnection(lastSender);
 			//TODO: implement case that plugin went offline, like in handleRequest
 			delete lastMsg;
 			requests.pop_back();
-			currentClient->sendData(msg->getContent());
+			currentWorker->transmit(msg);
 		}
 		//lastSender == CLIENT_SIDE(0) means, send response to tcp client
 		else
@@ -380,7 +380,7 @@ short ConnectionContext::getNewContextNumber()
 
 bool ConnectionContext::isDeletable()
 {
-	list<UdsComClient*>::iterator udsConnection;
+	list<UdsComWorker*>::iterator udsConnection;
 
 	if(tcpConnection->isDeletable())
 	{
@@ -405,7 +405,7 @@ bool ConnectionContext::isDeletable()
 
 void ConnectionContext::checkUdsConnections()
 {
-	list<UdsComClient*>::iterator udsConnection;
+	list<UdsComWorker*>::iterator udsConnection;
 
 	udsConnection = udsConnections.begin();
 	while(udsConnection != udsConnections.end())
@@ -423,41 +423,43 @@ void ConnectionContext::checkUdsConnections()
 }
 
 
-UdsComClient* ConnectionContext::createNewUdsComClient(Plugin* plugin)
+UdsComWorker* ConnectionContext::createNewUdsConncetion(Plugin* plugin)
 {
-	UdsComClient* newUdsComClient = NULL;
+	UdsComWorker* newUdsComWorker = NULL;
+	const char* identificationMsg = NULL;
 
 	try
 	{
 		//   create a new udsClient with this udsFilePath and push it to list
-		newUdsComClient = new UdsComClient(this, plugin->getUdsFilePath(), plugin->getName(), plugin->getPluginNumber());
-		newUdsComClient->tryToconnect();
-		udsConnections.push_back(newUdsComClient);
-		newUdsComClient->sendData(generateIdentificationMsg(contextNumber));
+		newUdsComWorker = new UdsComWorker(this, plugin->getUdsFilePath(), plugin->getName(), plugin->getPluginNumber());
+		newUdsComWorker->tryToconnect();
+		udsConnections.push_back(newUdsComWorker);
+		identificationMsg = generateIdentificationMsg(contextNumber);
+		newUdsComWorker->transmit(identificationMsg , strlen(identificationMsg));
 	}
 	catch(PluginError &e)
 	{
-		if(newUdsComClient != NULL)
-			delete newUdsComClient;
+		if(newUdsComWorker != NULL)
+			delete newUdsComWorker;
 		throw;
 	}
-	return newUdsComClient;
+	return newUdsComWorker;
 }
 
 
-UdsComClient* ConnectionContext::findUdsConnection(char* pluginName)
+UdsComWorker* ConnectionContext::findUdsConnection(char* pluginName)
 {
-	UdsComClient* currentComClient = NULL;
+	UdsComWorker* comWorker = NULL;
 	Plugin* currentPlugin = NULL;
 	bool clientFound = false;
-	list<UdsComClient*>::iterator i = udsConnections.begin();
+	list<UdsComWorker*>::iterator i = udsConnections.begin();
 
 	try
 	{
 		while(i != udsConnections.end() && !clientFound)
 		{
-			currentComClient = *i;
-			if(currentComClient->getPluginName()->compare(pluginName) == 0)
+			comWorker = *i;
+			if(comWorker->getPluginName()->compare(pluginName) == 0)
 			{
 				clientFound = true;
 			}
@@ -466,32 +468,32 @@ UdsComClient* ConnectionContext::findUdsConnection(char* pluginName)
 		}
 		if(!clientFound)
 		{
-			currentComClient = NULL;
+			comWorker = NULL;
 			currentPlugin = RSD::getPlugin(pluginName);
-			currentComClient = createNewUdsComClient(currentPlugin);
+			comWorker = createNewUdsConncetion(currentPlugin);
 		}
 	}
 	catch(PluginError &e)
 	{
 		throw;
 	}
-	return currentComClient;
+	return comWorker;
 }
 
 
-UdsComClient* ConnectionContext::findUdsConnection(int pluginNumber)
+UdsComWorker* ConnectionContext::findUdsConnection(int pluginNumber)
 {
-	UdsComClient* currentComClient = NULL;
+	UdsComWorker* comWorker = NULL;
 	bool clientFound = false;
 	Plugin* currentPlugin = NULL;
-	list<UdsComClient*>::iterator i = udsConnections.begin();
+	list<UdsComWorker*>::iterator i = udsConnections.begin();
 
 	try
 	{
 		while(i != udsConnections.end() && !clientFound)
 		{
-			currentComClient = *i;
-			if(currentComClient->getPluginNumber() == pluginNumber)
+			comWorker = *i;
+			if(comWorker->getPluginNumber() == pluginNumber)
 			{
 				clientFound = true;
 			}
@@ -501,20 +503,20 @@ UdsComClient* ConnectionContext::findUdsConnection(int pluginNumber)
 		if(!clientFound)
 		{
 			currentPlugin = RSD::getPlugin(pluginNumber);
-			currentComClient = createNewUdsComClient(currentPlugin);
+			comWorker = createNewUdsConncetion(currentPlugin);
 		}
 	}
 	catch(PluginError &e)
 	{
 		throw;
 	}
-	return currentComClient;
+	return comWorker;
 }
 
 
 void ConnectionContext::deleteAllUdsConnections()
 {
-	list<UdsComClient*>::iterator i = udsConnections.begin();
+	list<UdsComWorker*>::iterator i = udsConnections.begin();
 
 	while(i != udsConnections.end())
 	{

@@ -10,7 +10,7 @@
 #include <limits>
 
 #include "TcpWorker.hpp"
-#include "UdsComClient.hpp"
+#include "UdsComWorker.hpp"
 #include "Plugin.hpp"
 #include "Plugin_Error.h"
 #include "LogUnit.hpp"
@@ -58,7 +58,7 @@ class ConnectionContext : public LogUnit
 		 * \return On success a valid pointer to a UdsComClient is returned. On fail
 		 * the function will return NULL.
 		 */
-		UdsComClient* findUdsConnection(char* pluginName);
+		UdsComWorker* findUdsConnection(char* pluginName);
 
 		/**
 		 * Search the list of existing UdsComClients for a existing connection
@@ -67,7 +67,7 @@ class ConnectionContext : public LogUnit
 		 * \return On success a valid pointer to a UdsComClient is returned. On fail
 		 * the function will return NULL.
 		 */
-		virtual UdsComClient* findUdsConnection(int pluginNumber);
+		virtual UdsComWorker* findUdsConnection(int pluginNumber);
 
 
 		/**
@@ -175,7 +175,7 @@ class ConnectionContext : public LogUnit
 		 * This list can contain active connection and non active connections, but
 		 * the non active will be automatically deleted after a short time through RSD.
 		*/
-		list<UdsComClient*> udsConnections;
+		list<UdsComWorker*> udsConnections;
 
 		/*! This list acts as LIFO (last in, first out stack) for requests. The main request
 		 * from a client will always pushed first into this stack. Through the process of receiving
@@ -205,7 +205,7 @@ class ConnectionContext : public LogUnit
 		/*! Contains just 0, this Nullvalue is needed if we got a parse error.*/
 		Value nullId;
 		/*! Contains the current UdsComClient, which will be used in the process of handling the current message.*/
-		UdsComClient* currentClient;
+		UdsComWorker* currentWorker;
 		/*! This flags signals if a main request (from a client) is in process.*/
 		bool requestInProcess;
 		/*! Used for getting the sender of the last request (from requests-stack) and working with it in several functions.*/
@@ -249,7 +249,8 @@ class ConnectionContext : public LogUnit
 		 * wrong a instance of PluginError will be thrown.
 		 * \param plugin An instance of plugin which contains information about the plugin we wish to connect to.
 		 */
-		UdsComClient* createNewUdsComClient(Plugin* plugin);
+		//TODO: change doxy
+		UdsComWorker* createNewUdsConncetion(Plugin* plugin);
 
 
 		/**
