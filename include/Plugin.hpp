@@ -76,6 +76,22 @@ class Plugin{
 		 */
 		list<string*>* getMethods(){return &(this->methods);}
 
+		bool operator==(Plugin* plugin2)
+		{
+			string* name = plugin2->getName();
+			int id = plugin2->getPluginNumber();
+			string* path = plugin2->getUdsFilePath();
+
+			if(
+				this->name->compare(*name) &&
+				this->pluginNumber == id &&
+				this->udsFilePath->compare(*path)
+			  )
+				return true;
+			else
+				return false;
+		}
+
 
 	private:
 

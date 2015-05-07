@@ -1,38 +1,30 @@
 
-
 #include "UdsComWorker.hpp"
 #include "ConnectionContext.hpp"
 
 
 
-
-UdsComWorker::UdsComWorker(ConnectionContext* context, string* udsFilePath, string* pluginName, int pluginNumber)
+UdsComWorker::UdsComWorker(ConnectionContext* context, Plugin* plugin)
 {
+	string* tempUdsPath = NULL;
 	this->optionflag = 1;
 	this->deletable = false;
-	this->jsonReturn = NULL;
-	this->jsonInput = NULL;
-	this->identity = NULL;
 	this->logInfoIn.logLevel = LOG_INPUT;
 	this->logInfoIn.logName = "UDS IN:";
 	this->logInfo.logName = "UdsComWorker:";
 	this->logInfoOut.logLevel = LOG_OUTPUT;
 	this->logInfoOut.logName = "UDS OUT:";
 	this->logInfo.logName = "UdsComWorker:";
-	this->pluginNumber = pluginNumber;
+	this->plugin = plugin;
 	this->context = context;
-	this->udsFilePath = new string(*udsFilePath);
-	this->pluginName = new string(*pluginName);
+	tempUdsPath = plugin->getUdsFilePath();
 
 	currentSocket = socket(AF_UNIX, SOCK_STREAM, 0);
 	address.sun_family = AF_UNIX;
 	memset(address.sun_path, '\0', sizeof(address.sun_path));
-	strncpy(address.sun_path, udsFilePath->c_str(), udsFilePath->size());
+	strncpy(address.sun_path, tempUdsPath->c_str(), tempUdsPath->size());
 	addrlen = sizeof(address);
-
 }
-
-
 
 
 UdsComWorker::~UdsComWorker()
@@ -45,12 +37,8 @@ UdsComWorker::~UdsComWorker()
 	WaitForListenerThreadToExit();
 	WaitForWorkerThreadToExit();
 
-	delete udsFilePath;
-	delete pluginName;
-
 	deleteReceiveQueue();
 }
-
 
 
 void UdsComWorker::thread_work()
@@ -88,8 +76,6 @@ void UdsComWorker::thread_work()
 }
 
 
-
-
 void UdsComWorker::thread_listen()
 {
 	listen_thread_active = true;
@@ -123,7 +109,7 @@ void UdsComWorker::thread_listen()
 			{
 				//add received data in buffer to queue
 				content = new string(receiveBuffer, recvSize);
-				pushReceiveQueue(new RsdMsg(pluginNumber, content));
+				pushReceiveQueue(new RsdMsg(plugin->getPluginNumber(), content));
 
 				//signal the worker
 				pthread_kill(worker_thread, SIGUSR1);

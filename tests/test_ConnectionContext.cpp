@@ -8,7 +8,7 @@
 
 #include "ConnectionContext.hpp"
 #include "Plugin_Error.h"
-#include "RsdMsg.h"
+#include "RsdMsg.hpp"
 
 
 #include "TestHarness.h"
@@ -53,7 +53,7 @@ class ConnectionContextMock  : public ConnectionContext
 			mock().actualCall("processMsg").withParameterOfType("RsdMsg","msg", msg);
 		}
 
-		virtual UdsComClient* findUdsConnection(int pluginNumber)
+		virtual UdsComWorker* findUdsConnection(int pluginNumber)
 		{
 			mock().actualCall("findUdsConnection").withParameter("pluginNumber", pluginNumber);
 			return NULL;

@@ -17,6 +17,7 @@
 #include "RsdMsg.hpp"
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
+#include "Plugin.hpp"
 #include "Plugin_Error.h"
 #include "LogUnit.hpp"
 
@@ -28,50 +29,109 @@ using namespace std;
 class ConnectionContext;
 
 
+/**
+ * \class UdsComUnit
+ * UdComUnit makes it possible to communicate to plugins via unix domain socket. Like TcpComUnit it will be managed
+ * by the corresponding instance of ConnectionContext. It's receive/send system is similiar to the one of TcpComUnit.
+ * UdsComUnit however saves information about the plugin connected and of course can try to connect to a plugin.
+ * With the transmit methods it is possible to send data to the plugin, if it is connected. Also it can receive data
+ * from the plugin and will forward it to the corresponding ConnectionContext.
+ */
 class UdsComWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, public LogUnit{
 
 	public:
-		UdsComWorker(ConnectionContext* context, string* udsFilePath, string* pluginName, int pluginNumber);
-		~UdsComWorker();
 
-		string* getPluginName(){return pluginName;}
+		/**
+		 * Constructor.
+		 * \param context The overlying ConnectionContext.
+		 * \param plugin Pointer to plugin instance of a registered plugin (which means, known to RSD).
+		 */
+		UdsComWorker(ConnectionContext* context, Plugin* plugin);
+
+		/**
+		 * Destructor.
+		 */
+		virtual ~UdsComWorker();
+
+		/**
+		 * \return Return the name of the corresponding plugin (maybe connected).
+		 */
+		string* getPluginName(){return plugin->getName();}
+
+		/**
+		 * \return Return the unique id of the corresponding plugin (maybe connected).
+		 */
+		int getPluginNumber(){return plugin->getPluginNumber();}
+
+		/**
+		 * \return Returns true if this UdsComUnit is deletable ,which means that the connected plugin closed the connection.
+		 */
 		bool isDeletable(){return deletable;}
-		int getPluginNumber(){return pluginNumber;}
 
-		void routeBack(RsdMsg* data);
+
+		/**
+		 * Trys to connect to the plugin, whose information was given through the constructor.
+		 * If the connect is successful it will also create a thread for listening and working with data.
+		 * Should the connect or the creation of the worker/listener thread fail, a instance of PluginError will be thrown.
+		 */
 		void tryToconnect();
 
+		/**
+		 * Sends a message through the uds-connections to the plugin.
+		 * \param msg Pointer to a character array, which has to be send.
+		 * \param size Length of data.
+		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
+		*/
 		int transmit(char* data, int size);
+
+		/**
+		 * Sends a message through the uds-connections to the plugin.
+		 * \param msg Pointer to a constant character array, which has to be send.
+		 * \param size Length of data.
+		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
+		*/
 		int transmit(const char* data, int size);
+
+
+		/**
+		 * Sends a message through the uds-connections to the plugin.
+		 * \param msg Pointer to RsdMsg, which has to be send.
+		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
+		*/
 		int transmit(RsdMsg* msg);
 
 
 	private:
 
-		//variables for worker
-		string* jsonInput;
-		string* identity;
-		string* jsonReturn;
-
-
-		//not shared, more common
+		/*! Overlying ConnectionContext instance, which mangages outgoing data and receives incomming data.*/
+		ConnectionContext* context;
+		/*! The current unix domain socket fd, which we need to send/receive data.*/
 		int currentSocket;
+		/*! If this is true, this UdsComUnit is marked as deletable.*/
 		bool deletable;
+		/*! Contains Log-information for logging incomming data (from plugin).*/
 		LogInformation logInfoIn;
+		/*! Contains Log-information for logging outgoing data (to plugin).*/
 		LogInformation logInfoOut;
 
-		ConnectionContext* context;
 
+		//information about the unix domain socket
 		struct sockaddr_un address;
 		socklen_t addrlen;
 		int optionflag;
 
+		/*! Contains information about the plugin which this UdsComUnit can connect.
+		 *  This is just a pointer to the same instance of plugin which RSD has.*/
+		Plugin* plugin;
 
-		string* udsFilePath;
-		string* pluginName;
-		int pluginNumber;
-
-
+		/**
+		 * This method is used if this UdsComUnit receives data from a plugin.
+		 * First it will forward the message to processMsg() of the ConnectionContext.
+		 * If an exception was thrown, it will call handleIncorrectPluginResponse of the ConnectionContext,
+		 * which will create a valid json rpc error response for the plugin and send it to that.
+		 * \param data A RsdMsg containing a json rpc request or response.
+		 */
+		void routeBack(RsdMsg* data);
 
 
 		virtual void thread_listen();
@@ -79,6 +139,5 @@ class UdsComWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, publi
 		virtual void thread_work();
 
 };
-
 
 #endif /* INCLUDE_UDSWORKER_HPP_ */

@@ -431,7 +431,7 @@ UdsComWorker* ConnectionContext::createNewUdsConncetion(Plugin* plugin)
 	try
 	{
 		//   create a new udsClient with this udsFilePath and push it to list
-		newUdsComWorker = new UdsComWorker(this, plugin->getUdsFilePath(), plugin->getName(), plugin->getPluginNumber());
+		newUdsComWorker = new UdsComWorker(this, plugin);
 		newUdsComWorker->tryToconnect();
 		udsConnections.push_back(newUdsComWorker);
 		identificationMsg = generateIdentificationMsg(contextNumber);
@@ -451,22 +451,22 @@ UdsComWorker* ConnectionContext::findUdsConnection(char* pluginName)
 {
 	UdsComWorker* comWorker = NULL;
 	Plugin* currentPlugin = NULL;
-	bool clientFound = false;
+	bool connectionFound = false;
 	list<UdsComWorker*>::iterator i = udsConnections.begin();
 
 	try
 	{
-		while(i != udsConnections.end() && !clientFound)
+		while(i != udsConnections.end() && !connectionFound)
 		{
 			comWorker = *i;
 			if(comWorker->getPluginName()->compare(pluginName) == 0)
 			{
-				clientFound = true;
+				connectionFound = true;
 			}
 			else
 				++i;
 		}
-		if(!clientFound)
+		if(!connectionFound)
 		{
 			comWorker = NULL;
 			currentPlugin = RSD::getPlugin(pluginName);

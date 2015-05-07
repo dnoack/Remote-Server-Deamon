@@ -8,7 +8,7 @@
 //include testharness here
 #include "TestHarness.h"
 #include "MockSupport.h"
-#include "RsdMsg.h"
+#include "RsdMsg.hpp"
 
 
 

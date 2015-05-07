@@ -5,7 +5,7 @@
 #define MOCK_BUFFER_SIZE 2048
 
 
-#include "RsdMsg.h"
+#include "RsdMsg.hpp"
 #include "WorkerInterface.hpp"
 
 
