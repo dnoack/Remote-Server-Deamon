@@ -1,6 +1,7 @@
 #ifndef INCLUDE_CONNECTIONCONTEXT_HPP_
 #define INCLUDE_CONNECTIONCONTEXT_HPP_
 
+/*! Value of sender from RsdMsgs from clientside*/
 #define CLIENT_SIDE 0
 
 
@@ -17,8 +18,8 @@
 
 /*
  * \class ConnectionContext
- * \brief The class ConnectioNContext represents the connection of a client to RSD and through RSD to one or
- * multiple Plugins. The connection between client and RSD is a TCP connection and is managed through a internal
+ * \brief The class ConnectionContext represents the connection of a client to RSD and through RSD to one or
+ * multiple plugins. The connection between client and RSD is a TCP connection and is managed through a internal
  * instance of TcpWorker. The connection(s) from RSD to one or multiple plugins is managed through a list of
  * UdsComWorker. ConnectionContext got three important main tasks.
  * -# Creating a new Context for a new incomming Connection
@@ -51,7 +52,7 @@ class ConnectionContext : public LogUnit
 
 
 		/**
-		 * Search the list of existing UdsComClients for a existing connection
+		 * Searches the list of existing UdsComClients for a existing connection
 		 * to the corresponding plugin.
 		 * \param pluginName The unique name of the plugin.
 		 * \return On success a valid pointer to a UdsComClient is returned. On fail
@@ -144,7 +145,7 @@ class ConnectionContext : public LogUnit
 		/**
 		 * Sends a message through the tcp-connections to the client.
 		 * \param msg Pointer to RsdMsg, which has to be send.
-		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
+		 * \return On success it returns the number of bytes which where send, on fail it return -1 (errno is set).
 		 */
 		int tcp_send(RsdMsg* msg);
 
@@ -240,28 +241,90 @@ class ConnectionContext : public LogUnit
 		const char* generateIdentificationMsg(int contextNumber);
 
 
+		/**
+		 * Creates a new uds-connection to a registered plugin. The information from a plugin instance
+		 * will be used to try to connect to this plugin via unix domain socket. If a working
+		 * connection was created, it will be pushed to the list of udsConnections and the plugin will
+		 * receive a json rpc notification with information about this context. It something goes
+		 * wrong a instance of PluginError will be thrown.
+		 * \param plugin An instance of plugin which contains information about the plugin we wish to connect to.
+		 */
 		UdsComClient* createNewUdsComClient(Plugin* plugin);
 
 
-
+		/**
+		 * Checks if the message is from a client or from a plugin and calls the
+		 * corresponding methods for handling this message.
+		 * \param msg The incomming RsdMsg containing a json rpc request.
+		 */
 		void handleRequest(RsdMsg* msg);
+
+
+		/**
+		 * Searches the msg for a namespace within the json rpc field "method".
+		 * If the namespace RSD is found, it will call handleRSDCommand, for other namepspaces
+		 * it will try to connect to the requested plugin. If there is no namespace or another error
+		 * a PluginError will bethrown.
+		 * \param msg The incomming RsdMsg containing a json rpc request.
+		 */
 		void handleRequestFromClient(RsdMsg* msg);
+
+
+		/**
+		 * This method will be usefull in case of subrequests from one plugin to another.
+		 * It pushes the message to the request-stack of the connectioncontext and trys to
+		 * forward the message to the corresponding plugin. Therefore the namepsace of the
+		 * json rpc field "method" will be analyzed.
+		 * \param msg The incomming RsdMsg containing a json rpc request.
+		 */
 		void handleRequestFromPlugin(RsdMsg* msg);
 
 
+		/**
+		 * If the sender of the msg is a client, a instance of PluginError will be thrown,
+		 * else handleResponseFromPlugin(msg) will be called.
+		 * \param msg The incomming RsdMsg containing a json rpc response.
+		 */
 		void handleResponse(RsdMsg* msg);
+
+
+		/**
+		 * The last message from request-stack will be analyzed for it's sender and if it's a plugin
+		 * the response will be forwarded to it via uds. In case that the last sender of the last
+		 * request is the client, the response will be forwarded via tcp to the client. For the latter one,
+		 * the requestInProcess flag will be set to false, because a main request is complete.
+		 * \param msg The incomming RsdMsg containing a json rpc response.
+		 */
 		void handleResponseFromPlugin(RsdMsg* msg);
 
+
+		/**
+		 * This methodd handles messages which are correct json message but are no request nor response.
+		 * In case the client send such a request, a instance of PluginError will be thrown.
+		 * \param msg The incomming RsdMsg containing valid json but not a json rpc.
+		 */
 		void handleTrash(RsdMsg* msg);
+
+
+		/**
+		 * Generates a json rpc error response message and sends it back to the corresponding plugin.
+		 * For sending back the errpr response message, it calls handleResponseFromPlugin().
+		 * \param msg The incomming RsdMsg containing valid json but not a json rpc.
+		 */
 		void handleTrashFromPlugin(RsdMsg* msg);
 
+
+		/**
+		 * Trys to get the method name of the json rpc method field and calls the static method
+		 * RSD::executefunction(). The result of this call will be send back to the client via the
+		 * existing tcp-connection.
+		 * \param msg The incomming RsdMsg containing a json rpc request with "RSD" as method-namespace.
+		 */
 		void handleRSDCommand(RsdMsg* msg);
 
 
-		void handleParseError(RsdMsg* msg);
 
-
-		/*! Mutext to protect the contextCounter variable.*/
+		/*! Mutex to protect the contextCounter variable.*/
 		static pthread_mutex_t contextCounterMutex;
 
 		/*! Count the number of instancec of ConnectionContext.

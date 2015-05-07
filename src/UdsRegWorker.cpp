@@ -5,7 +5,7 @@
 #include "UdsRegWorker.hpp"
 #include "Registration.hpp"
 #include "Plugin_Error.h"
-#include "RsdMsg.h"
+#include "RsdMsg.hpp"
 #include "Utils.h"
 
 
@@ -65,20 +65,19 @@ void UdsRegWorker::thread_work()
 			case SIGUSR1:
 				while(getReceiveQueueSize() > 0)
 				{
-					if(!registration->isRequestInProcess())
+
+					try
 					{
-						try
-						{
-							msg = receiveQueue.back();
-							dyn_print("RegWorker Received: %s\n", msg->getContent()->c_str());
-							popReceiveQueueWithoutDelete();
-							registration->processMsg(msg);
-						}
-						catch(...)
-						{
-							dyn_print("Unkown Exception.\n");
-						}
+						msg = receiveQueue.back();
+						dyn_print("RegWorker Received: %s\n", msg->getContent()->c_str());
+						popReceiveQueueWithoutDelete();
+						registration->processMsg(msg);
 					}
+					catch(...)
+					{
+						dyn_print("Unkown Exception.\n");
+					}
+
 				}
 			break;
 

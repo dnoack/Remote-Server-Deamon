@@ -224,7 +224,7 @@ for i in range (1):
 
   print "request for i2c Di-Plugin"
   time.sleep(1)
-  s.send("{\"jsonrpc\": \"2.0\", \"method\": \"i2c.write\", \"params\" : { \"device\": 225456, \"slave_addr\": 56, \"data_out\" : [3, 0] }, \"id\" : 17}")
+  s.send("{\"jsonrpc\": \"2.0\", \"method\": \"i2c.write\", \"params\" : { \"device\": 2237936547, \"slave_addr\": 56, \"data_out\" : [3, 0] }, \"id\" : 17}")
   data = s.recv(1024)
   print 'Received', repr(data)
   

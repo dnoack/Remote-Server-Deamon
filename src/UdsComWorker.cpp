@@ -1,15 +1,7 @@
-/*
- * UdsComWorker.cpp
- *
- *  Created on: 09.02.2015
- *      Author: dnoack
- */
-
 
 #include "UdsComClient.hpp"
 #include "UdsComWorker.hpp"
-#include "errno.h"
-#include "Utils.h"
+
 
 
 UdsComWorker::UdsComWorker(int socket,  UdsComClient* comClient)

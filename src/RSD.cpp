@@ -1,5 +1,5 @@
 #include "RSD.hpp"
-#include "RsdMsg.h"
+#include "RsdMsg.hpp"
 #include "Utils.h"
 #include "LogUnit.hpp"
 #include <iostream>
@@ -379,10 +379,7 @@ void RSD::startPluginsDuringStartup(const char* plugins)
 		}
 		myfile.close();
 	}
-
-
 }
-
 
 
 int RSD::start(int argc, char** argv)
@@ -454,7 +451,6 @@ void RSD::_start()
 		regServer->checkForDeletableWorker();
 		//check TCP/workers
 		this->checkForDeletableConnections();
-		//RsdMsg::printCounters();
 	}
 	while(rsdActive);
 }
