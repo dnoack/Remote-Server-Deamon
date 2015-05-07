@@ -13,7 +13,7 @@
 
 
 #include "JsonRPC.hpp"
-#include "RsdMsg.h"
+#include "RsdMsg.hpp"
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
 #include "Plugin.hpp"

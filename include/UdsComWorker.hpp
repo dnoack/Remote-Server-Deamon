@@ -1,7 +1,7 @@
 #ifndef INCLUDE_UDSCOMWORKER_HPP_
 #define INCLUDE_UDSCOMWORKER_HPP_
 
-//unix domain socket definition
+#include "errno.h"
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -14,7 +14,7 @@
 
 
 #include "JsonRPC.hpp"
-#include "RsdMsg.h"
+#include "RsdMsg.hpp"
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
 #include "Plugin_Error.h"
