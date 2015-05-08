@@ -10,7 +10,6 @@ CPP_SRCS += \
 ../src/Registration.cpp \
 ../src/RsdMsg.cpp \
 ../src/TcpWorker.cpp \
-../src/UdsComClient.cpp \
 ../src/UdsComWorker.cpp \
 ../src/UdsRegServer.cpp \
 ../src/UdsRegWorker.cpp 
@@ -22,7 +21,6 @@ OBJS += \
 ./src/Registration.o \
 ./src/RsdMsg.o \
 ./src/TcpWorker.o \
-./src/UdsComClient.o \
 ./src/UdsComWorker.o \
 ./src/UdsRegServer.o \
 ./src/UdsRegWorker.o 
@@ -34,7 +32,6 @@ CPP_DEPS += \
 ./src/Registration.d \
 ./src/RsdMsg.d \
 ./src/TcpWorker.d \
-./src/UdsComClient.d \
 ./src/UdsComWorker.d \
 ./src/UdsRegServer.d \
 ./src/UdsRegWorker.d 
@@ -44,7 +41,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -g -DTESTMODE -I/home/dnoack/libs/rapidjson/include/rapidjson -I"/home/dnoack/git/RSD-and-Plugin-lib/include" -O3 -Wall -c -fmessage-length=0 ${CXXFLAGS} -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	g++ -g -DTESTMODE -I/home/dnoack/libs/rapidjson/include/rapidjson -I/home/Dave/libs/cpputest-3.6/include -I/home/Dave/libs/cpputest-3.6/include/CppUTest -I/home/Dave/libs/cpputest-3.6/include/CppUTestExt -I"/home/Dave/git/RSD-and-Plugin-lib/include" -O3 -Wall -c -fmessage-length=0 ${CXXFLAGS} -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
