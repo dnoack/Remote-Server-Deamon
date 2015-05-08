@@ -18,7 +18,7 @@
 #include "WorkerThreads.hpp"
 #include "Plugin.hpp"
 #include "Registration.hpp"
-#include "Plugin_Error.h"
+#include "Error.hpp"
 #include "Utils.h"
 
 class Registration;

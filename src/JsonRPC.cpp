@@ -1,15 +1,7 @@
-/*
- * JsonRPC.cpp
- *
- *  Created on: 	16.01.2015
- *  Last edited:	20.03.2015
- *  Author: 		dnoack
- */
 
 #include "stdio.h"
 #include <JsonRPC.hpp>
-#include "Plugin_Error.h"
-
+#include "Error.hpp"
 
 
 Document* JsonRPC::parse(string* msg)
@@ -20,7 +12,7 @@ Document* JsonRPC::parse(string* msg)
 	if(!inputDOM->HasParseError())
 		result = inputDOM;
 	else
-		throw PluginError(-32700, "Error while parsing json rpc.");
+		throw Error(-32700, "Error while parsing json rpc.");
 
 	return result;
 }
@@ -31,7 +23,7 @@ void JsonRPC::parse(string* msg, Document* dom)
 	dom->Parse(msg->c_str());
 
 	if(dom->HasParseError())
-		throw PluginError(-32700, "Error while parsing json rpc.");
+		throw Error(-32700, "Error while parsing json rpc.");
 }
 
 
@@ -91,12 +83,12 @@ Value* JsonRPC::tryTogetParam(const char* name)
 		hasParams();
 		params = &((*inputDOM)["params"]);
 		if(!params->HasMember(name))
-			throw PluginError(-32022, "Missing parameter.");
+			throw Error(-32022, "Missing parameter.");
 		else
 			result = getParam(name);
 
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -113,7 +105,7 @@ Value* JsonRPC::tryTogetParams()
 		hasParams();
 		params = &((*inputDOM)["params"]);
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -143,7 +135,7 @@ Value* JsonRPC::tryTogetResult()
 		hasResult();
 		resultValue = getResult();
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -161,7 +153,7 @@ Value* JsonRPC::tryTogetResult(Document* dom)
 		hasResult(dom);
 		resultValue = getResult(dom);
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -186,7 +178,7 @@ Value* JsonRPC::tryTogetMethod()
 		hasMethod();
 		methodValue = getMethod();
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -210,7 +202,7 @@ Value* JsonRPC::tryTogetId()
 		hasId();
 		idValue = getId();
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -228,7 +220,7 @@ bool JsonRPC::checkJsonRpc_RequestFormat()
 		checkJsonRpcVersion();
 		hasMethod();
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -240,7 +232,7 @@ bool JsonRPC::checkJsonRpcVersion(Document* dom)
 {
 
 	if(strcmp((*dom)["jsonrpc"].GetString(), JSON_PROTOCOL_VERSION) != 0)
-		throw PluginError(-32023, "Incorrect jsonrpc version. Used version is 2.0");
+		throw Error(-32002, "Incorrect jsonrpc version. Used version is 2.0");
 
 	return true;
 }
@@ -261,7 +253,7 @@ bool JsonRPC::isRequest()
 		hasId();
 		result = true;
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		result = false;
 	}
@@ -281,7 +273,7 @@ bool JsonRPC::isResponse()
 		hasId();
 		result = true;
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		result = false;
 		throw;
@@ -304,7 +296,7 @@ bool JsonRPC::isError(Document* dom)
 		hasId(dom);
 		result = true;
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		result = false;
 		throw;
@@ -329,7 +321,7 @@ bool JsonRPC::isNotification()
 		checkJsonRpc_RequestFormat();
 		result = true;
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		result = false;
 	}
@@ -349,13 +341,13 @@ bool JsonRPC::hasJsonRPCVersion(Document* dom)
 			if((*dom)["jsonrpc"].IsString())
 				result = true;
 			else
-				throw PluginError(-32001, "Member -jsonrpc- has to be a string.");
+				throw Error(-32001, "Member -jsonrpc- has to be a string.");
 
 		}
 		else
-			throw PluginError(-32000, "Member -jsonrpc- is missing.");
+			throw Error(-32000, "Member -jsonrpc- is missing.");
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -380,12 +372,12 @@ bool JsonRPC::hasMethod(Document* dom)
 			if((*dom)["method"].IsString())
 				result = true;
 			else
-				throw PluginError(-32011, "Member -method- has to be a string.");
+				throw Error(-32011, "Member -method- has to be a string.");
 		}
 		else
-			throw PluginError(-32010, "Member -method- is missing.");
+			throw Error(-32010, "Member -method- is missing.");
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -412,13 +404,13 @@ bool JsonRPC::hasParams(Document* dom)
 				result = true;
 			else
 			{
-				throw PluginError(-32021, "Member -params- has to be an object.");
+				throw Error(-32021, "Member -params- has to be an object.");
 			}
 		}
 		else
-			throw PluginError(-32020, "Member -params- is missing.");
+			throw Error(-32020, "Member -params- is missing.");
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -446,12 +438,12 @@ bool JsonRPC::hasId(Document* dom)
 			if((*dom)["id"].IsInt() || (*inputDOM)["id"].IsString())
 				result = true;
 			else
-				throw PluginError(-32031, "Member -id- has to be an integer or a string.");
+				throw Error(-32031, "Member -id- has to be an integer or a string.");
 		}
 		else
-			throw PluginError(-32030, "Member -id- is missing.");
+			throw Error(-32030, "Member -id- is missing.");
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -478,9 +470,9 @@ bool JsonRPC::hasResult(Document* dom)
 			result = true;
 			//no checking for type, because the type of result is deetermined by the calling function
 		else
-			throw PluginError(-32040, "Member -result- is missing.");
+			throw Error(-32040, "Member -result- is missing.");
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -506,12 +498,12 @@ bool JsonRPC::hasError(Document* dom)
 			if((*dom)["error"].IsObject())
 				result = true;
 			else
-				throw PluginError( -32051, "Member -error- has to be an object.");
+				throw Error( -32051, "Member -error- has to be an object.");
 		}
 		else
-			throw PluginError(-32050, "Member -error- is missing.");
+			throw Error(-32050, "Member -error- is missing.");
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -534,7 +526,7 @@ bool JsonRPC::hasResultOrError(Document* dom)
 	{
 		result = hasResult(dom);
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		result |= hasError(dom);
 	}
@@ -671,8 +663,4 @@ void JsonRPC::generateErrorDOM(Document &dom)
 	dom.AddMember("id", id, dom.GetAllocator());
 
 }
-
-
-
-
 

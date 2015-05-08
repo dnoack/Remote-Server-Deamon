@@ -125,5 +125,5 @@ void UdsRegServer::start()
 {
 	pthread_create(&accepter, NULL, uds_accept, NULL);
 	if(wait_for_accepter_up() < 0)
-		throw PluginError("Couldnt start Accept thread in time.");
+		throw Error("Couldnt start Accept thread in time.");
 }

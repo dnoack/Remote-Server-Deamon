@@ -110,7 +110,7 @@ bool RSD::addPlugin(const char* name, int pluginNumber, const char* udsFilePath)
 	{
 		getPlugin(name);
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		pthread_mutex_lock(&pLmutex);
 		plugins.push_back(new Plugin(name, pluginNumber, udsFilePath));
@@ -129,7 +129,7 @@ bool RSD::addPlugin(Plugin* newPlugin)
 	{
 		getPlugin(name);
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		pthread_mutex_lock(&pLmutex);
 		plugins.push_back(newPlugin);
@@ -185,7 +185,7 @@ Plugin* RSD::getPlugin(const char* name)
 	pthread_mutex_unlock(&pLmutex);
 
 	if(!found)
-		throw PluginError(-33011, "Plugin not found.");
+		throw Error(-33011, "Plugin not found.");
 	else
 		return result;
 }
@@ -213,7 +213,7 @@ Plugin* RSD::getPlugin(int pluginNumber)
 	pthread_mutex_unlock(&pLmutex);
 
 	if(!found)
-		throw PluginError(-33011, "Plugin not found.");
+		throw Error(-33011, "Plugin not found.");
 	else
 		return result;
 }
@@ -276,11 +276,11 @@ bool RSD::executeFunction(Value &method, Value &params, Value &result)
 	{
 		funcMapPointer = funcMap[(char*)method.GetString()];
 		if(funcMapPointer == NULL)
-			throw PluginError("Function not found.",  __FILE__, __LINE__);
+			throw Error("Function not found.",  __FILE__, __LINE__);
 		else
 			return (*funcMapPointer)(params, result);
 	}
-	catch(const PluginError &e)
+	catch(const Error &e)
 	{
 		throw;
 	}

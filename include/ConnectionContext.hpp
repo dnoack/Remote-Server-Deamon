@@ -12,7 +12,7 @@
 #include "TcpWorker.hpp"
 #include "UdsComWorker.hpp"
 #include "Plugin.hpp"
-#include "Plugin_Error.h"
+#include "Error.hpp"
 #include "LogUnit.hpp"
 
 
@@ -139,7 +139,7 @@ class ConnectionContext : public LogUnit
 		* \param msg The received message from a plugin (via UdsComWorker).
 		* \param error The corresponding errorstring for this incorrect message.
 		*/
-		void handleIncorrectPluginResponse(RsdMsg* msg, PluginError &error);
+		void handleIncorrectPluginResponse(RsdMsg* msg, Error &error);
 
 
 		/**

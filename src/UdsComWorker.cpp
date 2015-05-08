@@ -131,7 +131,7 @@ void UdsComWorker::routeBack(RsdMsg* msg)
 	{
 		context->processMsg(msg);
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		/*this can happen if a plugin answers with a incorret msg.
 		Server will then get a parsing error and throw a PluginError*/
@@ -145,14 +145,14 @@ void UdsComWorker::tryToconnect()
 	if( connect(currentSocket, (struct sockaddr*)&address, addrlen) < 0)
 	{
 		dlog(logInfoOut, "Plugin not found, errno: %s ", strerror(errno));
-		throw PluginError("Could not connect to plugin.");
+		throw Error("Could not connect to plugin.");
 	}
 	else
 	{
 		StartWorkerThread();
 
 		if(wait_for_listener_up() != 0)
-			throw PluginError("Creation of Listener/worker threads failed.");
+			throw Error("Creation of Listener/worker threads failed.");
 	}
 }
 

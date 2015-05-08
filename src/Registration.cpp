@@ -70,7 +70,7 @@ void Registration::processMsg(RsdMsg* msg)
 				break;
 		}
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		cancelTimer();
 
@@ -112,10 +112,10 @@ const char* Registration::handleAnnounceMsg(RsdMsg* msg)
 
 		//check if there is already a plugin with this number registered.
 		if(RSD::getPlugin(number) != NULL)
-			throw PluginError(-32701, "Plugin already registered.");
+			throw Error(-32701, "Plugin already registered.");
 
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		// -33011 is plugin not found, which is fine
 		if(e.getErrorCode() != -33011)
@@ -140,7 +140,7 @@ bool Registration::handleRegisterMsg(RsdMsg* msg)
 		}
 		delete msg;
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -172,7 +172,7 @@ const char* Registration::createRegisterACKMsg()
 		result.SetString("registerACK");
 		response = json->generateResponse(*id, result);
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}

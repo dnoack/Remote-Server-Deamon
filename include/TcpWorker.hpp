@@ -16,7 +16,7 @@
 
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
-#include "Plugin_Error.h"
+#include "Error.hpp"
 #include "Utils.h"
 #include "RsdMsg.hpp"
 #include "LogUnit.hpp"

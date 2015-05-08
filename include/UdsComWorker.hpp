@@ -18,7 +18,7 @@
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
 #include "Plugin.hpp"
-#include "Plugin_Error.h"
+#include "Error.hpp"
 #include "LogUnit.hpp"
 
 

@@ -83,7 +83,7 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 			handleTrash(msg);
 		}
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		dlog(logInfo,  "Exception: %s", e.get());
 		dlog(logInfo, "Stacksize: %d", requests.size());
@@ -92,7 +92,7 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 		{
 			delete msg;
 			error = json->generateResponseError(nullId, e.getErrorCode(), e.get());
-			throw PluginError(error);
+			throw Error(error);
 		}
 		else
 		{
@@ -113,7 +113,7 @@ void ConnectionContext::handleRequest(RsdMsg* msg)
 		else
 			handleRequestFromPlugin(msg);
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -133,7 +133,7 @@ char* ConnectionContext::getMethodNamespace()
 	//No '.' found -> no namespace
 	if(namespacePos == strlen(methodName) || namespacePos == 0)
 	{
-		throw PluginError(-32010, "Methodname has no namespace.");
+		throw Error(-32010, "Methodname has no namespace.");
 	}
 	else
 	{
@@ -163,7 +163,7 @@ void ConnectionContext::handleRSDCommand(RsdMsg* msg)
 		//send the generated msg back to client
 		tcp_send(result);
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		setRequestNotInProcess();
 		throw;
@@ -196,7 +196,7 @@ void ConnectionContext::handleRequestFromClient(RsdMsg* msg)
 		}
 		delete[] methodNamespace;
 	}
-	catch (PluginError &e)
+	catch (Error &e)
 	{
 		if(e.getErrorCode() != -32010)
 		{
@@ -219,7 +219,7 @@ void ConnectionContext::handleRequestFromPlugin(RsdMsg* msg)
 		currentWorker->transmit(msg);
 		delete[] methodNamespace;
 	}
-	catch (PluginError &e)
+	catch (Error &e)
 	{
 		if(e.getErrorCode() != -32010)
 			delete[] methodNamespace;
@@ -233,12 +233,12 @@ void ConnectionContext::handleResponse(RsdMsg* msg)
 	try
 	{
 		if(msg->getSender() == CLIENT_SIDE)
-			throw PluginError(-3303, "Response from Clientside is not allowed.");
+			throw Error(-3303, "Response from Clientside is not allowed.");
 
 		else
 			handleResponseFromPlugin(msg);
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -272,7 +272,7 @@ void ConnectionContext::handleResponseFromPlugin(RsdMsg* msg)
 		}
 		delete msg;
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -286,12 +286,12 @@ void ConnectionContext::handleTrash(RsdMsg* msg)
 		if(msg->getSender() == CLIENT_SIDE)
 		{
 			delete msg;
-			throw PluginError(-3304, "Your Json-Rpc Message to to be a request.");
+			throw Error(-3304, "Your Json-Rpc Message to to be a request.");
 		}
 		else
 			handleTrashFromPlugin(msg);
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -311,14 +311,14 @@ void ConnectionContext::handleTrashFromPlugin(RsdMsg* msg)
 		delete msg;
 		handleResponseFromPlugin(errorResponse);
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
 }
 
 
-void ConnectionContext::handleIncorrectPluginResponse(RsdMsg* msg, PluginError &error)
+void ConnectionContext::handleIncorrectPluginResponse(RsdMsg* msg, Error &error)
 {
 
 	RsdMsg* errorResponse = NULL;
@@ -332,7 +332,7 @@ void ConnectionContext::handleIncorrectPluginResponse(RsdMsg* msg, PluginError &
 		errorResponse = new RsdMsg(msg->getSender(), errorResponseMsg);
 		handleResponseFromPlugin(errorResponse);
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -437,7 +437,7 @@ UdsComWorker* ConnectionContext::createNewUdsConncetion(Plugin* plugin)
 		identificationMsg = generateIdentificationMsg(contextNumber);
 		newUdsComWorker->transmit(identificationMsg , strlen(identificationMsg));
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		if(newUdsComWorker != NULL)
 			delete newUdsComWorker;
@@ -473,7 +473,7 @@ UdsComWorker* ConnectionContext::findUdsConnection(char* pluginName)
 			comWorker = createNewUdsConncetion(currentPlugin);
 		}
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}
@@ -506,7 +506,7 @@ UdsComWorker* ConnectionContext::findUdsConnection(int pluginNumber)
 			comWorker = createNewUdsConncetion(currentPlugin);
 		}
 	}
-	catch(PluginError &e)
+	catch(Error &e)
 	{
 		throw;
 	}

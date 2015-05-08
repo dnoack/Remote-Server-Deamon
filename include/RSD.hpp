@@ -6,8 +6,8 @@
 #define TCP_PORT 1234
 #define MAX_CLIENTS 20
 #define MAIN_SLEEP_TIME 3 //sleep time for main loop
-#include "Plugin_Error.h"
-#define RAPIDJSON_ASSERT(x)    if((x) == 0 ){throw PluginError("Rapidjson assertion.", __FILE__, __LINE__);}
+#include "Error.hpp"
+#define RAPIDJSON_ASSERT(x)    if((x) == 0 ){throw Error("Rapidjson assertion.", __FILE__, __LINE__);}
 
 
 #include <map>
@@ -24,6 +24,7 @@
 
 #include "document.h"
 #include "writer.h"
+
 
 #include "UdsRegServer.hpp"
 #include "ConnectionContext.hpp"

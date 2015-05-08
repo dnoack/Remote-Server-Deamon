@@ -20,7 +20,7 @@ TcpWorker::TcpWorker(ConnectionContext* context, TcpWorker** tcpWorker, int sock
 	StartWorkerThread();
 
 	if(wait_for_listener_up() != 0)
-		throw PluginError("Creation of Listener/worker threads failed.");
+		throw Error("Creation of Listener/worker threads failed.");
 	else
 		dlog(logInfo, "Created TcpWorker for context %d with socket %d.", context->getContextNumber(), currentSocket);
 }
@@ -72,7 +72,7 @@ void TcpWorker::thread_work()
 							popReceiveQueueWithoutDelete();
 							context->processMsg(msg);
 						}
-						catch(PluginError &e)
+						catch(Error &e)
 						{
 							errorResponse = new string(e.get());
 							errorMsg = new RsdMsg(0, errorResponse);
