@@ -2,6 +2,7 @@
 #define INCLUDE_UDSREGSERVER_HPP_
 
 
+#include "errno.h"
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/types.h>

@@ -29,6 +29,7 @@
 #include "UdsRegServer.hpp"
 #include "ConnectionContext.hpp"
 #include "Plugin.hpp"
+#include "LogUnit.hpp"
 
 
 /* This path/file will be used for registering new Plugins to the server.*/
@@ -67,7 +68,7 @@ struct cmp_keys
  * in the form of ConnectionContext objects. There are also Json-RPC functions from RSD itself.
  * \author David Noack
  */
-class RSD{
+class RSD : public LogUnit{
 
 
 	public:
@@ -171,9 +172,9 @@ class RSD{
 		/*! Mutex access plugins list.*/
 		static pthread_mutex_t pLmutex;
 		/*! List to all active ConnectionContext.*/
-		static list<ConnectionContext*> connectionContextList;
+		static list<ConnectionContext*> ccList;
 		/*! Mutex for access connectionContextList.*/
-		static pthread_mutex_t connectionContextListMutex;
+		static pthread_mutex_t ccListMutex;
 		/*! Map of functionname and functionpointer, which contains all available rpc function of RSD.*/
 		static map<const char*, afptr, cmp_keys> funcMap;
 		/*! Functionpointer which is used to initial funcMap and execute functions of the map.*/
@@ -215,6 +216,8 @@ class RSD{
 		pthread_t accepter;
 		/*! Instance of the Registration server for registering new plugins to RSD.*/
 		UdsRegServer* regServer;
+		/*! Contains the name of text file where paths and names of plugins are noted.*/
+		const char* pluginFile;
 
 		sigset_t sigmask;
 		sigset_t origmask;

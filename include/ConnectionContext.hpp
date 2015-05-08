@@ -326,7 +326,7 @@ class ConnectionContext : public LogUnit
 
 
 		/*! Mutex to protect the contextCounter variable.*/
-		static pthread_mutex_t contextCounterMutex;
+		static pthread_mutex_t cCounterMutex;
 
 		/*! Count the number of instancec of ConnectionContext.
 		 * \note will be increased/decreased through constructor/destructor and is protected by mutex contextCounterMutex.

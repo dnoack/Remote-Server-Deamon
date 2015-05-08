@@ -29,7 +29,7 @@ CPP_DEPS += \
 tests/%.o: ../tests/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -g -DTESTMODE -I/home/dnoack/libs/rapidjson/include/rapidjson -I"/home/dnoack/git/RSD-and-Plugin-lib/include" -O3 -Wall -c -fmessage-length=0 ${CXXFLAGS} -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	g++ -g -DTESTMODE -I/home/dnoack/libs/rapidjson/include/rapidjson -I/home/Dave/libs/cpputest-3.6/include -I/home/Dave/libs/cpputest-3.6/include/CppUTest -I/home/Dave/libs/cpputest-3.6/include/CppUTestExt -I"/home/Dave/git/RSD-and-Plugin-lib/include" -O3 -Wall -c -fmessage-length=0 ${CXXFLAGS} -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

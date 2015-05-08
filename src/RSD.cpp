@@ -16,8 +16,8 @@ bool RSD::accept_thread_active;
 list<Plugin*> RSD::plugins;
 pthread_mutex_t RSD::pLmutex;
 
-list<ConnectionContext*> RSD::connectionContextList;
-pthread_mutex_t RSD::connectionContextListMutex;
+list<ConnectionContext*> RSD::ccList;
+pthread_mutex_t RSD::ccListMutex;
 
 map<const char*, afptr, cmp_keys> RSD::funcMap;
 afptr RSD::funcMapPointer;
@@ -28,8 +28,14 @@ int LogUnit::globalLogLevel = 0;
 
 RSD::RSD()
 {
-	pthread_mutex_init(&pLmutex, NULL);
-	pthread_mutex_init(&connectionContextListMutex, NULL);
+	logInfo.logLevel = LOG_INFO;
+	logInfo.logName = "RSD: ";
+	pluginFile = "plugins.txt";
+
+	if( pthread_mutex_init(&pLmutex, NULL) != 0)
+		throw Error (-200 , "Could not init pLMutex", strerror(errno));
+	if( pthread_mutex_init(&ccListMutex, NULL) != 0)
+		throw Error (-201 , "Could not init connectionContextListMutex", strerror(errno));
 
 	rsdActive = true;
 	accepter = 0;
@@ -74,7 +80,7 @@ RSD::~RSD()
 	funcMap.clear();
 
 	pthread_mutex_destroy(&pLmutex);
-	pthread_mutex_destroy(&connectionContextListMutex);
+	pthread_mutex_destroy(&ccListMutex);
 }
 
 
@@ -82,22 +88,39 @@ void* RSD::accept_connections(void* data)
 {
 	int tcpSocket = 0;
 	ConnectionContext* context = NULL;
+	Error** err = (Error**)data;
 
-	connection_socket = socket(AF_INET, SOCK_STREAM, 0);
-	setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag));
-	bind(connection_socket, (struct sockaddr*)&address, sizeof(address));
-	listen(connection_socket, MAX_CLIENTS);
-	accept_thread_active = true;
-
-	while(accept_thread_active)
+	try
 	{
-		tcpSocket = accept(connection_socket, (struct sockaddr*)&address, &addrlen);
-		if(tcpSocket >= 0)
+		connection_socket = socket(AF_INET, SOCK_STREAM, 0);
+		if(connection_socket < 0)
+			throw Error (-203, "Could not create connection socket", strerror(errno));
+
+		if( setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag)) != 0)
+			throw Error (-204, "Error while setting socket option", strerror(errno));
+
+		if( bind(connection_socket, (struct sockaddr*)&address, sizeof(address)) != 0)
+			throw Error (-205, "Error while binding connection_socket", strerror(errno));
+
+		if( listen(connection_socket, MAX_CLIENTS) != 0)
+			throw Error (-206, "Could not listen to connection_socket", strerror(errno));
+
+		accept_thread_active = true;
+
+		while(accept_thread_active)
 		{
-			dyn_print("Client connected\n");
-			context = new ConnectionContext(tcpSocket);
-			pushWorkerList(context);
+			tcpSocket = accept(connection_socket, (struct sockaddr*)&address, &addrlen);
+			if(tcpSocket > 0)
+			{
+				dyn_print("Client connected\n");
+				context = new ConnectionContext(tcpSocket);
+				pushWorkerList(context);
+			}
 		}
+	}
+	catch(Error &e)
+	{
+		*err = new Error(e.getErrorCode(), e.get());
 	}
 	return 0;
 }
@@ -235,26 +258,26 @@ void RSD::deleteAllPlugins()
 
 void RSD::pushWorkerList(ConnectionContext* context)
 {
-	pthread_mutex_lock(&connectionContextListMutex);
-	connectionContextList.push_back(context);
-	dyn_print("Anzahl ConnectionContext: %d\n", connectionContextList.size());
-	pthread_mutex_unlock(&connectionContextListMutex);
+	pthread_mutex_lock(&ccListMutex);
+	ccList.push_back(context);
+	dyn_print("Anzahl ConnectionContext: %d\n", ccList.size());
+	pthread_mutex_unlock(&ccListMutex);
 }
 
 
 void RSD::checkForDeletableConnections()
 {
-	pthread_mutex_lock(&connectionContextListMutex);
+	pthread_mutex_lock(&ccListMutex);
 
-	list<ConnectionContext*>::iterator connection = connectionContextList.begin();
-	while(connection != connectionContextList.end())
+	list<ConnectionContext*>::iterator connection = ccList.begin();
+	while(connection != ccList.end())
 	{
 		//is a tcp connection down ?
 		if((*connection)->isDeletable())
 		{
-			dyn_print("RSD: ConnectionContext %d deleted from list. Verbleibend: %d\n", (*connection)->getContextNumber(), connectionContextList.size()-1);
+			dyn_print("RSD: ConnectionContext %d deleted from list. Verbleibend: %d\n", (*connection)->getContextNumber(), ccList.size()-1);
 			delete *connection;
-			connection = connectionContextList.erase(connection);
+			connection = ccList.erase(connection);
 
 		}
 		//maybe we got a working tcp connection but a plugin went down
@@ -266,7 +289,7 @@ void RSD::checkForDeletableConnections()
 		else
 			++connection;
 	}
-	pthread_mutex_unlock(&connectionContextListMutex);
+	pthread_mutex_unlock(&ccListMutex);
 }
 
 
@@ -346,38 +369,49 @@ void RSD::startPluginsDuringStartup(const char* plugins)
 	string pluginName;
 	string filePath;
 	int posOfName = 0;
-	ifstream myfile(plugins);
+	ifstream myfile;
 
-
-	if(myfile.is_open())
+	try
 	{
-		while(getline(myfile, fileName))
+		myfile.exceptions(ifstream::failbit | ifstream::badbit);
+		myfile.open(plugins, ifstream::in);
+
+		if(myfile.is_open())
 		{
-
-			//look for last slash
-			posOfName = fileName.find_last_of('/', fileName.size());
-
-			//test if filename contains "-Plugin"
-			if(fileName.find("-Plugin", posOfName) > 0)
+			while(!myfile.eof())
 			{
-				filePath = fileName;
-				fileName = filePath.substr(posOfName+1, string::npos);
+				getline(myfile, fileName);
 
-				cout << "Filepath: " << filePath << " and fileName: " << fileName << '\n';
-				//make a fork
-				if(fork() == 0)
+				//look for last slash
+				posOfName = fileName.find_last_of('/', fileName.size());
+
+				//test if filename contains "-Plugin"
+				if(fileName.find("-Plugin", posOfName) > 0)
 				{
-					//within child process, try to execlp the plugin
-					int ret = execlp(filePath.c_str(), fileName.c_str(), NULL);
+					filePath = fileName;
+					fileName = filePath.substr(posOfName+1, string::npos);
 
-					if(ret < 0)
-						cout << "Error while xeclp: " << strerror(errno) << '\n';
+					dlog(logInfo, "Filepath %s and fileName %s \n", filePath.c_str(), fileName.c_str());
+					//make a fork
+					if(fork() == 0)
+					{
+						//within child process, try to execlp the plugin
+						int ret = execlp(filePath.c_str(), fileName.c_str(), NULL);
 
-					exit(EXIT_FAILURE);
+						if(ret < 0)
+							dlog(logInfo, "Error while execlp of %s : errno : %s\n", fileName.c_str(), strerror(errno));
+
+						exit(EXIT_FAILURE);
+					}
 				}
 			}
+			myfile.close();
 		}
-		myfile.close();
+	}
+	catch(ifstream::failure &e)
+	{
+		if(myfile.fail())
+			log(logInfo, "Could not open file for loading plugins.");
 	}
 }
 
@@ -387,42 +421,69 @@ int RSD::start(int argc, char** argv)
 
 	char* lvalue = NULL;
 	char* pvalue = NULL;
-	unsigned int logLevel = 5;
+	unsigned int logLevel = 7;
 	int port = 1234;
-	int c;
+	int c = 0;
 
-	while(( c = getopt(argc, argv, "p:l:")) != -1)
+	try
 	{
-		switch(c)
+
+		while(( c = getopt(argc, argv, "hf:p:l:")) != -1)
 		{
-			case 'p':
-				pvalue = optarg;
-				port = (int)strtol(pvalue, NULL, 10);
-				break;
+			switch(c)
+			{
+				case 'h':
+					cout << "Aufruf: Remote-Server-Daemon [OPTION]...\n" ;
+					cout << "Startet Remote-Server-Daemon.\n\n\n";
+					cout << "-f [FILENAME]\t Datei welche die zu ladenden plugins enthält.\n";
+					cout << "-l \t\t Loglevel-maske welches angibt was geloggt werden soll.\n";
+					cout << "   \t\t Die Maske besteht aus 3 Bit (little endian)\n";
+					cout << "   \t\t Bit 0: INPUT    Bit 1: OUTPUT\n";
+					cout << "   \t\t Bit 2: Info\n";
+					cout << "   \t\t Bsp.: Logge Alles : -l 111\n";
+					cout << "   \t\t Bsp.: Logge nur Input : -l 001\n";
+					cout << "-p \t\t Gibt den TCP port an.\n\n";
+					cout << "Standardmäßig wird der Server auf Port 1234 mit der Logmaske 111\ngestartet.";
+					cout << "Außerdem wird versucht mögliche plugins von der Datei\n\"plugins.txt\" im selben Verzeichnis aus zu starte.\n\n";
+					return 0;
+					break;
 
-			case 'l':
-				lvalue = optarg;
-				logLevel = strtol(lvalue, NULL, 2);
-				break;
-			case '?':
-				return 1;
+				case 'f':
+					pluginFile = optarg;
+					break;
+				case 'p':
+					pvalue = optarg;
+					port = (int)strtol(pvalue, NULL, 10);
+					break;
 
-			default:
-				abort();
+				case 'l':
+					lvalue = optarg;
+					logLevel = strtol(lvalue, NULL, 2);
+					break;
+				case '?':
+					return 1;
+
+				default:
+					abort();
+			}
 		}
+
+
+		if( logLevel < 8)
+			LogUnit::setGlobalLogLevel(logLevel);
+
+		if(port > 1023)
+		{
+			address.sin_port = htons(port);
+			addrlen = sizeof(address);
+		}
+
+		_start();
 	}
-
-
-	if( logLevel < 8)
-		LogUnit::setGlobalLogLevel(logLevel);
-
-	if(port > 1023)
+	catch(Error &e)
 	{
-		address.sin_port = htons(port);
-		addrlen = sizeof(address);
+		throw;
 	}
-
-	_start();
 
 	return 0;
 }
@@ -430,22 +491,27 @@ int RSD::start(int argc, char** argv)
 
 void RSD::_start()
 {
+	Error* err = NULL;
 
 	regServer->start();
 
-	//start comListener
-	pthread_create(&accepter, NULL, accept_connections, NULL);
+	//start accept-thread for incomming tcp connections
+	if( pthread_create(&accepter, NULL, accept_connections, &err) != 0)
+		throw Error(-202, "Could not start TCP-accept-thread", strerror(errno));
 
-	while(!accept_thread_active)
+	//wait until accept thread is ready or an exception within accept_connection thread occured
+	while(!accept_thread_active )
 	{
+		if(err != NULL)
+			throw *err;
 		sleep(1);
 	}
 
-	startPluginsDuringStartup("plugins.txt");
+	//start plugins
+	startPluginsDuringStartup(pluginFile);
 
 	do
 	{
-
 		sleep(MAIN_SLEEP_TIME);
 		//check uds registry workers
 		regServer->checkForDeletableWorker();
@@ -453,14 +519,26 @@ void RSD::_start()
 		this->checkForDeletableConnections();
 	}
 	while(rsdActive);
+
 }
 
 
 #ifndef TESTMODE
 int main(int argc, char** argv)
 {
-	RSD* rsd = new RSD();
-	rsd->start(argc, argv);
-	delete rsd;
+	try
+	{
+		RSD* rsd = new RSD();
+		rsd->start(argc, argv);
+		delete rsd;
+	}
+	catch(Error &e)
+	{
+		dyn_print("An error caused RSD to abort: %d - %s", e.getErrorCode(), e.get());
+	}
+	catch(...)
+	{
+		dyn_print("huhu");
+	}
 }
 #endif

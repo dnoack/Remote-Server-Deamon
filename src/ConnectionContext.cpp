@@ -4,7 +4,7 @@
 
 
 unsigned short ConnectionContext::contextCounter;
-pthread_mutex_t ConnectionContext::contextCounterMutex;
+pthread_mutex_t ConnectionContext::cCounterMutex;
 int ConnectionContext::indexLimit;
 int ConnectionContext::currentIndex;
 
@@ -35,16 +35,17 @@ ConnectionContext::~ConnectionContext()
 {
 	delete tcpConnection;
 	delete json;
-	pthread_mutex_lock(&contextCounterMutex);
+	pthread_mutex_lock(&cCounterMutex);
 	--contextCounter;
-	pthread_mutex_unlock(&contextCounterMutex);
+	pthread_mutex_unlock(&cCounterMutex);
 	pthread_mutex_destroy(&rIPMutex);
 }
 
 
 void ConnectionContext::init()
 {
-	pthread_mutex_init(&contextCounterMutex, NULL);
+	if( pthread_mutex_init(&cCounterMutex, NULL) != 0)
+		throw Error (-300, "Could not init cCounterMutex", strerror(errno));
 	contextCounter = 0;
 	currentIndex = 1;
 	indexLimit = numeric_limits<short>::max();
@@ -53,7 +54,7 @@ void ConnectionContext::init()
 
 void ConnectionContext::destroy()
 {
-	pthread_mutex_destroy(&contextCounterMutex);
+	pthread_mutex_destroy(&cCounterMutex);
 }
 
 
@@ -359,7 +360,7 @@ const char* ConnectionContext::generateIdentificationMsg(int contextNumber)
 short ConnectionContext::getNewContextNumber()
 {
 	short result = 0;
-	pthread_mutex_lock(&contextCounterMutex);
+	pthread_mutex_lock(&cCounterMutex);
 
 	if(contextCounter < MAX_CLIENTS)
 	{
@@ -373,7 +374,7 @@ short ConnectionContext::getNewContextNumber()
 	else
 		result = -1;
 
-	pthread_mutex_unlock(&contextCounterMutex);
+	pthread_mutex_unlock(&cCounterMutex);
 	return result;
 }
 

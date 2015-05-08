@@ -23,12 +23,16 @@ UdsRegServer::UdsRegServer( const char* udsFile)
 	address.sun_family = AF_UNIX;
 	strncpy(address.sun_path, udsFile, strlen(udsFile));
 	addrlen = sizeof(address);
-
 	pthread_mutex_init(&wLmutex, NULL);
 
-	unlink(udsFile);
-	setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag));
-	bind(connection_socket, (struct sockaddr*)&address, addrlen);
+	if( unlink(udsFile) != 0 )
+		throw Error(-200, "Error while unlinking udsFile", strerror(errno));
+
+	if( setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag)) != 0 )
+		throw Error(-201, "Error while setting socket option", strerror(errno));
+
+	if(bind(connection_socket, (struct sockaddr*)&address, addrlen) != 0)
+		throw Error (-202, "Error while binding socket", strerror(errno));
 }
 
 
@@ -49,7 +53,9 @@ void* UdsRegServer::uds_accept(void* param)
 {
 	int new_socket = 0;
 
-	listen(connection_socket, 5);
+	if( listen(connection_socket, 5) != 0)
+		throw Error(-203, "Could not listen to socket", strerror(errno));
+
 	accept_thread_active = true;
 
 	while(accept_thread_active)
@@ -123,7 +129,15 @@ void UdsRegServer::deleteWorkerList()
 
 void UdsRegServer::start()
 {
-	pthread_create(&accepter, NULL, uds_accept, NULL);
-	if(wait_for_accepter_up() < 0)
-		throw Error("Couldnt start Accept thread in time.");
+	try
+	{
+		if( pthread_create(&accepter, NULL, uds_accept, NULL) != 0 )
+			throw Error (-204, "Could not create accept-thread", strerror(errno));
+		if(wait_for_accepter_up() < 0)
+			throw Error(-205, "Could not start Accept thread in time.");
+	}
+	catch(Error &e)
+	{
+		throw;
+	}
 }
