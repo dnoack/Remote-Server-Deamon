@@ -1,13 +1,8 @@
 
 #include "RSD.hpp"
 #include "UdsRegServer.hpp"
-#include "JsonRPC.hpp"
-#include "Plugin_Error.h"
-#include "Utils.h"
 
 
-
-//static symbols
 int UdsRegServer::connection_socket;
 bool UdsRegServer::accept_thread_active;
 
@@ -19,14 +14,14 @@ socklen_t UdsRegServer::addrlen;
 
 
 
-UdsRegServer::UdsRegServer( const char* udsFile, int nameSize)
+UdsRegServer::UdsRegServer( const char* udsFile)
 {
 	optionflag = 1;
 	accepter = 0;
 	accept_thread_active = false;
 	connection_socket = socket(AF_UNIX, SOCK_STREAM, 0);
 	address.sun_family = AF_UNIX;
-	strncpy(address.sun_path, udsFile, nameSize);
+	strncpy(address.sun_path, udsFile, strlen(udsFile));
 	addrlen = sizeof(address);
 
 	pthread_mutex_init(&wLmutex, NULL);

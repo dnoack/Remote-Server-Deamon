@@ -47,7 +47,7 @@ RSD::RSD()
 
 
 	//create Registry Server
-	regServer = new UdsRegServer(REGISTRY_PATH, sizeof(REGISTRY_PATH));
+	regServer = new UdsRegServer(REGISTRY_PATH);
 
 	//init static part of ConnectionContext
 	ConnectionContext::init();

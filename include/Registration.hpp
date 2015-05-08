@@ -7,7 +7,6 @@
 #include "JsonRPC.hpp"
 #include "RsdMsg.hpp"
 #include "Plugin.hpp"
-#include "UdsRegWorker.hpp"
 #include "WorkerInterface.hpp"
 
 using namespace std;

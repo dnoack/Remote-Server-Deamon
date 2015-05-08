@@ -1,31 +1,20 @@
 
-#include "errno.h"
-
 #include "RSD.hpp"
 #include "UdsRegWorker.hpp"
-#include "Registration.hpp"
-#include "Plugin_Error.h"
-#include "RsdMsg.hpp"
-#include "Utils.h"
-
 
 using namespace rapidjson;
 
 
-
 UdsRegWorker::UdsRegWorker(int socket)
 {
-	this->msg = NULL;
 	this->currentSocket = socket;
 	this->registration = new Registration(this);
-	this->errorResponse = NULL;
 
 	StartWorkerThread();
 
 	if(wait_for_listener_up() != 0)
 			throw PluginError("Creation of Listener/worker threads failed.");
 }
-
 
 
 UdsRegWorker::~UdsRegWorker()
@@ -38,7 +27,7 @@ UdsRegWorker::~UdsRegWorker()
 	WaitForWorkerThreadToExit();
 
 	delete registration;
-	cleanupReceiveQueue(this);
+	deleteReceiveQueue();
 }
 
 
@@ -48,10 +37,10 @@ string* UdsRegWorker::getPluginName()
 }
 
 
-
 void UdsRegWorker::thread_work()
 {
 	worker_thread_active = true;
+	RsdMsg* msg = NULL;
 
 	configSignals();
 	StartListenerThread();
@@ -65,7 +54,6 @@ void UdsRegWorker::thread_work()
 			case SIGUSR1:
 				while(getReceiveQueueSize() > 0)
 				{
-
 					try
 					{
 						msg = receiveQueue.back();
@@ -88,7 +76,6 @@ void UdsRegWorker::thread_work()
 	}
 	close(currentSocket);
 }
-
 
 
 void UdsRegWorker::thread_listen()
@@ -138,15 +125,6 @@ void UdsRegWorker::thread_listen()
 }
 
 
-
-
-void UdsRegWorker::cleanupReceiveQueue(void* arg)
-{
-	UdsRegWorker* worker = static_cast<UdsRegWorker*>(arg);
-	worker->deleteReceiveQueue();
-}
-
-
 int UdsRegWorker::transmit(char* data, int size)
 {
 	return send(currentSocket, data, size, 0);
@@ -164,5 +142,4 @@ int UdsRegWorker::transmit(RsdMsg* msg)
 	string* data = msg->getContent();
 	return send(currentSocket, data->c_str(), data->size(), 0);
 }
-
 
