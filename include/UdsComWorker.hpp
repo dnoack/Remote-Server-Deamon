@@ -76,13 +76,7 @@ class UdsComWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, publi
 		 */
 		void tryToconnect();
 
-		/**
-		 * Sends a message through the uds-connections to the plugin.
-		 * \param msg Pointer to a character array, which has to be send.
-		 * \param size Length of data.
-		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
-		*/
-		int transmit(char* data, int size);
+
 
 		/**
 		 * Sends a message through the uds-connections to the plugin.
@@ -105,24 +99,15 @@ class UdsComWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, publi
 
 		/*! Overlying ConnectionContext instance, which mangages outgoing data and receives incomming data.*/
 		ConnectionContext* context;
-		/*! The current unix domain socket fd, which we need to send/receive data.*/
-		int currentSocket;
-		/*! If this is true, this UdsComUnit is marked as deletable.*/
-		bool deletable;
-		/*! Contains Log-information for logging incomming data (from plugin).*/
-		LogInformation logInfoIn;
-		/*! Contains Log-information for logging outgoing data (to plugin).*/
-		LogInformation logInfoOut;
-
+		/*! Contains information about the plugin which this UdsComUnit can connect.
+		 *  This is just a pointer to the same instance of plugin which RSD has.*/
+		Plugin* plugin;
 
 		//information about the unix domain socket
 		struct sockaddr_un address;
 		socklen_t addrlen;
 		int optionflag;
 
-		/*! Contains information about the plugin which this UdsComUnit can connect.
-		 *  This is just a pointer to the same instance of plugin which RSD has.*/
-		Plugin* plugin;
 
 		/**
 		 * This method is used if this UdsComUnit receives data from a plugin.

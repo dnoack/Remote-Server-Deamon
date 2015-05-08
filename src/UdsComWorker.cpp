@@ -157,13 +157,6 @@ void UdsComWorker::tryToconnect()
 }
 
 
-int UdsComWorker::transmit(char* data, int size)
-{
-	log(logInfoOut, data);
-	return send(currentSocket, data, size, 0);
-}
-
-
 int UdsComWorker::transmit(const char* data, int size)
 {
 

@@ -50,13 +50,7 @@ class UdsRegWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
 		 */
 		string* getPluginName();
 
-		/**
-		 * Sends a message through the uds-connections to the plugin.
-		 * \param msg Pointer to a character array, which has to be send.
-		 * \param size Length of data.
-		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
-		*/
-		int transmit(char* data, int size);
+
 
 		/**
 		 * Sends a message through the uds-connections to the plugin.
@@ -78,8 +72,6 @@ class UdsRegWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
 
 		/*! Contains the registration process.*/
 		Registration* registration;
-		/*! The socket of this UdsRegWorker, which is used to send and receive data.*/
-		int currentSocket;
 
 
 		virtual void thread_listen();

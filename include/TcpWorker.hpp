@@ -56,14 +56,6 @@ class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, public L
 
 		/**
 		 * Sends a message through the tcp-connections to the client.
-		 * \param msg Pointer to a character array, which has to be send.
-		 * \param size Length of data.
-		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
-		*/
-		int transmit(char* data, int size);
-
-		/**
-		 * Sends a message through the tcp-connections to the client.
 		 * \param msg Pointer to a constant character array, which has to be send.
 		 * \param size Length of data.
 		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
@@ -81,21 +73,11 @@ class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, public L
 
 		/*! Corresponding ConnectionContext, this Context will handle our incomming messages.*/
 		ConnectionContext* context;
-		/*! fd of current tcp socket.*/
-		int currentSocket;
-
-		/*! Willcontaint logName and LogLevel for logging incomming data (from client).*/
-		LogInformation logInfoIn;
-		/*! Willcontaint logName and LogLevel for logging outgoing data (to client).*/
-		LogInformation logInfoOut;
 
 
 		/*! Receives data over a tcp socket which was accepted trough RSD. A new RsdMsg with the content
 		 * of the received data will be created and put into the receiveQueue (WorkerInterface).
 		 * \note This function will run in a separate thread, which is created and managed through WorkerThreads.
-		 * \param parent_th Thread-id of the parent thread, in this case it will always be the id of the thread where thread_work will be executed.
-		 * \param socket Fd of the tcp socket which we use to for communication with the client.
-		 * \param workerBuffer
 		 */
 		virtual void thread_listen();
 
@@ -105,7 +87,6 @@ class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, public L
 		 * new Messages in the receiveQueue, this function will handle them. Once the receiQueue is empty, it
 		 * will wait for signal SIGUSR1.
 		 * \note This function will run in a separate thread, which is created and managed through WorkerThreads.
-		 * \param socket Fd of the tcp socket which we use to for communication with the client.
 		 */
 		virtual void thread_work();
 };

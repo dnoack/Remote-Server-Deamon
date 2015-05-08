@@ -103,7 +103,7 @@ void TcpWorker::thread_listen()
 	int retval;
 	fd_set rfds;
 	pthread_t worker_thread = getWorker();
-	//configSignals();
+
 
 	FD_ZERO(&rfds);
 	FD_SET(currentSocket, &rfds);
@@ -140,13 +140,6 @@ void TcpWorker::thread_listen()
 		}
 	}
 
-}
-
-
-int TcpWorker::transmit(char* data, int size)
-{
-	log(logInfoOut, data);
-	return send(currentSocket, data, size, 0);
 }
 
 

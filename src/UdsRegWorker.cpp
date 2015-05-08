@@ -125,11 +125,6 @@ void UdsRegWorker::thread_listen()
 }
 
 
-int UdsRegWorker::transmit(char* data, int size)
-{
-	return send(currentSocket, data, size, 0);
-}
-
 
 int UdsRegWorker::transmit(const char* data, int size)
 {
