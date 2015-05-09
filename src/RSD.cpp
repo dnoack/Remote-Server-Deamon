@@ -126,28 +126,11 @@ void* RSD::accept_connections(void* data)
 }
 
 
-bool RSD::addPlugin(const char* name, int pluginNumber, const char* udsFilePath)
-{
-	bool result = false;
-	try
-	{
-		getPlugin(name);
-	}
-	catch(Error &e)
-	{
-		pthread_mutex_lock(&pLmutex);
-		plugins.push_back(new Plugin(name, pluginNumber, udsFilePath));
-		result = true;
-		pthread_mutex_unlock(&pLmutex);
-	}
-	return result;
-}
-
-
 bool RSD::addPlugin(Plugin* newPlugin)
 {
 	bool result = false;
 	char* name = (char*)(newPlugin->getName()->c_str());
+
 	try
 	{
 		getPlugin(name);
@@ -260,7 +243,6 @@ void RSD::pushWorkerList(ConnectionContext* context)
 {
 	pthread_mutex_lock(&ccListMutex);
 	ccList.push_back(context);
-	dyn_print("Anzahl ConnectionContext: %d\n", ccList.size());
 	pthread_mutex_unlock(&ccListMutex);
 }
 
@@ -275,10 +257,9 @@ void RSD::checkForDeletableConnections()
 		//is a tcp connection down ?
 		if((*connection)->isDeletable())
 		{
-			dyn_print("RSD: ConnectionContext %d deleted from list. Verbleibend: %d\n", (*connection)->getContextNumber(), ccList.size()-1);
+			dlog(logInfo, "ConnectionContext %d deleted from list. Verbleibend: %d\n", (*connection)->getContextNumber(), ccList.size()-1);
 			delete *connection;
 			connection = ccList.erase(connection);
-
 		}
 		//maybe we got a working tcp connection but a plugin went down
 		else if((*connection)->isUdsCheckEnabled())
@@ -427,7 +408,6 @@ int RSD::start(int argc, char** argv)
 
 	try
 	{
-
 		while(( c = getopt(argc, argv, "hf:p:l:")) != -1)
 		{
 			switch(c)
@@ -534,11 +514,11 @@ int main(int argc, char** argv)
 	}
 	catch(Error &e)
 	{
-		dyn_print("An error caused RSD to abort: %d - %s", e.getErrorCode(), e.get());
+		dyn_print("An error caused RSD to abort: %d - %s\n", e.getErrorCode(), e.get());
 	}
 	catch(...)
 	{
-		dyn_print("huhu");
+		dyn_print("Unkown exception thrown.\n");
 	}
 }
 #endif

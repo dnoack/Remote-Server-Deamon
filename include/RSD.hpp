@@ -96,14 +96,6 @@ class RSD : public LogUnit{
 		 */
 		void checkForDeletableConnections();
 
-		/**
-		 * Adds a plugin to the list of all registered plugins.
-		 * \param name Name of registered plugin.
-		 * \param Unique number of plugin, which where send via plugin registration message.
-		 * \param Unique file for communication over unix domain socket to the registered plugin.
-		 * \note This function uses pLmutex for access to plugins (list).
-		 */
-		static bool addPlugin(const char* name, int pluginNumber, const char* udsFilePath);
 
 		/**
 		 * Adds a plugin to the list of all registered plugins.

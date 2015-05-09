@@ -91,7 +91,7 @@ void UdsComWorker::thread_listen()
 	while(listen_thread_active)
 	{
 
-		retval = pselect(currentSocket+1, &rfds, NULL, NULL, NULL, &origmask);
+		retval = select(currentSocket+1, &rfds, NULL, NULL, NULL);
 
 		if(retval < 0)
 		{
@@ -102,7 +102,7 @@ void UdsComWorker::thread_listen()
 		}
 		else if(FD_ISSET(currentSocket, &rfds))
 		{
-			recvSize = recv(currentSocket , receiveBuffer, BUFFER_SIZE, MSG_DONTWAIT);
+			recvSize = recv(currentSocket , receiveBuffer, BUFFER_SIZE, 0);
 
 			//data received
 			if(recvSize > 0)
@@ -118,6 +118,7 @@ void UdsComWorker::thread_listen()
 			{
 				listen_thread_active = false;
 				deletable = true;
+				context->arrangeUdsConnectionCheck();
 			}
 		}
 		memset(receiveBuffer, '\0', BUFFER_SIZE);
@@ -167,7 +168,13 @@ int UdsComWorker::transmit(const char* data, int size)
 
 int UdsComWorker::transmit(RsdMsg* msg)
 {
-	log(logInfoOut, msg->getContent());
-	return send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);
+	int  sentBytes = send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);
+
+	if( sentBytes< 0)
+		throw Error ("Fehler beim Senden.");
+	else
+		log(logInfoOut, msg->getContent());
+
+	return sentBytes;
 }
 

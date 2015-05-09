@@ -16,14 +16,19 @@ socklen_t UdsRegServer::addrlen;
 
 UdsRegServer::UdsRegServer( const char* udsFile)
 {
+	accept_thread_active = false;
 	optionflag = 1;
 	accepter = 0;
-	accept_thread_active = false;
-	connection_socket = socket(AF_UNIX, SOCK_STREAM, 0);
 	address.sun_family = AF_UNIX;
 	strncpy(address.sun_path, udsFile, strlen(udsFile));
 	addrlen = sizeof(address);
-	pthread_mutex_init(&wLmutex, NULL);
+
+	connection_socket = socket(AF_UNIX, SOCK_STREAM, 0);
+	if(connection_socket < 0)
+		throw Error (-206 , "Could not create connection_socket", strerror(errno));
+
+	if( pthread_mutex_init(&wLmutex, NULL) != 0)
+		throw Error (-207 , "Could not init wLmutex", strerror(errno));
 
 	if( unlink(udsFile) != 0 )
 		throw Error(-200, "Error while unlinking udsFile", strerror(errno));

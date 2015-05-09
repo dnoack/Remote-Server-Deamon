@@ -28,7 +28,7 @@ class Registration;
  * UdsRegWorker is a communication endpoint between a plugin and UdsRegServer.
  * It can be used to receive and send data during the registration process of a plugin.
  */
-class UdsRegWorker : public WorkerInterface<RsdMsg>, WorkerThreads{
+class UdsRegWorker : public WorkerInterface<RsdMsg>, WorkerThreads, LogUnit{
 
 	public:
 

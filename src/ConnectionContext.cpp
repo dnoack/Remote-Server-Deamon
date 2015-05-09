@@ -134,7 +134,7 @@ char* ConnectionContext::getMethodNamespace()
 	//No '.' found -> no namespace
 	if(namespacePos == strlen(methodName) || namespacePos == 0)
 	{
-		throw Error(-32010, "Methodname has no namespace.");
+		throw Error(-301, "Methodname has no namespace.");
 	}
 	else
 	{
@@ -199,7 +199,7 @@ void ConnectionContext::handleRequestFromClient(RsdMsg* msg)
 	}
 	catch (Error &e)
 	{
-		if(e.getErrorCode() != -32010)
+		if(e.getErrorCode() != -301)
 		{
 			delete[] methodNamespace;
 			setRequestNotInProcess();
@@ -222,7 +222,7 @@ void ConnectionContext::handleRequestFromPlugin(RsdMsg* msg)
 	}
 	catch (Error &e)
 	{
-		if(e.getErrorCode() != -32010)
+		if(e.getErrorCode() != -301)
 			delete[] methodNamespace;
 		throw;
 	}
@@ -234,7 +234,7 @@ void ConnectionContext::handleResponse(RsdMsg* msg)
 	try
 	{
 		if(msg->getSender() == CLIENT_SIDE)
-			throw Error(-3303, "Response from Clientside is not allowed.");
+			throw Error(-302, "Response from Clientside is not allowed.");
 
 		else
 			handleResponseFromPlugin(msg);
@@ -287,7 +287,7 @@ void ConnectionContext::handleTrash(RsdMsg* msg)
 		if(msg->getSender() == CLIENT_SIDE)
 		{
 			delete msg;
-			throw Error(-3304, "Your Json-Rpc Message to to be a request.");
+			throw Error(-303, "Json Msg has to be a json rpc 2.0 message.");
 		}
 		else
 			handleTrashFromPlugin(msg);
@@ -307,7 +307,7 @@ void ConnectionContext::handleTrashFromPlugin(RsdMsg* msg)
 	try
 	{
 		//get sender from old msg and create a new valid error response
-		errorResponseMsg = json->generateResponseError(id, -3305, "Json-Rpc got to be a request or response.");
+		errorResponseMsg = json->generateResponseError(id, -304, "Json-Rpc was neither a request nor response.");
 		errorResponse = new RsdMsg(msg->getSender(), errorResponseMsg);
 		delete msg;
 		handleResponseFromPlugin(errorResponse);
@@ -416,6 +416,7 @@ void ConnectionContext::checkUdsConnections()
 			delete *udsConnection;
 			udsConnection = udsConnections.erase(udsConnection);
 			dlog(logInfo,  "UdsComworker deleted from context %d. Verbleibend: %lu " , contextNumber, udsConnections.size());
+			//TODO: check request stack, create error response , pop stack, set requestNOTinprocess
 			tcpConnection->transmit("Connection to AardvarkPlugin Aborted!\n", 39);
 		}
 		else

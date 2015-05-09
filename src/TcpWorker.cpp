@@ -112,7 +112,7 @@ void TcpWorker::thread_listen()
 	{
 		memset(receiveBuffer, '\0', BUFFER_SIZE);
 
-		retval = pselect(currentSocket+1, &rfds, NULL, NULL, NULL, &origmask);
+		retval = select(currentSocket+1, &rfds, NULL, NULL, NULL);
 
 		if(retval < 0 )
 		{
@@ -145,7 +145,6 @@ void TcpWorker::thread_listen()
 
 int TcpWorker::transmit(const char* data, int size)
 {
-
 	log(logInfoOut, data);
 	return send(currentSocket, data, size, 0);
 }

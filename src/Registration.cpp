@@ -5,17 +5,17 @@
 
 Registration::Registration(WorkerInterface<RsdMsg>* udsWorker)
 {
-	this->request = 0;
-	this->response = 0;
 	this->udsWorker = udsWorker;
-	this->plugin = NULL;
-	this->pluginName = NULL;
-	this->timerThread = 0;
-	this->id = NULL;
+	request = 0;
+	response = 0;
+	plugin = NULL;
+	pluginName = NULL;
+	timerThread = 0;
+	id = NULL;
 	nullId.SetInt(0);
-	this->error = NULL;
-	this->state = NOT_ACTIVE;
-	this->json = new JsonRPC();
+	error = NULL;
+	state = NOT_ACTIVE;
+	json = new JsonRPC();
 }
 
 Registration::~Registration()
@@ -59,10 +59,10 @@ void Registration::processMsg(RsdMsg* msg)
 
 			case REGISTERED:
 				cancelTimer();
-				#ifndef TESTMODE
-				RSD::addPlugin(plugin);
-				plugin = NULL;
-				#endif
+					#ifndef TESTMODE
+						RSD::addPlugin(plugin);
+						plugin = NULL;
+					#endif
 				delete msg;
 				state = ACTIVE;
 				break;
@@ -74,6 +74,7 @@ void Registration::processMsg(RsdMsg* msg)
 	{
 		cancelTimer();
 
+		//parse error
 		if(e.getErrorCode() == -32700)
 			id = &nullId;
 
@@ -112,12 +113,12 @@ const char* Registration::handleAnnounceMsg(RsdMsg* msg)
 
 		//check if there is already a plugin with this number registered.
 		if(RSD::getPlugin(number) != NULL)
-			throw Error(-32701, "Plugin already registered.");
+			throw Error(-500, "Plugin already registered.");
 
 	}
 	catch(Error &e)
 	{
-		// -33011 is plugin not found, which is fine
+		// -33011 is plugin not found, which is fine, throw all other exceptions
 		if(e.getErrorCode() != -33011)
 			throw;
 	}
@@ -129,10 +130,12 @@ const char* Registration::handleAnnounceMsg(RsdMsg* msg)
 bool Registration::handleRegisterMsg(RsdMsg* msg)
 {
 	string* functionName = NULL;
-	Value* functionArray = json->tryTogetParam("functions");
+	Value* functionArray = NULL;
 
 	try
 	{
+		functionArray = json->tryTogetParam("functions");
+
 		for(unsigned int i = 0; i < functionArray->Size(); i++)
 		{
 			functionName = new string(((*functionArray)[i]).GetString());
@@ -188,6 +191,7 @@ void Registration::startTimer(int limit)
 	pthread_create(&timerThread, NULL, timer, &timerParams);
 }
 
+
 void Registration::cancelTimer()
 {
 	if(timerThread != 0)
@@ -216,7 +220,5 @@ void* Registration::timer(void* timerParams)
 
 	return NULL;
 }
-
-
 
 

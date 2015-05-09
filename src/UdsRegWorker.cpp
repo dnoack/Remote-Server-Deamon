@@ -8,12 +8,15 @@ using namespace rapidjson;
 UdsRegWorker::UdsRegWorker(int socket)
 {
 	this->currentSocket = socket;
+	this->logInfo.logName = "UdsRegWorker: ";
+	this->logInfoIn.logName = "REG IN: ";
+	this->logInfoOut.logName = "REG OUT: ";
 	this->registration = new Registration(this);
 
 	StartWorkerThread();
 
 	if(wait_for_listener_up() != 0)
-			throw Error("Creation of Listener/worker threads failed.");
+			throw Error(-400, "Timeout for Thread creation");
 }
 
 
@@ -57,7 +60,7 @@ void UdsRegWorker::thread_work()
 					try
 					{
 						msg = receiveQueue.back();
-						dyn_print("RegWorker Received: %s\n", msg->getContent()->c_str());
+						log(logInfoIn, msg->getContent());
 						popReceiveQueueWithoutDelete();
 						registration->processMsg(msg);
 					}
@@ -93,11 +96,11 @@ void UdsRegWorker::thread_listen()
 
 	while(listen_thread_active)
 	{
-		retval = pselect(currentSocket+1, &rfds, NULL, NULL, NULL, &origmask);
+		retval = select(currentSocket+1, &rfds, NULL, NULL, NULL);
 
 		if(retval < 0)
 		{
-			//Plugin itself invoked shutdown
+			//Something is wrong with our socket, maybe plugin closed the connection
 			listen_thread_active = false;
 			deletable = true;
 		}
@@ -115,8 +118,8 @@ void UdsRegWorker::thread_listen()
 			}
 			else
 			{
-				deletable = true;
 				listen_thread_active = false;
+				deletable = true;
 			}
 		}
 
@@ -128,13 +131,15 @@ void UdsRegWorker::thread_listen()
 
 int UdsRegWorker::transmit(const char* data, int size)
 {
+	log(logInfoOut, data);
 	return send(currentSocket, data, size, 0);
 }
 
 
 int UdsRegWorker::transmit(RsdMsg* msg)
 {
-	string* data = msg->getContent();
-	return send(currentSocket, data->c_str(), data->size(), 0);
+	log(logInfoOut, msg->getContent());
+	return send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);
 }
+
 
