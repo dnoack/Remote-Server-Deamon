@@ -78,6 +78,7 @@ RSD::~RSD()
 
 	ConnectionContext::destroy();
 	funcMap.clear();
+	//TODO: implement deleteFunclist like in Aardvark-Plugin
 
 	pthread_mutex_destroy(&pLmutex);
 	pthread_mutex_destroy(&ccListMutex);
