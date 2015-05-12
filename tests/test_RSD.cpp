@@ -75,9 +75,9 @@ TEST(RSD, deletePlugin_withMorePluginsInList)
 {
 	string* pluginName = new string("SecondPlugin");
 
-	rsd->addPlugin("FirstPlugin", 1, "/tmp/firstPlugin.uds");
-	rsd->addPlugin("SecondPlugin", 2, "/tmp/secondPlugin.uds");
-	rsd->addPlugin("ThirdPlugin", 3, "/tmp/thirdPlugin.uds");
+	rsd->addPlugin(new Plugin("FirstPlugin", 1, "/tmp/firstPlugin.uds"));
+	rsd->addPlugin(new Plugin("SecondPlugin", 2, "/tmp/secondPlugin.uds"));
+	rsd->addPlugin(new Plugin("ThirdPlugin", 3, "/tmp/thirdPlugin.uds"));
 	rsd->addPlugin(new Plugin("AnotherPlugin", 4, "/tmp/anotherPlugin.uds"));
 
 	CHECK(rsd->deletePlugin(pluginName));
@@ -88,7 +88,7 @@ TEST(RSD, deletePlugin_withMorePluginsInList)
 TEST(RSD, deletePlugin_withPluginInList)
 {
 	string* pluginName = new string("SecondPlugin");
-	rsd->addPlugin("SecondPlugin", 2, "/tmp/secondPlugin.uds");
+	rsd->addPlugin(new Plugin("SecondPlugin", 2, "/tmp/secondPlugin.uds"));
 	CHECK(rsd->deletePlugin(pluginName));
 	delete pluginName;
 
@@ -121,7 +121,7 @@ TEST(RSD, addPluginWithObject)
 
 TEST(RSD, addPlugin_byParams)
 {
-	rsd->addPlugin("FirstPlugin", 1, "/tmp/firstPlugin.uds");
+	rsd->addPlugin(new Plugin("FirstPlugin", 1, "/tmp/firstPlugin.uds"));
 }
 
 
