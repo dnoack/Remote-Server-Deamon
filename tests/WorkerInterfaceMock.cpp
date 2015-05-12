@@ -20,6 +20,7 @@ int WorkerInterfaceMock::transmit(char* data, int size)
 	{
 		memcpy(buffer, data, size);
 	}
+	return size;
 }
 
 
@@ -27,9 +28,9 @@ int WorkerInterfaceMock::transmit(const char* data, int size)
 {
 	if(size < MOCK_BUFFER_SIZE)
 	{
-		memcpy(buffer, data, size);
+		 memcpy(buffer, data, size);
 	}
-
+	return size;
 }
 
 int WorkerInterfaceMock::transmit(RsdMsg* msg)
@@ -39,4 +40,5 @@ int WorkerInterfaceMock::transmit(RsdMsg* msg)
 	{
 		memcpy(buffer, data->c_str(), data->size());
 	}
+	return data->size();
 }
