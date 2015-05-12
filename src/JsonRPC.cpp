@@ -276,7 +276,6 @@ bool JsonRPC::isResponse()
 	catch(Error &e)
 	{
 		result = false;
-		throw;
 	}
 	return result;
 }
@@ -299,7 +298,6 @@ bool JsonRPC::isError(Document* dom)
 	catch(Error &e)
 	{
 		result = false;
-		throw;
 	}
 	return result;
 }

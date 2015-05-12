@@ -286,7 +286,6 @@ void ConnectionContext::handleTrash(RsdMsg* msg)
 	{
 		if(msg->getSender() == CLIENT_SIDE)
 		{
-			delete msg;
 			throw Error(-303, "Json Msg has to be a json rpc 2.0 message.");
 		}
 		else
