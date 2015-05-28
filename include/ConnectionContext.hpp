@@ -194,6 +194,8 @@ class ConnectionContext : public LogUnit
 
 		/*! Parser unit for json rpc messages which uses rapidjosn as json parser.*/
 		JsonRPC* json;
+		/*! JSON DOM object for current message.*/
+		Document* localDom;
 		/*! Marks this ConnectionContext as deletable for RSD.*/
 		bool deletable;
 		/*! Marks this ConnectionContext for checking its UdsComClient for RSD.*/

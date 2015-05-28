@@ -6,6 +6,7 @@
 Registration::Registration(WorkerInterface<RsdMsg>* udsWorker)
 {
 	this->udsWorker = udsWorker;
+	localDom = NULL;
 	request = 0;
 	response = 0;
 	plugin = NULL;
@@ -31,13 +32,14 @@ void Registration::processMsg(RsdMsg* msg)
 {
 	try
 	{
-		json->parse(msg->getContent());
+		localDom = new Document();
+		json->parse(localDom, msg->getContent());
 
 		switch(state)
 		{
 			case NOT_ACTIVE:
 				//check for announce msg, create a plugin object in RSD central list
-				id = json->getId();
+				id = json->getId(localDom);
 				response = handleAnnounceMsg(msg);
 				state = ANNOUNCED;
 				udsWorker->transmit(response,  strlen(response));
@@ -46,7 +48,7 @@ void Registration::processMsg(RsdMsg* msg)
 
 			case ANNOUNCED:
 				cancelTimer();
-				id = json->getId();
+				id = json->getId(localDom);
 				//check for register msg, add all method names from msg to plugin object in central RSD list
 				if(handleRegisterMsg(msg))
 				{
@@ -69,6 +71,7 @@ void Registration::processMsg(RsdMsg* msg)
 			case ACTIVE:
 				break;
 		}
+		delete localDom;
 	}
 	catch(Error &e)
 	{
@@ -78,12 +81,15 @@ void Registration::processMsg(RsdMsg* msg)
 		if(e.getErrorCode() == -32700)
 			id = &nullId;
 
+		delete localDom;
 		delete msg;
 		error = json->generateResponseError(*id, e.getErrorCode(), e.get());
 		state = NOT_ACTIVE;
 		cleanup();
 		udsWorker->transmit(error, strlen(error));
+
 	}
+
 }
 
 
@@ -96,11 +102,11 @@ const char* Registration::handleAnnounceMsg(RsdMsg* msg)
 
 	try
 	{
-		currentParam = json->tryTogetParam("pluginName");
+		currentParam = json->tryTogetParam(localDom, "pluginName");
 		name = currentParam->GetString();
-		currentParam = json->tryTogetParam("udsFilePath");
+		currentParam = json->tryTogetParam(localDom, "udsFilePath");
 		udsFilePath = currentParam->GetString();
-		currentParam = json->tryTogetParam("pluginNumber");
+		currentParam = json->tryTogetParam(localDom, "pluginNumber");
 		number = currentParam->GetInt();
 
 
@@ -134,7 +140,7 @@ bool Registration::handleRegisterMsg(RsdMsg* msg)
 
 	try
 	{
-		functionArray = json->tryTogetParam("functions");
+		functionArray = json->tryTogetParam(localDom, "functions");
 
 		for(unsigned int i = 0; i < functionArray->Size(); i++)
 		{

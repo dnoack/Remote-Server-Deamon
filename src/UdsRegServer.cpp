@@ -30,8 +30,9 @@ UdsRegServer::UdsRegServer( const char* udsFile)
 	if( pthread_mutex_init(&wLmutex, NULL) != 0)
 		throw Error (-207 , "Could not init wLmutex", strerror(errno));
 
-	if( unlink(udsFile) != 0 )
-		throw Error(-200, "Error while unlinking udsFile", strerror(errno));
+	unlink(udsFile);
+	//if( unlink(udsFile) != 0 )
+		//throw Error(-200, "Error while unlinking udsFile", strerror(errno));
 
 	if( setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag)) != 0 )
 		throw Error(-201, "Error while setting socket option", strerror(errno));

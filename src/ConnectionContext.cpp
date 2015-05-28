@@ -25,6 +25,7 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	contextNumber = getNewContextNumber();
 	//TODO: if no number is free, tcpworker has to send an error and close the connection
 	this->json = new JsonRPC();
+	this->localDom = NULL;
 	new TcpWorker(this, &(this->tcpConnection),tcpSocket);
 	dlog(logInfo, "New ConnectionContext: %d",  contextNumber);
 }
@@ -62,19 +63,20 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 {
 	try
 	{
+		localDom = new Document();
 		//parse to dom with jsonrpc
-		json->parse(msg->getContent());
+		json->parse(localDom, msg->getContent());
 
 		//is it a request ?
-		if(json->isRequest())
+		if(json->isRequest(localDom))
 		{
-			id = json->getId();
+			id = json->getId(localDom);
 			handleRequest(msg);
 		}
 		//or is it a response ?
-		else if(json->isResponse())
+		else if(json->isResponse(localDom))
 		{
-			id = json->getId();
+			id = json->getId(localDom);
 			handleResponse(msg);
 		}
 		//trash
@@ -88,6 +90,7 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 	{
 		dlog(logInfo,  "Exception: %s", e.get());
 		dlog(logInfo, "Stacksize: %d", requests.size());
+		delete localDom;
 
 		if(msg->getSender() == CLIENT_SIDE)
 		{
@@ -101,6 +104,7 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 		}
 
 	}
+	delete localDom;
 	dlog(logInfo, "Stacksize: %d", requests.size());
 }
 
@@ -128,7 +132,7 @@ char* ConnectionContext::getMethodNamespace()
 	unsigned int namespacePos = 0;
 
 	// get method namespace
-	methodName = json->tryTogetMethod()->GetString();
+	methodName = json->tryTogetMethod(localDom)->GetString();
 	namespacePos = strcspn(methodName, ".");
 
 	//No '.' found -> no namespace
@@ -150,9 +154,9 @@ void ConnectionContext::handleRSDCommand(RsdMsg* msg)
 {
 	try
 	{
-		Value* method = json->getMethod();
+		Value* method = json->getMethod(localDom);
 		Value* params = NULL;
-		Value* id = json->getId();
+		Value* id = json->getId(localDom);
 		Value resultValue;
 		const char* result = NULL;
 

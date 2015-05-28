@@ -32,6 +32,8 @@ RSD::RSD()
 	logInfo.logName = "RSD: ";
 	pluginFile = "plugins.txt";
 
+	try{
+
 	if( pthread_mutex_init(&pLmutex, NULL) != 0)
 		throw Error (-200 , "Could not init pLMutex", strerror(errno));
 	if( pthread_mutex_init(&ccListMutex, NULL) != 0)
@@ -63,6 +65,11 @@ RSD::RSD()
 	funcMap.insert(pair<const char*, afptr>("RSD.showAllRegisteredPlugins", funcMapPointer));
 	funcMapPointer = &RSD::showAllKnownFunctions;
 	funcMap.insert(pair<const char*, afptr>("RSD.showAllKownFunctions", funcMapPointer));
+	}
+	catch(Error &e)
+	{
+		printf("%s\n", e.get());
+	}
 }
 
 

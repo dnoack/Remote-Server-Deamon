@@ -97,6 +97,9 @@ class Registration
 
 		/*! Instance of json-rpc modul.*/
 		JsonRPC* json;
+		/*! JSON DOM for current message.*/
+		Document* localDom;
+
 		/*! Int the process of registration, this will be our new plugin, which will be added to RSD plugins list.*/
 		Plugin* plugin;
 		/*! Contains the corresponding pluginname, this is later used for deleting the right plugin within RSD plugins list.*/

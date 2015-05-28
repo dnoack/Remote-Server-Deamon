@@ -4,21 +4,9 @@
 #include "Error.hpp"
 
 
-Document* JsonRPC::parse(string* msg)
-{
-	Document* result = NULL;
-
-	inputDOM->Parse(msg->c_str());
-	if(!inputDOM->HasParseError())
-		result = inputDOM;
-	else
-		throw Error(-32700, "Error while parsing json rpc.");
-
-	return result;
-}
 
 
-void JsonRPC::parse(string* msg, Document* dom)
+void JsonRPC::parse( Document* dom, string* msg)
 {
 	dom->Parse(msg->c_str());
 
@@ -27,31 +15,30 @@ void JsonRPC::parse(string* msg, Document* dom)
 }
 
 
-list<string*>* JsonRPC::splitMsg(string* msg)
+list<string*>* JsonRPC::splitMsg(Document* dom, string* msg)
 {
 	string* splitMsg = NULL;
 	int splitPos = 0;
 	string* tempString = new string(*msg);
 	list<string*>* msgList = new list<string*>();
 
-	inputDOM->Parse(tempString->c_str());
+	dom->Parse(tempString->c_str());
 
-	if(!inputDOM->HasParseError())
+	if(!dom->HasParseError())
 		msgList->push_back(tempString);
-
 	else
 	{
-		while(inputDOM->GetParseError() == kParseErrorDocumentRootNotSingular)
+		while(dom->GetParseError() == kParseErrorDocumentRootNotSingular)
 		{
-			splitPos = inputDOM->GetErrorOffset();
+			splitPos = dom->GetErrorOffset();
 			splitMsg = new string(*tempString, 0, splitPos);
 			tempString->erase(0,splitPos);
 
 			msgList->push_back(splitMsg);
-			inputDOM->Parse(tempString->c_str());
+			dom->Parse(tempString->c_str());
 		}
 		//if there is a parse error or it is the last root of a valid msg/ push it too
-		msgList->push_back(new string(*tempString));
+		msgList->push_back(tempString);
 	}
 
 	return msgList;
@@ -59,12 +46,12 @@ list<string*>* JsonRPC::splitMsg(string* msg)
 
 
 
-Value* JsonRPC::getParam(const char* name)
+Value* JsonRPC::getParam(Document* dom, const char* name)
 {
 	Value* params = NULL;
 	Value* result = NULL;
 
-	params = &((*inputDOM)["params"]);
+	params = &((*dom)["params"]);
 	result = &((*params)[name]);
 
 	return result;
@@ -72,7 +59,7 @@ Value* JsonRPC::getParam(const char* name)
 
 
 
-Value* JsonRPC::tryTogetParam(const char* name)
+Value* JsonRPC::tryTogetParam(Document* dom, const char* name)
 {
 	Value* result;
 	Value* params;
@@ -80,12 +67,12 @@ Value* JsonRPC::tryTogetParam(const char* name)
 
 	try
 	{
-		hasParams();
-		params = &((*inputDOM)["params"]);
+		hasParams(dom);
+		params = &((*dom)["params"]);
 		if(!params->HasMember(name))
 			throw Error(-32022, "Missing parameter.");
 		else
-			result = getParam(name);
+			result = getParam(dom, name);
 
 	}
 	catch(Error &e)
@@ -97,13 +84,20 @@ Value* JsonRPC::tryTogetParam(const char* name)
 }
 
 
-Value* JsonRPC::tryTogetParams()
+Value* JsonRPC::getParams(Document* dom)
+{
+	return &((*dom)["params"]);
+}
+
+
+Value* JsonRPC::tryTogetParams(Document* dom)
 {
 	Value* params = NULL;
+
 	try
 	{
-		hasParams();
-		params = &((*inputDOM)["params"]);
+		hasParams(dom);
+		params = getParams(dom);
 	}
 	catch(Error &e)
 	{
@@ -113,34 +107,9 @@ Value* JsonRPC::tryTogetParams()
 }
 
 
-
-Value* JsonRPC::getResult()
-{
-	return &((*inputDOM)["result"]);
-}
-
-
 Value* JsonRPC::getResult(Document* dom)
 {
 	return &((*dom)["result"]);
-}
-
-
-Value* JsonRPC::tryTogetResult()
-{
-	Value* resultValue = NULL;
-
-	try
-	{
-		hasResult();
-		resultValue = getResult();
-	}
-	catch(Error &e)
-	{
-		throw;
-	}
-
-	return resultValue;
 }
 
 
@@ -162,21 +131,20 @@ Value* JsonRPC::tryTogetResult(Document* dom)
 }
 
 
-Value* JsonRPC::getMethod()
+Value* JsonRPC::getMethod(Document* dom)
 {
-	Value* methodValue = NULL;
-	methodValue = &((*inputDOM)["method"]);
-	return methodValue;
+	return  &((*dom)["method"]);
 }
 
 
-Value* JsonRPC::tryTogetMethod()
+Value* JsonRPC::tryTogetMethod(Document* dom)
 {
 	Value* methodValue = NULL;
+
 	try
 	{
-		hasMethod();
-		methodValue = getMethod();
+		hasMethod(dom);
+		methodValue = getMethod(dom);
 	}
 	catch(Error &e)
 	{
@@ -186,21 +154,20 @@ Value* JsonRPC::tryTogetMethod()
 }
 
 
-Value* JsonRPC::getId()
+Value* JsonRPC::getId(Document* dom)
 {
-	Value* idValue;
-	idValue = &((*inputDOM)["id"]);
-	return idValue;
+	return &((*dom)["id"]);
 }
 
 
-Value* JsonRPC::tryTogetId()
+Value* JsonRPC::tryTogetId(Document* dom)
 {
 	Value* idValue = NULL;
+
 	try
 	{
-		hasId();
-		idValue = getId();
+		hasId(dom);
+		idValue = getId(dom);
 	}
 	catch(Error &e)
 	{
@@ -209,48 +176,28 @@ Value* JsonRPC::tryTogetId()
 	return idValue;
 }
 
-
-//member id will not be checked here, so we can use this method for checking notifications too
-bool JsonRPC::checkJsonRpc_RequestFormat()
-{
-
-	try
-	{
-		hasJsonRPCVersion();
-		checkJsonRpcVersion();
-		hasMethod();
-	}
-	catch(Error &e)
-	{
-		throw;
-	}
-	return true;
-}
 
 
 bool JsonRPC::checkJsonRpcVersion(Document* dom)
 {
-
 	if(strcmp((*dom)["jsonrpc"].GetString(), JSON_PROTOCOL_VERSION) != 0)
 		throw Error(-32002, "Incorrect jsonrpc version. Used version is 2.0");
 
 	return true;
 }
 
-bool JsonRPC::checkJsonRpcVersion()
-{
-	return checkJsonRpcVersion(inputDOM);
-}
 
 
-bool JsonRPC::isRequest()
+bool JsonRPC::isRequest(Document* dom)
 {
 	bool result = false;
 
 	try
 	{
-		checkJsonRpc_RequestFormat();
-		hasId();
+		hasJsonRPCVersion(dom);
+		checkJsonRpcVersion(dom);
+		hasMethod(dom);
+		hasId(dom);
 		result = true;
 	}
 	catch(Error &e)
@@ -261,16 +208,16 @@ bool JsonRPC::isRequest()
 	return result;
 }
 
-bool JsonRPC::isResponse()
+bool JsonRPC::isResponse(Document* dom)
 {
 	bool result = false;
 
 	try
 	{
-		hasJsonRPCVersion();
-		checkJsonRpcVersion();
-		hasResultOrError();
-		hasId();
+		hasJsonRPCVersion(dom);
+		checkJsonRpcVersion(dom);
+		hasResultOrError(dom);
+		hasId(dom);
 		result = true;
 	}
 	catch(Error &e)
@@ -303,20 +250,17 @@ bool JsonRPC::isError(Document* dom)
 }
 
 
-bool JsonRPC::isError()
-{
-	return isError(inputDOM);
-}
 
-
-
-bool JsonRPC::isNotification()
+bool JsonRPC::isNotification(Document* dom)
 {
 	bool result = false;
 
 	try
 	{
-		checkJsonRpc_RequestFormat();
+		hasJsonRPCVersion(dom);
+		checkJsonRpcVersion(dom);
+		hasMethod(dom);
+		hasNoId(dom);
 		result = true;
 	}
 	catch(Error &e)
@@ -353,11 +297,6 @@ bool JsonRPC::hasJsonRPCVersion(Document* dom)
 	return result;
 }
 
-bool JsonRPC::hasJsonRPCVersion()
-{
-	return hasJsonRPCVersion(inputDOM);
-}
-
 
 bool JsonRPC::hasMethod(Document* dom)
 {
@@ -381,12 +320,6 @@ bool JsonRPC::hasMethod(Document* dom)
 	}
 
 	return result;
-}
-
-
-bool JsonRPC::hasMethod()
-{
-	return hasMethod(inputDOM);
 }
 
 
@@ -418,12 +351,6 @@ bool JsonRPC::hasParams(Document* dom)
 }
 
 
-bool JsonRPC::hasParams()
-{
-	return hasParams(inputDOM);
-}
-
-
 bool JsonRPC::hasId(Document* dom)
 {
 	bool result = false;
@@ -433,7 +360,7 @@ bool JsonRPC::hasId(Document* dom)
 	{
 		if(dom->HasMember("id"))
 		{
-			if((*dom)["id"].IsInt() || (*inputDOM)["id"].IsString())
+			if((*dom)["id"].IsInt() || (*dom)["id"].IsString())
 				result = true;
 			else
 				throw Error(-32031, "Member -id- has to be an integer or a string.");
@@ -447,14 +374,29 @@ bool JsonRPC::hasId(Document* dom)
 	}
 
 	return result;
-
-
 }
 
 
-bool JsonRPC::hasId()
+bool JsonRPC::hasNoId(Document* dom)
 {
-	return hasId(inputDOM);
+	bool result = false;
+
+	//TODO: check: normally not NULL, no fractional pars
+	try
+	{
+		if(!dom->HasMember("id"))
+		{
+			result = true;
+		}
+		else
+			throw Error(-32032, "Member -id- should not be within Notification.");
+			//TODO: freie error nummer wählen( siehe dokument für fehler)
+	}
+	catch(Error &e)
+	{
+		throw;
+	}
+	return result;
 }
 
 
@@ -476,12 +418,6 @@ bool JsonRPC::hasResult(Document* dom)
 	}
 
 	return result;
-}
-
-
-bool JsonRPC::hasResult()
-{
-	return hasResult(inputDOM);
 }
 
 
@@ -510,12 +446,6 @@ bool JsonRPC::hasError(Document* dom)
 }
 
 
-bool JsonRPC::hasError()
-{
-	return hasError(inputDOM);
-}
-
-
 bool JsonRPC::hasResultOrError(Document* dom)
 {
 	bool result = false;
@@ -530,12 +460,6 @@ bool JsonRPC::hasResultOrError(Document* dom)
 	}
 
 	return result;
-}
-
-
-bool JsonRPC::hasResultOrError()
-{
-	return hasResultOrError(inputDOM);
 }
 
 
