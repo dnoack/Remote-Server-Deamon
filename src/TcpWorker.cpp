@@ -39,9 +39,9 @@ TcpWorker::~TcpWorker()
 
 void TcpWorker::thread_work()
 {
-	RsdMsg* msg = NULL;
+	RPCMsg* msg = NULL;
 	string* errorResponse = NULL;
-	RsdMsg* errorMsg = NULL;
+	RPCMsg* errorMsg = NULL;
 	worker_thread_active = true;
 
 	memset(receiveBuffer, '\0', BUFFER_SIZE);
@@ -75,7 +75,7 @@ void TcpWorker::thread_work()
 						catch(Error &e)
 						{
 							errorResponse = new string(e.get());
-							errorMsg = new RsdMsg(0, errorResponse);
+							errorMsg = new RPCMsg(0, errorResponse);
 							transmit(errorMsg);
 							delete errorMsg;
 						}
@@ -127,7 +127,7 @@ void TcpWorker::thread_listen()
 			{
 				//add received data in buffer to queue
 				content = new string(receiveBuffer, recvSize);
-				pushReceiveQueue(new RsdMsg(0, content));
+				pushReceiveQueue(new RPCMsg(0, content));
 				//signal the worker
 				pthread_kill(worker_thread, SIGUSR1);
 			}
@@ -150,7 +150,7 @@ int TcpWorker::transmit(const char* data, int size)
 }
 
 
-int TcpWorker::transmit(RsdMsg* msg)
+int TcpWorker::transmit(RPCMsg* msg)
 {
 	log(logInfoOut, msg->getContent());
 	return send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);

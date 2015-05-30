@@ -4,9 +4,8 @@
 
 
 int UdsRegServer::connection_socket;
-bool UdsRegServer::accept_thread_active;
 
-list<UdsRegWorker*> UdsRegServer::workerList;
+list<ComPoint*> UdsRegServer::workerList;
 pthread_mutex_t UdsRegServer::wLmutex;
 
 struct sockaddr_un UdsRegServer::address;
@@ -55,7 +54,7 @@ UdsRegServer::~UdsRegServer()
 
 
 
-void* UdsRegServer::uds_accept(void* param)
+void UdsRegServer::thread_accept()
 {
 	int new_socket = 0;
 
@@ -72,15 +71,15 @@ void* UdsRegServer::uds_accept(void* param)
 			pushWorkerList(new_socket);
 		}
 	}
-	return 0;
 }
 
 
 
 void UdsRegServer::pushWorkerList(int new_socket)
 {
+	Registration* registry = new Registration();
 	pthread_mutex_lock(&wLmutex);
-		workerList.push_back(new UdsRegWorker(new_socket));
+		workerList.push_back(new ComPoint(new_socket, registry));
 	pthread_mutex_unlock(&wLmutex);
 }
 
@@ -88,12 +87,14 @@ void UdsRegServer::pushWorkerList(int new_socket)
 void UdsRegServer::checkForDeletableWorker()
 {
 	pthread_mutex_lock(&wLmutex);
-	list<UdsRegWorker*>::iterator i = workerList.begin();
+	Registration* registry = NULL;
+	list<ComPoint*>::iterator i = workerList.begin();
 	while(i != workerList.end())
 	{
 		if((*i)->isDeletable())
 		{
-			RSD::deletePlugin((*i)->getPluginName());
+			registry = (Registration*)(*i)->getProcessInterface();
+			RSD::deletePlugin(registry->getPluginName());
 			delete  *i;
 			i = workerList.erase(i);
 			dyn_print("UdsRegServer: UdsRegWorker was deleted.\n");
@@ -105,22 +106,10 @@ void UdsRegServer::checkForDeletableWorker()
 }
 
 
-int UdsRegServer::wait_for_accepter_up()
-{
-   time_t startTime = time(NULL);
-   while(time(NULL) - startTime < TIMEOUT)
-   {
-	   if(accept_thread_active == true)
-		   return 0;
-   }
-   return -1;
-}
-
-
 void UdsRegServer::deleteWorkerList()
 {
 	pthread_mutex_lock(&wLmutex);
-	list<UdsRegWorker*>::iterator i = workerList.begin();
+	list<ComPoint*>::iterator i = workerList.begin();
 
 	while(i != workerList.end())
 	{
@@ -137,8 +126,7 @@ void UdsRegServer::start()
 {
 	try
 	{
-		if( pthread_create(&accepter, NULL, uds_accept, NULL) != 0 )
-			throw Error (-204, "Could not create accept-thread", strerror(errno));
+		StartAcceptThread();
 		if(wait_for_accepter_up() < 0)
 			throw Error(-205, "Could not start Accept thread in time.");
 	}

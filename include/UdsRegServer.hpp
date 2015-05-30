@@ -13,10 +13,12 @@
 #include <pthread.h>
 #include "signal.h"
 
+#include "AcceptThread.hpp"
 #include "JsonRPC.hpp"
-#include "UdsRegWorker.hpp"
+#include <ComPoint.hpp>
 #include "Error.hpp"
 #include "Utils.h"
+#include "Registration.hpp"
 
 
 
@@ -26,7 +28,7 @@
  * connections within a separated accept-thread. It also manages all accepted connections
  * in a list of UdsRegWorkers.
  */
-class UdsRegServer{
+class UdsRegServer : public AcceptThread{
 
 	public:
 
@@ -44,7 +46,7 @@ class UdsRegServer{
 		/**
 		 * Removes all RegWorker from the intern list and also deallocates them.
 		 */
-		static void deleteWorkerList();
+		void deleteWorkerList();
 
 
 		/**
@@ -66,11 +68,9 @@ class UdsRegServer{
 
 		/*! Unix domain socket for registering plugins.*/
 		static int connection_socket;
-		/*! Flag that signals if the accept-thread is ready for accepting connections.*/
-		static bool accept_thread_active;
 
 		/*!list of pthread ids with all the active RegWorker.*/
-		static list<UdsRegWorker*> workerList;
+		static list<ComPoint*> workerList;
 		/*! Mutex for protecting the intern list of UdsRegWorkers.*/
 		static pthread_mutex_t wLmutex;
 
@@ -84,24 +84,19 @@ class UdsRegServer{
 		/*! optionflag for connection_socket.*/
 		int optionflag;
 
-		/* Timeout function that waits TIMEOUT in seconds, during
-		 * that time the accept_thread_active flag will be continuously checked.
-		 * \return Returns 0 if the accept_thread_active switches to true during the wait time, else it return -1.
-		 */
-		int wait_for_accepter_up();
 
 		/* Accepts new incommingconnection over the unix domain registry file.
 		 * A new accepted connection results in a new UdsRegWorker, which will be added to the intern list.
 		 * \note This function has to be started in a separated thread.
 		 */
-		static void* uds_accept(void*);
+		virtual void thread_accept();
 
 		/*
 		 * Creates a new instance of UdsRegWorker and adds it to the intern list of UdsRegWorkers.
 		 * \param new_socket The socket fd which was returned by accept.
 		 * \note This function uses uLmutex to protect the intern list.
 		 */
-		static void pushWorkerList(int new_socket);
+		 void pushWorkerList(int new_socket);
 
 };
 

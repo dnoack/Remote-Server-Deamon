@@ -14,7 +14,7 @@
 
 
 #include "JsonRPC.hpp"
-#include "RsdMsg.hpp"
+#include "RPCMsg.hpp"
 #include "WorkerInterface.hpp"
 #include "WorkerThreads.hpp"
 #include "Plugin.hpp"
@@ -37,7 +37,7 @@ class ConnectionContext;
  * With the transmit methods it is possible to send data to the plugin, if it is connected. Also it can receive data
  * from the plugin and will forward it to the corresponding ConnectionContext.
  */
-class UdsComWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, public LogUnit{
+class UdsComWorker : public WorkerInterface<RPCMsg>, public WorkerThreads, public LogUnit{
 
 	public:
 
@@ -92,7 +92,7 @@ class UdsComWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, publi
 		 * \param msg Pointer to RsdMsg, which has to be send.
 		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
 		*/
-		int transmit(RsdMsg* msg);
+		int transmit(RPCMsg* msg);
 
 
 	private:
@@ -116,7 +116,7 @@ class UdsComWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, publi
 		 * which will create a valid json rpc error response for the plugin and send it to that.
 		 * \param data A RsdMsg containing a json rpc request or response.
 		 */
-		void routeBack(RsdMsg* data);
+		void routeBack(RPCMsg* data);
 
 
 		virtual void thread_listen();

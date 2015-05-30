@@ -43,7 +43,7 @@ string* UdsRegWorker::getPluginName()
 void UdsRegWorker::thread_work()
 {
 	worker_thread_active = true;
-	RsdMsg* msg = NULL;
+	RPCMsg* msg = NULL;
 
 	configSignals();
 	StartListenerThread();

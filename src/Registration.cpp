@@ -3,9 +3,8 @@
 #include "Registration.hpp"
 
 
-Registration::Registration(WorkerInterface<RsdMsg>* udsWorker)
+Registration::Registration()
 {
-	this->udsWorker = udsWorker;
 	localDom = NULL;
 	request = 0;
 	response = 0;
@@ -28,7 +27,7 @@ Registration::~Registration()
 }
 
 
-void Registration::processMsg(RsdMsg* msg)
+void Registration::process(RPCMsg* msg)
 {
 	try
 	{
@@ -42,7 +41,7 @@ void Registration::processMsg(RsdMsg* msg)
 				id = json->getId(localDom);
 				response = handleAnnounceMsg(msg);
 				state = ANNOUNCED;
-				udsWorker->transmit(response,  strlen(response));
+				workerInterface->transmit(response,  strlen(response));
 				startTimer(REGISTRATION_TIMEOUT);
 				break;
 
@@ -54,7 +53,7 @@ void Registration::processMsg(RsdMsg* msg)
 				{
 					response = createRegisterACKMsg();
 					state = REGISTERED;
-					udsWorker->transmit(response, strlen(response));
+					workerInterface->transmit(response, strlen(response));
 					startTimer(REGISTRATION_TIMEOUT);
 				}
 				break;
@@ -86,14 +85,14 @@ void Registration::processMsg(RsdMsg* msg)
 		error = json->generateResponseError(*id, e.getErrorCode(), e.get());
 		state = NOT_ACTIVE;
 		cleanup();
-		udsWorker->transmit(error, strlen(error));
+		workerInterface->transmit(error, strlen(error));
 
 	}
 
 }
 
 
-const char* Registration::handleAnnounceMsg(RsdMsg* msg)
+const char* Registration::handleAnnounceMsg(RPCMsg* msg)
 {
 	Value* currentParam = NULL;
 	const char* name = NULL;
@@ -133,7 +132,7 @@ const char* Registration::handleAnnounceMsg(RsdMsg* msg)
 	return response;
 }
 
-bool Registration::handleRegisterMsg(RsdMsg* msg)
+bool Registration::handleRegisterMsg(RPCMsg* msg)
 {
 	string* functionName = NULL;
 	Value* functionArray = NULL;

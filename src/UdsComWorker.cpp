@@ -43,7 +43,7 @@ UdsComWorker::~UdsComWorker()
 
 void UdsComWorker::thread_work()
 {
-	RsdMsg* msg = NULL;
+	RPCMsg* msg = NULL;
 	worker_thread_active = true;
 
 	configSignals();
@@ -109,7 +109,7 @@ void UdsComWorker::thread_listen()
 			{
 				//add received data in buffer to queue
 				content = new string(receiveBuffer, recvSize);
-				pushReceiveQueue(new RsdMsg(plugin->getPluginNumber(), content));
+				pushReceiveQueue(new RPCMsg(plugin->getPluginNumber(), content));
 
 				//signal the worker
 				pthread_kill(worker_thread, SIGUSR1);
@@ -126,7 +126,7 @@ void UdsComWorker::thread_listen()
 }
 
 
-void UdsComWorker::routeBack(RsdMsg* msg)
+void UdsComWorker::routeBack(RPCMsg* msg)
 {
 	try
 	{
@@ -166,7 +166,7 @@ int UdsComWorker::transmit(const char* data, int size)
 }
 
 
-int UdsComWorker::transmit(RsdMsg* msg)
+int UdsComWorker::transmit(RPCMsg* msg)
 {
 	int  sentBytes = send(currentSocket, msg->getContent()->c_str(), msg->getContent()->size(), 0);
 

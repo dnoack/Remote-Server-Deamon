@@ -5,8 +5,9 @@
 #include <unistd.h>
 
 #include "JsonRPC.hpp"
-#include "RsdMsg.hpp"
+#include "RPCMsg.hpp"
 #include "Plugin.hpp"
+#include "ProcessInterface.hpp"
 #include "WorkerInterface.hpp"
 
 using namespace std;
@@ -24,7 +25,7 @@ using namespace std;
  *
  *
  */
-class Registration
+class Registration : public ProcessInterface
 {
 	public:
 
@@ -32,7 +33,7 @@ class Registration
 		 * Constructor.
 		 * \param udsWorker The instance which was created through UdsRegServer during an accept.
 		 */
-		Registration(WorkerInterface<RsdMsg>* udsWorker);
+		Registration();
 
 		/**
 		 * Destuctor.
@@ -48,7 +49,7 @@ class Registration
 		 * socket (udsWorker).
 		 * \param msg A instance of RsdMsg which contains a json rpc request/notification containing information about the plugin.
 		 */
-		void processMsg(RsdMsg* msg);
+		void process(RPCMsg* msg);
 
 
 		/**
@@ -60,6 +61,7 @@ class Registration
 		 * Deallocated pluginName and plugin if they whereallocated.
 		 */
 		void cleanup();
+
 
 	private:
 
@@ -120,9 +122,8 @@ class Registration
 		_timeout timerParams;
 		/*! After an exception was thrown, this variable can be user to generate json-rpc error responses.*/
 		const char* error;
-		/*! Instance of corresponding WorkerInterface, in this case a instance of UdsRegWorker. This is used
-		 * for communication between the server- and plugin registration.*/
-		WorkerInterface<RsdMsg>* udsWorker;
+
+
 		/*!
 		 * NOT_ACTIVE = A connection via UdsRegServer was accepted. The plugin is not known by RSD nor by the instance of Registration.
 		 * ANNOUNCED = A announce message was received, containing the name, id and path to unix domain socket file. Registration knows the plugin, RSD not.
@@ -143,7 +144,7 @@ class Registration
 		 * \param msg Containing a json rpc request with field method = "announce".
 		 * \return A valid json rpc response message where the result = "announceACK".
 		 */
-		const char* handleAnnounceMsg(RsdMsg* msg);
+		const char* handleAnnounceMsg(RPCMsg* msg);
 
 		//TODO: create announceACK, currently handled by handleAnnounceMsg
 
@@ -155,7 +156,7 @@ class Registration
 		 * \params msg Containing a json rpc request with field method = "register".
 		 * \return Returns True if everything was fine.
 		 */
-		bool handleRegisterMsg(RsdMsg* msg);
+		bool handleRegisterMsg(RPCMsg* msg);
 
 		/*
 		 * Creates a json rpc response message with result field ="registerACK"
@@ -166,7 +167,7 @@ class Registration
 		/**
 		*  TODO: Not implemented yet.
 		*/
-		const char* handleActiveMsg(RsdMsg* msg);
+		const char* handleActiveMsg(RPCMsg* msg);
 };
 
 #endif /* INCLUDE_REGISTRATION_HPP_ */

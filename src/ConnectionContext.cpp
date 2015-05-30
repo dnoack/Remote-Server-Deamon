@@ -26,6 +26,7 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	//TODO: if no number is free, tcpworker has to send an error and close the connection
 	this->json = new JsonRPC();
 	this->localDom = NULL;
+	//warum so und nicht tcpConnection = new TcpWorker ???
 	new TcpWorker(this, &(this->tcpConnection),tcpSocket);
 	dlog(logInfo, "New ConnectionContext: %d",  contextNumber);
 }
@@ -59,7 +60,7 @@ void ConnectionContext::destroy()
 }
 
 
-void ConnectionContext::processMsg(RsdMsg* msg)
+void ConnectionContext::processMsg(RPCMsg* msg)
 {
 	try
 	{
@@ -109,7 +110,7 @@ void ConnectionContext::processMsg(RsdMsg* msg)
 }
 
 
-void ConnectionContext::handleRequest(RsdMsg* msg)
+void ConnectionContext::handleRequest(RPCMsg* msg)
 {
 	try
 	{
@@ -150,7 +151,7 @@ char* ConnectionContext::getMethodNamespace()
 }
 
 
-void ConnectionContext::handleRSDCommand(RsdMsg* msg)
+void ConnectionContext::handleRSDCommand(RPCMsg* msg)
 {
 	try
 	{
@@ -176,7 +177,7 @@ void ConnectionContext::handleRSDCommand(RsdMsg* msg)
 }
 
 
-void ConnectionContext::handleRequestFromClient(RsdMsg* msg)
+void ConnectionContext::handleRequestFromClient(RPCMsg* msg)
 {
 	char* methodNamespace = NULL;
 
@@ -213,7 +214,7 @@ void ConnectionContext::handleRequestFromClient(RsdMsg* msg)
 }
 
 
-void ConnectionContext::handleRequestFromPlugin(RsdMsg* msg)
+void ConnectionContext::handleRequestFromPlugin(RPCMsg* msg)
 {
 	char* methodNamespace = NULL;
 	try
@@ -233,7 +234,7 @@ void ConnectionContext::handleRequestFromPlugin(RsdMsg* msg)
 }
 
 
-void ConnectionContext::handleResponse(RsdMsg* msg)
+void ConnectionContext::handleResponse(RPCMsg* msg)
 {
 	try
 	{
@@ -251,9 +252,9 @@ void ConnectionContext::handleResponse(RsdMsg* msg)
 
 
 
-void ConnectionContext::handleResponseFromPlugin(RsdMsg* msg)
+void ConnectionContext::handleResponseFromPlugin(RPCMsg* msg)
 {
-	RsdMsg* lastMsg = requests.back();
+	RPCMsg* lastMsg = requests.back();
 	lastSender = lastMsg->getSender();
 
 	try
@@ -284,7 +285,7 @@ void ConnectionContext::handleResponseFromPlugin(RsdMsg* msg)
 }
 
 
-void ConnectionContext::handleTrash(RsdMsg* msg)
+void ConnectionContext::handleTrash(RPCMsg* msg)
 {
 	try
 	{
@@ -302,16 +303,16 @@ void ConnectionContext::handleTrash(RsdMsg* msg)
 }
 
 
-void ConnectionContext::handleTrashFromPlugin(RsdMsg* msg)
+void ConnectionContext::handleTrashFromPlugin(RPCMsg* msg)
 {
-	RsdMsg* errorResponse = NULL;
+	RPCMsg* errorResponse = NULL;
 	const char* errorResponseMsg = NULL;
 	Value id;
 	try
 	{
 		//get sender from old msg and create a new valid error response
 		errorResponseMsg = json->generateResponseError(id, -304, "Json-Rpc was neither a request nor response.");
-		errorResponse = new RsdMsg(msg->getSender(), errorResponseMsg);
+		errorResponse = new RPCMsg(msg->getSender(), errorResponseMsg);
 		delete msg;
 		handleResponseFromPlugin(errorResponse);
 	}
@@ -322,10 +323,10 @@ void ConnectionContext::handleTrashFromPlugin(RsdMsg* msg)
 }
 
 
-void ConnectionContext::handleIncorrectPluginResponse(RsdMsg* msg, Error &error)
+void ConnectionContext::handleIncorrectPluginResponse(RPCMsg* msg, Error &error)
 {
 
-	RsdMsg* errorResponse = NULL;
+	RPCMsg* errorResponse = NULL;
 	const char* errorResponseMsg = NULL;
 	Value id;
 	try
@@ -333,7 +334,7 @@ void ConnectionContext::handleIncorrectPluginResponse(RsdMsg* msg, Error &error)
 		error.append(msg->getContent());
 		//get sender from old msg and create a new valid error response
 		errorResponseMsg = json->generateResponseError(id, error.getErrorCode(), error.get());
-		errorResponse = new RsdMsg(msg->getSender(), errorResponseMsg);
+		errorResponse = new RPCMsg(msg->getSender(), errorResponseMsg);
 		handleResponseFromPlugin(errorResponse);
 	}
 	catch(Error &e)
@@ -537,7 +538,7 @@ void ConnectionContext::arrangeUdsConnectionCheck()
 }
 
 
-int ConnectionContext::tcp_send(RsdMsg* msg)
+int ConnectionContext::tcp_send(RPCMsg* msg)
 {
 	return tcpConnection->transmit(msg);
 }

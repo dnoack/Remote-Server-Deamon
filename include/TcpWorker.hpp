@@ -18,12 +18,11 @@
 #include "WorkerThreads.hpp"
 #include "Error.hpp"
 #include "Utils.h"
-#include "RsdMsg.hpp"
+#include "RPCMsg.hpp"
 #include "LogUnit.hpp"
 
 
 class ConnectionContext;
-class UdsComClient;
 
 
 /**
@@ -36,7 +35,7 @@ class UdsComClient;
  * \note implements WorkerInterface, WorkerThreads and LogUnit
  * \author David Noack
  */
-class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, public LogUnit{
+class TcpWorker : public WorkerInterface<RPCMsg>, public WorkerThreads, public LogUnit{
 
 	public:
 
@@ -67,7 +66,7 @@ class TcpWorker : public WorkerInterface<RsdMsg>, public WorkerThreads, public L
 		 * \param msg Pointer to RsdMsg, which has to be send.
 		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
 		*/
-		int transmit(RsdMsg* data);
+		int transmit(RPCMsg* data);
 
 	private:
 
