@@ -10,10 +10,10 @@
 #include <limits>
 
 #include "TcpWorker.hpp"
-#include "UdsComWorker.hpp"
 #include "Plugin.hpp"
 #include "Error.hpp"
 #include "LogUnit.hpp"
+#include "JsonRPC.hpp"
 
 
 /*
@@ -36,7 +36,7 @@
  *   - close and delete UdsComClients which are not needed anymore.
  * \author David Noack
  */
-class ConnectionContext : public LogUnit
+class ConnectionContext : public ProcessInterface, public LogUnit
 {
 	public:
 
@@ -58,7 +58,7 @@ class ConnectionContext : public LogUnit
 		 * \return On success a valid pointer to a UdsComClient is returned. On fail
 		 * the function will return NULL.
 		 */
-		UdsComWorker* findUdsConnection(char* pluginName);
+		WorkerInterface<RPCMsg>* findUdsConnection(char* pluginName);
 
 		/**
 		 * Search the list of existing UdsComClients for a existing connection
@@ -67,14 +67,14 @@ class ConnectionContext : public LogUnit
 		 * \return On success a valid pointer to a UdsComClient is returned. On fail
 		 * the function will return NULL.
 		 */
-		virtual UdsComWorker* findUdsConnection(int pluginNumber);
+		virtual WorkerInterface<RPCMsg>* findUdsConnection(int pluginNumber);
 
 
 		/**
 		 * Analysis the incomming message and calls the different methods for
 		 * request/response or trash messages.
 		 */
-		virtual void processMsg(RPCMsg* msg);
+		virtual void process(RPCMsg* msg);
 
 		/**
 		 * Initializes the counter and corresponding mutex to limit
@@ -175,7 +175,7 @@ class ConnectionContext : public LogUnit
 		 * This list can contain active connection and non active connections, but
 		 * the non active will be automatically deleted after a short time through RSD.
 		*/
-		list<UdsComWorker*> udsConnections;
+		list<Plugin*> plugins;
 
 		/*! This list acts as LIFO (last in, first out stack) for requests. The main request
 		 * from a client will always pushed first into this stack. Through the process of receiving
@@ -207,7 +207,7 @@ class ConnectionContext : public LogUnit
 		/*! Contains just 0, this Nullvalue is needed if we got a parse error.*/
 		Value nullId;
 		/*! Contains the current UdsComClient, which will be used in the process of handling the current message.*/
-		UdsComWorker* currentWorker;
+		WorkerInterface<RPCMsg>* currentComPoint;
 		/*! This flags signals if a main request (from a client) is in process.*/
 		bool requestInProcess;
 		/*! Used for getting the sender of the last request (from requests-stack) and working with it in several functions.*/
@@ -252,7 +252,7 @@ class ConnectionContext : public LogUnit
 		 * \param plugin An instance of plugin which contains information about the plugin we wish to connect to.
 		 */
 		//TODO: change doxy
-		UdsComWorker* createNewUdsConncetion(Plugin* plugin);
+		WorkerInterface<RPCMsg>* createNewUdsConncetion(Plugin* plugin);
 
 
 		/**
@@ -324,6 +324,10 @@ class ConnectionContext : public LogUnit
 		 * \param msg The incomming RPCMsg containing a json rpc request with "RSD" as method-namespace.
 		 */
 		void handleRSDCommand(RPCMsg* msg);
+
+
+		void routeBack(RPCMsg* msg);
+		int tryToconnect(Plugin* plugin);
 
 
 

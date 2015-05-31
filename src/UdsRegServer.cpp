@@ -3,21 +3,12 @@
 #include "UdsRegServer.hpp"
 
 
-int UdsRegServer::connection_socket;
-
-list<ComPoint*> UdsRegServer::workerList;
-pthread_mutex_t UdsRegServer::wLmutex;
-
-struct sockaddr_un UdsRegServer::address;
-socklen_t UdsRegServer::addrlen;
-
 
 
 UdsRegServer::UdsRegServer( const char* udsFile)
 {
 	accept_thread_active = false;
 	optionflag = 1;
-	accepter = 0;
 	address.sun_family = AF_UNIX;
 	strncpy(address.sun_path, udsFile, strlen(udsFile));
 	addrlen = sizeof(address);
@@ -43,12 +34,14 @@ UdsRegServer::UdsRegServer( const char* udsFile)
 
 UdsRegServer::~UdsRegServer()
 {
+	pthread_t accepter = getAccepter();
 	if(accepter != 0)
 		pthread_cancel(accepter);
 
+	WaitForAcceptThreadToExit();
+
 	deleteWorkerList();
 	close(connection_socket);
-
 	pthread_mutex_destroy(&wLmutex);
 }
 
@@ -79,7 +72,7 @@ void UdsRegServer::pushWorkerList(int new_socket)
 {
 	Registration* registry = new Registration();
 	pthread_mutex_lock(&wLmutex);
-		workerList.push_back(new ComPoint(new_socket, registry));
+		workerList.push_back(new ComPoint(new_socket, registry, -1));
 	pthread_mutex_unlock(&wLmutex);
 }
 

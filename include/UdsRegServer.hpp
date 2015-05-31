@@ -67,20 +67,19 @@ class UdsRegServer : public AcceptThread{
 	private:
 
 		/*! Unix domain socket for registering plugins.*/
-		static int connection_socket;
+		int connection_socket;
 
 		/*!list of pthread ids with all the active RegWorker.*/
-		static list<ComPoint*> workerList;
+		list<ComPoint*> workerList;
 		/*! Mutex for protecting the intern list of UdsRegWorkers.*/
-		static pthread_mutex_t wLmutex;
+		pthread_mutex_t wLmutex;
 
 		/*! Address for conection_socket.*/
-		static struct sockaddr_un address;
+		struct sockaddr_un address;
 		/*! Address length for connection_socket.*/
-		static socklen_t addrlen;
+		socklen_t addrlen;
 
-		/*! Thread id for the accept-thread.*/
-		pthread_t accepter;
+
 		/*! optionflag for connection_socket.*/
 		int optionflag;
 
