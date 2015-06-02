@@ -1,17 +1,11 @@
 #include "RSD.hpp"
+
 #include "RPCMsg.hpp"
-#include "Utils.h"
 #include "LogUnit.hpp"
 #include <iostream>
 #include <fstream>
 #include <string>
 
-
-int RSD::connection_socket;
-struct sockaddr_in RSD::address;
-socklen_t RSD::addrlen;
-int RSD::optionflag;
-bool RSD::accept_thread_active;
 
 list<Plugin*> RSD::plugins;
 pthread_mutex_t RSD::pLmutex;
@@ -21,9 +15,7 @@ pthread_mutex_t RSD::ccListMutex;
 
 map<const char*, afptr, cmp_keys> RSD::funcMap;
 afptr RSD::funcMapPointer;
-Document RSD::dom;
 
-int LogUnit::globalLogLevel = 0;
 
 
 RSD::RSD()
@@ -31,6 +23,12 @@ RSD::RSD()
 	logInfo.logLevel = LOG_INFO;
 	logInfo.logName = "RSD: ";
 	pluginFile = "plugins.txt";
+	connection_socket = 0;
+	address.sin_family = AF_INET;
+	address.sin_addr.s_addr = INADDR_ANY;
+	address.sin_port = htons(TCP_PORT);
+	addrlen = sizeof(address);
+	optionflag = 1;
 
 	try{
 
@@ -40,12 +38,6 @@ RSD::RSD()
 		throw Error (-201 , "Could not init connectionContextListMutex", strerror(errno));
 
 	rsdActive = true;
-	accepter = 0;
-	address.sin_family = AF_INET;
-	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons(TCP_PORT);
-	addrlen = sizeof(address);
-	optionflag = 1;
 
 	sigemptyset(&origmask);
 	sigemptyset(&sigmask);
@@ -53,11 +45,8 @@ RSD::RSD()
 	sigaddset(&sigmask, SIGUSR2);
 	pthread_sigmask(SIG_BLOCK, &sigmask, &origmask);
 
-
-	//create Registry Server
 	regServer = new UdsRegServer(REGISTRY_PATH);
 
-	//init static part of ConnectionContext
 	ConnectionContext::init();
 	LogUnit::setGlobalLogLevel(0);
 
@@ -65,10 +54,11 @@ RSD::RSD()
 	funcMap.insert(pair<const char*, afptr>("RSD.showAllRegisteredPlugins", funcMapPointer));
 	funcMapPointer = &RSD::showAllKnownFunctions;
 	funcMap.insert(pair<const char*, afptr>("RSD.showAllKownFunctions", funcMapPointer));
+
 	}
 	catch(Error &e)
 	{
-		printf("%s\n", e.get());
+		dlog(logInfo, "%s", e.get());
 	}
 }
 
@@ -76,27 +66,29 @@ RSD::RSD()
 
 RSD::~RSD()
 {
+	pthread_t accepter = getAccepter();
 	accept_thread_active = false;
-	delete regServer;
-	deleteAllPlugins();
-	close(connection_socket);
 	if(accepter != 0)
 		pthread_cancel(accepter);
 
+	WaitForAcceptThreadToExit();
+
+	delete regServer;
+	deleteAllPlugins();
+	close(connection_socket);
+
 	ConnectionContext::destroy();
 	funcMap.clear();
-	//TODO: implement deleteFunclist like in Aardvark-Plugin
 
 	pthread_mutex_destroy(&pLmutex);
 	pthread_mutex_destroy(&ccListMutex);
 }
 
 
-void* RSD::accept_connections(void* data)
+void RSD::thread_accept()
 {
 	int tcpSocket = 0;
 	ConnectionContext* context = NULL;
-	Error** err = (Error**)data;
 
 	try
 	{
@@ -120,7 +112,7 @@ void* RSD::accept_connections(void* data)
 			tcpSocket = accept(connection_socket, (struct sockaddr*)&address, &addrlen);
 			if(tcpSocket > 0)
 			{
-				dyn_print("Client connected\n");
+				log(logInfo, "Client connected.");
 				context = new ConnectionContext(tcpSocket);
 				pushWorkerList(context);
 			}
@@ -128,9 +120,8 @@ void* RSD::accept_connections(void* data)
 	}
 	catch(Error &e)
 	{
-		*err = new Error(e.getErrorCode(), e.get());
+		throw;
 	}
-	return 0;
 }
 
 
@@ -270,13 +261,11 @@ void RSD::checkForDeletableConnections()
 			connection = ccList.erase(connection);
 		}
 		//maybe we got a working tcp connection but a plugin went down
-		else if((*connection)->isUdsCheckEnabled())
+		else
 		{
 			(*connection)->checkUdsConnections();
 			++connection;
 		}
-		else
-			++connection;
 	}
 	pthread_mutex_unlock(&ccListMutex);
 }
@@ -302,6 +291,7 @@ bool RSD::executeFunction(Value &method, Value &params, Value &result)
 bool RSD::showAllRegisteredPlugins(Value &params, Value &result)
 {
 	Value* tempValue = NULL;
+	Document dom;
 	pthread_mutex_lock(&pLmutex);
 	list<Plugin*>::iterator plugin = plugins.begin();
 	result.SetArray();
@@ -322,6 +312,7 @@ bool RSD::showAllKnownFunctions(Value &params, Value &result)
 	Value* pluginName = NULL;
 	Value* tempValue = NULL;
 	Value tempArray;
+	Document dom;
 	list<string*>* methods = NULL;
 	list<string*>::iterator method;
 
@@ -407,7 +398,6 @@ void RSD::startPluginsDuringStartup(const char* plugins)
 
 int RSD::start(int argc, char** argv)
 {
-
 	char* lvalue = NULL;
 	char* pvalue = NULL;
 	unsigned int logLevel = 7;
@@ -479,36 +469,41 @@ int RSD::start(int argc, char** argv)
 
 void RSD::_start()
 {
-	Error* err = NULL;
+	try{
+		regServer->start();
 
-	regServer->start();
+		//start accept-thread for incomming tcp connections
+		StartAcceptThread();
 
-	//start accept-thread for incomming tcp connections
-	if( pthread_create(&accepter, NULL, accept_connections, &err) != 0)
-		throw Error(-202, "Could not start TCP-accept-thread", strerror(errno));
+		//wait until accept thread is ready or an exception within accept_connection thread occured
+		while(!accept_thread_active)
+		{
+			sleep(1);
+		}
 
-	//wait until accept thread is ready or an exception within accept_connection thread occured
-	while(!accept_thread_active )
-	{
-		if(err != NULL)
-			throw *err;
-		sleep(1);
+		//start plugins
+		startPluginsDuringStartup(pluginFile);
+
+		do
+		{
+			sleep(MAIN_SLEEP_TIME);
+			//check IPC registry compoints
+			regServer->checkForDeletableWorker();
+			//check TCP/workers
+			checkForDeletableConnections();
+		}
+		while(rsdActive);
 	}
-
-	//start plugins
-	startPluginsDuringStartup(pluginFile);
-
-	do
+	catch(Error &e)
 	{
-		sleep(MAIN_SLEEP_TIME);
-		//check uds registry workers
-		regServer->checkForDeletableWorker();
-		//check TCP/workers
-		this->checkForDeletableConnections();
+		throw;
 	}
-	while(rsdActive);
-
+	catch(...)
+	{
+		throw;
+	}
 }
+
 
 
 #ifndef TESTMODE
@@ -522,11 +517,11 @@ int main(int argc, char** argv)
 	}
 	catch(Error &e)
 	{
-		dyn_print("An error caused RSD to abort: %d - %s\n", e.getErrorCode(), e.get());
+		printf("An error caused RSD to abort: %d - %s\n", e.getErrorCode(), e.get());
 	}
 	catch(...)
 	{
-		dyn_print("Unkown exception thrown.\n");
+		printf("Unkown exception thrown.\n");
 	}
 }
 #endif

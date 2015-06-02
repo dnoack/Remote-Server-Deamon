@@ -1,5 +1,5 @@
-#ifndef INCLUDE_UDSREGSERVER_HPP_
-#define INCLUDE_UDSREGSERVER_HPP_
+#ifndef INCLUDE_REGSERVER_HPP_
+#define INCLUDE_REGSERVER_HPP_
 
 
 #include "errno.h"
@@ -17,7 +17,6 @@
 #include "JsonRPC.hpp"
 #include <ComPoint.hpp>
 #include "Error.hpp"
-#include "Utils.h"
 #include "Registration.hpp"
 
 
@@ -82,6 +81,11 @@ class UdsRegServer : public AcceptThread{
 
 		/*! optionflag for connection_socket.*/
 		int optionflag;
+
+		/*!LogInformation for underlying ComPoints.*/
+		LogInformation infoIn;
+		LogInformation infoOut;
+		LogInformation info;
 
 
 		/* Accepts new incommingconnection over the unix domain registry file.

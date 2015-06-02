@@ -12,22 +12,33 @@ int ConnectionContext::currentIndex;
 ConnectionContext::ConnectionContext(int tcpSocket)
 {
 	pthread_mutex_init(&rIPMutex, NULL);
-	this->deletable = false;
-	this->udsCheck = false;
-	this->error = NULL;
-	this->id = NULL;
+	deletable = false;
+	error = NULL;
+	id = NULL;
 	nullId.SetInt(0);
-	this->currentComPoint = NULL;
-	this->tcpConnection = NULL;
-	this->requestInProcess = false;
-	this->lastSender = -1;
-	this->logInfo.logName = "CC:";
+	currentComPoint = NULL;
+	workerInterface = NULL;
+	requestInProcess = false;
+	lastSender = -1;
+	logInfo.logName = "CC:";
+	infoIn.logLevel = LOG_INPUT;
+	infoIn.logName = "IPC IN:";
+	infoOut.logLevel = LOG_OUTPUT;
+	infoOut.logName = "IPC OUT:";
+	info.logLevel = LOG_INFO;
+	info.logName = "ComPoint for RPC:";
 	contextNumber = getNewContextNumber();
 	//TODO: if no number is free, tcpworker has to send an error and close the connection
-	this->json = new JsonRPC();
-	this->localDom = NULL;
-	//warum so und nicht tcpConnection = new TcpWorker ???
-	new TcpWorker(this, &(this->tcpConnection),tcpSocket);
+	json = new JsonRPC();
+	localDom = NULL;
+	//tcpworker startet die listen/worker threads, diese können bereits daten
+	//empfangen bevor der pointer von TCPWorker aus dem Konstruktor als rückgabewert kommt
+	//new TcpWorker(this, &(this->workerInterface),tcpSocket);
+
+	//the tcp connection of a connection context hast always ID = 0
+	//ComPoint will do a vice versa register to this compoint and set the workerInterface
+	 new ComPoint(tcpSocket, this, 0, true);
+
 	dlog(logInfo, "New ConnectionContext: %d",  contextNumber);
 }
 
@@ -35,7 +46,8 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 
 ConnectionContext::~ConnectionContext()
 {
-	delete tcpConnection;
+	if(workerInterface != NULL)
+		delete workerInterface;
 	delete json;
 	pthread_mutex_lock(&cCounterMutex);
 	--contextCounter;
@@ -64,6 +76,8 @@ void ConnectionContext::process(RPCMsg* msg)
 {
 	try
 	{
+		id = NULL;
+		nullId.SetInt(0);
 		localDom = new Document();
 		//parse to dom with jsonrpc
 		json->parse(localDom, msg->getContent());
@@ -94,9 +108,12 @@ void ConnectionContext::process(RPCMsg* msg)
 		dlog(logInfo, "Stacksize: %d", requests.size());
 		delete localDom;
 
+		//Errors through messages from client will be thrown as json rpc error response to TcpWorker
 		if(msg->getSender() == CLIENT_SIDE)
 		{
 			delete msg;
+			if(id != NULL)
+				nullId.SetInt(id->GetInt());
 			error = json->generateResponseError(nullId, e.getErrorCode(), e.get());
 			throw Error(error);
 		}
@@ -167,7 +184,7 @@ void ConnectionContext::handleRSDCommand(RPCMsg* msg)
 		result = json->generateResponse(*id, resultValue);
 
 		//send the generated msg back to client
-		tcp_send(result);
+		workerInterface->transmit(result, strlen(result));
 	}
 	catch(Error &e)
 	{
@@ -273,7 +290,7 @@ void ConnectionContext::handleResponseFromPlugin(RPCMsg* msg)
 		{
 			delete lastMsg;
 			requests.pop_back();
-			tcp_send(msg);
+			workerInterface->transmit(msg);
 			setRequestNotInProcess();
 		}
 		delete msg;
@@ -387,12 +404,12 @@ bool ConnectionContext::isDeletable()
 {
 	list<Plugin*>::iterator plugin;
 
-	if(tcpConnection->isDeletable())
+	if(workerInterface != NULL && workerInterface->isDeletable())
 	{
-		//close tcpConnection
+		//close workerInterface
 		deletable = true;
-		delete tcpConnection;
-		tcpConnection = NULL;
+		delete workerInterface;
+		workerInterface = NULL;
 
 		//close all UdsConnections
 		plugin = plugins.begin();
@@ -401,7 +418,7 @@ bool ConnectionContext::isDeletable()
 			delete *plugin;
 			plugin = plugins.erase(plugin);
 
-			//dlog(logInfo, "UdsComworker deleted from context %d. Verbleibend: %lu ", contextNumber, plugins.size());
+			dlog(logInfo, "IPC ComPoint deleted from context %d. Verbleibend: %lu ", contextNumber, plugins.size());
 		}
 	}
 	return deletable;
@@ -423,7 +440,7 @@ void ConnectionContext::checkUdsConnections()
 			plugin = plugins.erase(plugin);
 			dlog(logInfo,  "UdsComworker deleted from context %d. Verbleibend: %lu " , contextNumber, plugins.size());
 			//TODO: check request stack, create error response , pop stack, set requestNOTinprocess
-			tcpConnection->transmit("Connection to AardvarkPlugin Aborted!\n", 39);
+			workerInterface->transmit("Connection to AardvarkPlugin Aborted!\n", 39);
 		}
 		else
 			++plugin;
@@ -441,7 +458,8 @@ WorkerInterface<RPCMsg>* ConnectionContext::createNewUdsConncetion(Plugin* plugi
 	try
 	{
 		newSocket = tryToconnect(plugin);
-		comPoint = new ComPoint(newSocket, this, plugin->getPluginNumber());
+		comPoint = new ComPoint(newSocket, this, plugin->getPluginNumber(), false);
+		comPoint->configureLogInfo(&infoIn, &infoOut, &info);
 		localPlugin = new Plugin(plugin);
 		localPlugin->setComPoint(comPoint);
 		plugins.push_back(localPlugin);
@@ -579,24 +597,6 @@ void ConnectionContext::deleteAllUdsConnections()
 		delete *plugin;
 		plugin = plugins.erase(plugin);
 	}
-}
-
-
-void ConnectionContext::arrangeUdsConnectionCheck()
-{
-	udsCheck = true;
-}
-
-
-int ConnectionContext::tcp_send(RPCMsg* msg)
-{
-	return tcpConnection->transmit(msg);
-}
-
-
-int ConnectionContext::tcp_send(const char* msg)
-{
-	return tcpConnection->transmit(msg, strlen(msg));
 }
 
 

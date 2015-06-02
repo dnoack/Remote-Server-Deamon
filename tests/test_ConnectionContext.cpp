@@ -8,7 +8,7 @@
 
 #include "ConnectionContext.hpp"
 #include "Error.hpp"
-#include "RsdMsg.hpp"
+#include "RPCMsg.hpp"
 
 
 #include "TestHarness.h"
@@ -19,7 +19,7 @@ static ConnectionContext* context = NULL;
 
 
 /*
-class RsdMsgComparator : public MockNamedValueComparator
+class RPCMsgComparator : public MockNamedValueComparator
 {
 	public:
 
@@ -31,7 +31,7 @@ class RsdMsgComparator : public MockNamedValueComparator
 
 		virtual SimpleString valueToString(const void* msg)
 		{
-			RsdMsg* object = (RsdMsg*)msg;
+			RPCMsg* object = (RPCMsg*)msg;
 			return StringFrom(object->print());
 		}
 
@@ -48,9 +48,9 @@ class ConnectionContextMock  : public ConnectionContext
 
 		}
 
-		virtual void processMsg(RsdMsg* msg)
+		virtual void processMsg(RPCMsg* msg)
 		{
-			mock().actualCall("processMsg").withParameterOfType("RsdMsg","msg", msg);
+			mock().actualCall("processMsg").withParameterOfType("RPCMsg","msg", msg);
 		}
 
 		virtual UdsComWorker* findUdsConnection(int pluginNumber)
@@ -81,7 +81,7 @@ TEST(CONNECTION_CONTEXT, processMsg_OK)
 {
 
 	context = new ConnectionContext(2);
-	RsdMsg* testMsg = new RsdMsg(0, "{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"Aaardvark.aa_close\", \"id\": 9}");
+	RPCMsg* testMsg = new RPCMsg(0, "{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"Aaardvark.aa_close\", \"id\": 9}");
 
 	CHECK_THROWS(Error, context->processMsg(testMsg));
 
@@ -95,7 +95,7 @@ TEST(CONNECTION_CONTEXT, processMsg_noNamespaceFail)
 
 
 	context = new ConnectionContext(2);
-	RsdMsg* testMsg = new RsdMsg(0, "{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"aa_close\", \"id\": 9}");
+	RPCMsg* testMsg = new RPCMsg(0, "{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"aa_close\", \"id\": 9}");
 
 	CHECK_THROWS(Error, context->processMsg(testMsg));
 
@@ -108,7 +108,7 @@ TEST(CONNECTION_CONTEXT, processMsg_parseFAIL)
 {
 
 	context = new ConnectionContext(2);
-	RsdMsg* testMsg = new RsdMsg(0, "test1");
+	RPCMsg* testMsg = new RPCMsg(0, "test1");
 
 	CHECK_THROWS(Error, context->processMsg(testMsg));
 

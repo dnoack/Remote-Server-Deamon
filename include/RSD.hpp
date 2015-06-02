@@ -26,7 +26,8 @@
 #include "writer.h"
 
 
-#include "UdsRegServer.hpp"
+#include "RegServer.hpp"
+#include "AcceptThread.hpp"
 #include "ConnectionContext.hpp"
 #include "Plugin.hpp"
 #include "LogUnit.hpp"
@@ -68,7 +69,7 @@ struct cmp_keys
  * in the form of ConnectionContext objects. There are also Json-RPC functions from RSD itself.
  * \author David Noack
  */
-class RSD : public LogUnit{
+class RSD : public AcceptThread, public LogUnit{
 
 
 	public:
@@ -147,18 +148,14 @@ class RSD : public LogUnit{
 
 	private:
 
-		/*! DOM object for parsing json rpc messages for RSD.*/
-		static Document dom;
-		/*! As long as this variable is true, the server will accept new client connections.*/
-		static bool accept_thread_active;
 		/*! Socket which accepts new connections.*/
-		static int connection_socket;
+		int connection_socket;
 		/*! Optionflag for setting socket options to connection_socket.*/
-		static int optionflag;
+		int optionflag;
 		/*! Server address configuration.*/
-		static struct sockaddr_in address;
+		struct sockaddr_in address;
 		/*! Size of server address configuration.*/
-		static socklen_t addrlen;
+	     socklen_t addrlen;
 		/*! A list of all registered plugins.*/
 		static list<Plugin*> plugins;
 		/*! Mutex access plugins list.*/
@@ -182,7 +179,7 @@ class RSD : public LogUnit{
 		 * creating a new instance of connectionContext and pushing it to connectionContextList.
 		 * \note This function will run in a separated thread and be started through RSD::start().
 		 */
-		static void* accept_connections(void*);
+		void thread_accept();
 
 		/** Json RPC method of RSD.
 		 * Takes a look into the list of all registered plugins. And writes their names as array into result.
@@ -200,12 +197,11 @@ class RSD : public LogUnit{
 		 */
 		static bool showAllKnownFunctions(Value &params, Value &result);
 
+
 		void startPluginsDuringStartup(const char* pluginFile);
 
 		/*! As long as this is true, the server will run.*/
 		bool rsdActive;
-		/*! Thread id of thread for accept_connections.*/
-		pthread_t accepter;
 		/*! Instance of the Registration server for registering new plugins to RSD.*/
 		UdsRegServer* regServer;
 		/*! Contains the name of text file where paths and names of plugins are noted.*/

@@ -5,11 +5,11 @@
 #define MOCK_BUFFER_SIZE 2048
 
 
-#include "RsdMsg.hpp"
+#include "RPCMsg.hpp"
 #include "WorkerInterface.hpp"
 
 
-class WorkerInterfaceMock : public WorkerInterface<RsdMsg>{
+class WorkerInterfaceMock : public WorkerInterface<RPCMsg>{
 
 	public:
 		WorkerInterfaceMock();
@@ -20,7 +20,7 @@ class WorkerInterfaceMock : public WorkerInterface<RsdMsg>{
 
 		int transmit(char* data, int size);
 		int transmit(const char* data, int size);
-		int transmit(RsdMsg* msg);
+		int transmit(RPCMsg* msg);
 
 		char* getBuffer()
 		{

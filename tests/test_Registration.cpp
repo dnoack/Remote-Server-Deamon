@@ -8,7 +8,7 @@
 //include testharness here
 #include "TestHarness.h"
 #include "MockSupport.h"
-#include "RsdMsg.hpp"
+#include "RPCMsg.hpp"
 
 
 
@@ -44,27 +44,27 @@ TEST_GROUP(Registration)
 TEST(Registration, registerProcess_retry_aferFail_OK)
 {
 
-	RsdMsg* testMsg = new RsdMsg(0, &announceMsg);
+	RPCMsg* testMsg = new RPCMsg(0, &announceMsg);
 	reg->processMsg(testMsg);
 	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"announceACK\",\"id\":123}", wMock.getBuffer());
 	wMock.clear();
 
 
-	testMsg = new RsdMsg(0, &incorrectMsg);
+	testMsg = new RPCMsg(0, &incorrectMsg);
 	reg->processMsg(testMsg);
 	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Server error\",\"data\":\"Error while parsing json rpc.\"},\"id\":0}", wMock.getBuffer());
 	wMock.clear();
 
-	testMsg = new RsdMsg(0, &announceMsg);
+	testMsg = new RPCMsg(0, &announceMsg);
 	reg->processMsg(testMsg);
 	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"announceACK\",\"id\":123}", wMock.getBuffer());
 	wMock.clear();
 
-	testMsg = new RsdMsg(0, &registerMsg);
+	testMsg = new RPCMsg(0, &registerMsg);
 	reg->processMsg(testMsg);
 	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"registerACK\",\"id\":124}", wMock.getBuffer());
 
-	testMsg = new RsdMsg(0, &activeMsg);
+	testMsg = new RPCMsg(0, &activeMsg);
 	reg->processMsg(testMsg);
 
 }
@@ -73,7 +73,7 @@ TEST(Registration, registerProcess_retry_aferFail_OK)
 
 TEST(Registration, registerMsg_FAIL)
 {
-	RsdMsg* testMsg = new RsdMsg(0, &registerMsg);
+	RPCMsg* testMsg = new RPCMsg(0, &registerMsg);
 	reg->processMsg(testMsg);
 	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32022,\"message\":\"Server error\",\"data\":\"Missing parameter.\"},\"id\":124}", wMock.getBuffer());
 	sleep(4);
@@ -82,7 +82,7 @@ TEST(Registration, registerMsg_FAIL)
 
 TEST(Registration, announceMsg)
 {
-	RsdMsg* testMsg = new RsdMsg(0, &announceMsg);
+	RPCMsg* testMsg = new RPCMsg(0, &announceMsg);
 	reg->processMsg(testMsg);
 	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"announceACK\",\"id\":123}", wMock.getBuffer());
 	sleep(4);
@@ -91,16 +91,16 @@ TEST(Registration, announceMsg)
 
 TEST(Registration, registerProcess_complete_OK)
 {
-	RsdMsg* testMsg = new RsdMsg(0, &announceMsg);
+	RPCMsg* testMsg = new RPCMsg(0, &announceMsg);
 	reg->processMsg(testMsg);
 	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"announceACK\",\"id\":123}", wMock.getBuffer());
 	wMock.clear();
 
-	testMsg = new RsdMsg(0, &registerMsg);
+	testMsg = new RPCMsg(0, &registerMsg);
 	reg->processMsg(testMsg);
 	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"registerACK\",\"id\":124}", wMock.getBuffer());
 
-	testMsg = new RsdMsg(0, &activeMsg);
+	testMsg = new RPCMsg(0, &activeMsg);
 	reg->processMsg(testMsg);
 
 

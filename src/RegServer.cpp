@@ -1,6 +1,6 @@
 
+#include "../include/RegServer.hpp"
 #include "RSD.hpp"
-#include "UdsRegServer.hpp"
 
 
 
@@ -10,6 +10,14 @@ UdsRegServer::UdsRegServer( const char* udsFile)
 	accept_thread_active = false;
 	optionflag = 1;
 	address.sun_family = AF_UNIX;
+	infoIn.logLevel = LOG_INPUT;
+	infoIn.logName = "IPC IN:";
+	infoOut.logLevel = LOG_OUTPUT;
+	infoOut.logName = "IPC OUT:";
+	info.logLevel = LOG_INFO;
+	info.logName = "ComPoint for Registry:";
+
+
 	strncpy(address.sun_path, udsFile, strlen(udsFile));
 	addrlen = sizeof(address);
 
@@ -71,8 +79,11 @@ void UdsRegServer::thread_accept()
 void UdsRegServer::pushWorkerList(int new_socket)
 {
 	Registration* registry = new Registration();
+	ComPoint* comPoint = NULL;
+
 	pthread_mutex_lock(&wLmutex);
-		workerList.push_back(new ComPoint(new_socket, registry, -1));
+		workerList.push_back(comPoint = new ComPoint(new_socket, registry, -1));
+		comPoint->configureLogInfo(&infoIn, &infoOut, &info);
 	pthread_mutex_unlock(&wLmutex);
 }
 
@@ -90,7 +101,7 @@ void UdsRegServer::checkForDeletableWorker()
 			RSD::deletePlugin(registry->getPluginName());
 			delete  *i;
 			i = workerList.erase(i);
-			dyn_print("UdsRegServer: UdsRegWorker was deleted.\n");
+			//dyn_print("UdsRegServer: UdsRegWorker was deleted.\n");
 		}
 		else
 			++i;

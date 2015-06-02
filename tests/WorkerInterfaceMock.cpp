@@ -33,7 +33,7 @@ int WorkerInterfaceMock::transmit(const char* data, int size)
 	return size;
 }
 
-int WorkerInterfaceMock::transmit(RsdMsg* msg)
+int WorkerInterfaceMock::transmit(RPCMsg* msg)
 {
 	string* data = msg->getContent();
 	if(data->size() < MOCK_BUFFER_SIZE)

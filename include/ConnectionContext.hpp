@@ -9,7 +9,7 @@
 #include <pthread.h>
 #include <limits>
 
-#include "TcpWorker.hpp"
+
 #include "Plugin.hpp"
 #include "Error.hpp"
 #include "LogUnit.hpp"
@@ -106,13 +106,6 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 */
 		bool isRequestInProcess();
 
-		/**
-		 * Checks if the list of UdsComClients of this ConnectionContext has to be checked for
-		 * diconnected UdsComClients.
-		 * \return Returns true if the list of UdsComClient hat to be checked for diconnected UdsComClients.
-		 * \note This function will be called through the main loop of RSD to check connections.
-		 */
-		bool isUdsCheckEnabled(){return this->udsCheck;}
 
 		/**
 		 * Checks the list of UdsComClients for deletable UdsComClients.
@@ -142,20 +135,6 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		void handleIncorrectPluginResponse(RPCMsg* msg, Error &error);
 
 
-		/**
-		 * Sends a message through the tcp-connections to the client.
-		 * \param msg Pointer to RPCMsg, which has to be send.
-		 * \return On success it returns the number of bytes which where send, on fail it return -1 (errno is set).
-		 */
-		int tcp_send(RPCMsg* msg);
-
-		/**
-		 * Sends a message through the tcp-connections to the client.
-		 * \param msg Pointer to a constant character array, which has to be send.
-		 * \return On success it return the number of bytes which where send, on fail it return -1 (errno is set).
-		 */
-		int tcp_send(const char* msg);
-
 		/*
 		 * Every context got a unique contextNumber, this function return the contextNumber of
 		 * the current ConnectionContext.
@@ -167,9 +146,6 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 
 
 	private:
-
-		/*! Handles the tcp-connection to the client.*/
-		TcpWorker* tcpConnection;
 
 		/*! A list of all current connection via unix domain socket to the plugins.
 		 * This list can contain active connection and non active connections, but
@@ -198,8 +174,6 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		Document* localDom;
 		/*! Marks this ConnectionContext as deletable for RSD.*/
 		bool deletable;
-		/*! Marks this ConnectionContext for checking its UdsComClient for RSD.*/
-		bool udsCheck;
 		/*! Contains an error message if a exception was thrown through the process of handling messages.*/
 		const char* error;
 		/*! Contains the id of the last main request.*/
@@ -214,6 +188,11 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		int lastSender;
 		/*! Contains the unique contextNumber of this ConnectionContext.*/
 		short contextNumber;
+		/*!LogInformation for underlying ComPoints.*/
+		LogInformation infoIn;
+		LogInformation infoOut;
+		LogInformation info;
+
 
 
 		/*! Sets the requestInProcess flag to true.
