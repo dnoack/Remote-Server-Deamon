@@ -158,15 +158,8 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * a response, the stack will be checked and the response will be send to the sender of the last
 		 * request. Through that it is also possible to handle subrequests from plugins to plugins.
 		 */
-		list<RPCMsg*> requests;
-
-		/**
-		 * Mutex for requestInProcess.
-		 * This mutex is needed because we set/unset the flag within ConnectionContext which
-		 * can be accessed through UdsComWorker-thread and TcpWorker-thread. Additionally we
-		 * check the flag within TcpWorker-thread.
-		 */
-		pthread_mutex_t rIPMutex;
+		list<RPCMsg*> requestQueue;
+		pthread_mutex_t rQMutex;
 
 		/*! Parser unit for json rpc messages which uses rapidjosn as json parser.*/
 		JsonRPC* json;
@@ -182,28 +175,17 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		Value nullId;
 		/*! Contains the current UdsComClient, which will be used in the process of handling the current message.*/
 		WorkerInterface<RPCMsg>* currentComPoint;
-		/*! This flags signals if a main request (from a client) is in process.*/
-		bool requestInProcess;
 		/*! Used for getting the sender of the last request (from requests-stack) and working with it in several functions.*/
 		int lastSender;
 		/*! Contains the unique contextNumber of this ConnectionContext.*/
 		short contextNumber;
+
 		/*!LogInformation for underlying ComPoints.*/
 		LogInformation infoIn;
 		LogInformation infoOut;
 		LogInformation info;
 
 
-
-		/*! Sets the requestInProcess flag to true.
-		 * \note This functions uses rIPMutex to access requestInProcess.
-		*/
-		void setRequestInProcess();
-
-		/*! Sets the requestInProcess flag to false.
-		 * \note This functions uses rIPMutex to access requestInProcess.
-		*/
-		void setRequestNotInProcess();
 
 		/**
 		 * Analysis the method value of the last parsed request of ConnectionContext.
@@ -305,8 +287,16 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		void handleRSDCommand(RPCMsg* msg);
 
 
-		void routeBack(RPCMsg* msg);
+
 		int tryToconnect(Plugin* plugin);
+
+		//Plugin always pushes back
+		void push_backRequestQueue(RPCMsg* request);
+		//client always pushes front
+		void push_frontRequestQueue(RPCMsg* request);
+		//pop the last request at queue with the corresponding json rpc id
+		//returns sender id of request
+		int pop_RequestQueue(int jsonRpcId);
 
 
 

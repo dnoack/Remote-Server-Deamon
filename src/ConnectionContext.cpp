@@ -11,21 +11,20 @@ int ConnectionContext::currentIndex;
 
 ConnectionContext::ConnectionContext(int tcpSocket)
 {
-	pthread_mutex_init(&rIPMutex, NULL);
+	pthread_mutex_init(&rQMutex, NULL);
 	deletable = false;
 	error = NULL;
 	id = NULL;
 	nullId.SetInt(0);
 	currentComPoint = NULL;
 	workerInterface = NULL;
-	requestInProcess = false;
 	lastSender = -1;
 	logInfo.logName = "CC:";
 	infoIn.logLevel = LOG_INPUT;
 	infoIn.logName = "IPC IN:";
 	infoOut.logLevel = LOG_OUTPUT;
 	infoOut.logName = "IPC OUT:";
-	info.logLevel = LOG_INFO;
+	logInfo.logLevel = LOG_INFO;
 	info.logName = "ComPoint for RPC:";
 	contextNumber = getNewContextNumber();
 	//TODO: if no number is free, tcpworker has to send an error and close the connection
@@ -52,7 +51,7 @@ ConnectionContext::~ConnectionContext()
 	pthread_mutex_lock(&cCounterMutex);
 	--contextCounter;
 	pthread_mutex_unlock(&cCounterMutex);
-	pthread_mutex_destroy(&rIPMutex);
+	pthread_mutex_destroy(&rQMutex);
 }
 
 
@@ -72,7 +71,7 @@ void ConnectionContext::destroy()
 }
 
 
-void ConnectionContext::process(RPCMsg* msg)
+void ConnectionContext::process(RPCMsg* input)
 {
 	try
 	{
@@ -80,50 +79,49 @@ void ConnectionContext::process(RPCMsg* msg)
 		nullId.SetInt(0);
 		localDom = new Document();
 		//parse to dom with jsonrpc
-		json->parse(localDom, msg->getContent());
+		json->parse(localDom, input->getContent());
 
 		//is it a request ?
 		if(json->isRequest(localDom))
 		{
 			id = json->getId(localDom);
-			handleRequest(msg);
+			handleRequest(input);
 		}
 		//or is it a response ?
 		else if(json->isResponse(localDom))
 		{
 			id = json->getId(localDom);
-			handleResponse(msg);
+			handleResponse(input);
 		}
 		//trash
 		else
 		{
 			//trash can be a message which is parsable but makes no sense at all, e.g. no method/response/ or error fields.
-			handleTrash(msg);
+			handleTrash(input);
 		}
-		delete localDom;
 	}
 	catch(Error &e)
 	{
 		dlog(logInfo,  "Exception: %s", e.get());
-		dlog(logInfo, "Stacksize: %d", requests.size());
-		delete localDom;
 
-		//Errors through messages from client will be thrown as json rpc error response to TcpWorker
-		if(msg->getSender() == CLIENT_SIDE)
+		//Errors through messages from client will be thrown as json rpc error response to ComPoint
+		if(input->getSender() == CLIENT_SIDE)
 		{
-			delete msg;
+			delete input;
 			if(id != NULL)
 				nullId.SetInt(id->GetInt());
+
 			error = json->generateResponseError(nullId, e.getErrorCode(), e.get());
-			throw Error(error);
+			workerInterface->transmit(error, strlen(error));
 		}
 		else
 		{
-			handleIncorrectPluginResponse(msg, e);
+			handleIncorrectPluginResponse(input, e);
 		}
 
 	}
-	dlog(logInfo, "Stacksize: %d", requests.size());
+	delete localDom;
+	dlog(logInfo, "Stacksize: %d", requestQueue.size());
 }
 
 
@@ -188,34 +186,31 @@ void ConnectionContext::handleRSDCommand(RPCMsg* msg)
 	}
 	catch(Error &e)
 	{
-		setRequestNotInProcess();
 		throw;
 	}
 }
 
 
-void ConnectionContext::handleRequestFromClient(RPCMsg* msg)
+void ConnectionContext::handleRequestFromClient(RPCMsg* input)
 {
 	char* methodNamespace = NULL;
 
 	try
 	{
 		methodNamespace = getMethodNamespace();
-		setRequestInProcess();
 
 		//Msg for RSD
 		if(strncmp(methodNamespace, "RSD", strlen(methodNamespace))== 0 )
 		{
-			handleRSDCommand(msg);
-			delete msg;
-			setRequestNotInProcess();
+			handleRSDCommand(input);
+			delete input;
 		}
 		//Msg for a Plugin
 		else
 		{
 			currentComPoint = findUdsConnection(methodNamespace);
-			requests.push_back(msg);
-			currentComPoint->transmit(msg);
+			requestQueue.push_back(input);
+			currentComPoint->transmit(input);
 		}
 		delete[] methodNamespace;
 	}
@@ -224,7 +219,6 @@ void ConnectionContext::handleRequestFromClient(RPCMsg* msg)
 		if(e.getErrorCode() != -301)
 		{
 			delete[] methodNamespace;
-			setRequestNotInProcess();
 		}
 		throw;
 	}
@@ -236,7 +230,7 @@ void ConnectionContext::handleRequestFromPlugin(RPCMsg* msg)
 	char* methodNamespace = NULL;
 	try
 	{
-		requests.push_back(msg);
+		requestQueue.push_back(msg);
 		methodNamespace = getMethodNamespace();
 		currentComPoint = findUdsConnection(methodNamespace);
 		currentComPoint->transmit(msg);
@@ -271,7 +265,7 @@ void ConnectionContext::handleResponse(RPCMsg* msg)
 
 void ConnectionContext::handleResponseFromPlugin(RPCMsg* msg)
 {
-	RPCMsg* lastMsg = requests.back();
+	RPCMsg* lastMsg = requestQueue.back();
 	lastSender = lastMsg->getSender();
 
 	try
@@ -282,16 +276,15 @@ void ConnectionContext::handleResponseFromPlugin(RPCMsg* msg)
 			currentComPoint =  findUdsConnection(lastSender);
 			//TODO: implement case that plugin went offline, like in handleRequest
 			delete lastMsg;
-			requests.pop_back();
+			requestQueue.pop_back();
 			currentComPoint->transmit(msg);
 		}
 		//lastSender == CLIENT_SIDE(0) means, send response to tcp client
 		else
 		{
 			delete lastMsg;
-			requests.pop_back();
+			requestQueue.pop_back();
 			workerInterface->transmit(msg);
-			setRequestNotInProcess();
 		}
 		delete msg;
 	}
@@ -349,6 +342,7 @@ void ConnectionContext::handleIncorrectPluginResponse(RPCMsg* msg, Error &error)
 	try
 	{
 		error.append(msg->getContent());
+		id.SetInt(0);
 		//get sender from old msg and create a new valid error response
 		errorResponseMsg = json->generateResponseError(id, error.getErrorCode(), error.get());
 		errorResponse = new RPCMsg(msg->getSender(), errorResponseMsg);
@@ -548,20 +542,6 @@ WorkerInterface<RPCMsg>* ConnectionContext::findUdsConnection(int pluginNumber)
 }
 
 
-void ConnectionContext::routeBack(RPCMsg* msg)
-{
-	try
-	{
-		processMsg(msg);
-	}
-	catch(Error &e)
-	{
-		/*this can happen if a plugin answers with a incorret msg.
-		Server will then get a parsing error and throw a PluginError*/
-		handleIncorrectPluginResponse(msg, e);
-	}
-}
-
 
 int ConnectionContext::tryToconnect(Plugin* plugin)
 {
@@ -600,28 +580,42 @@ void ConnectionContext::deleteAllUdsConnections()
 }
 
 
-
-bool ConnectionContext::isRequestInProcess()
+void ConnectionContext::push_backRequestQueue(RPCMsg* request)
 {
-	bool result = false;
-	pthread_mutex_lock(&rIPMutex);
-	result = requestInProcess;
-	pthread_mutex_unlock(&rIPMutex);
-	return result;
+	pthread_mutex_lock(&rQMutex);
+	requestQueue.push_back(request);
+	pthread_mutex_unlock(&rQMutex);
+
+
+}
+
+void ConnectionContext::push_frontRequestQueue(RPCMsg* request)
+{
+	pthread_mutex_lock(&rQMutex);
+	requestQueue.push_front(request);
+	pthread_mutex_unlock(&rQMutex);
+
 }
 
 
-void ConnectionContext::setRequestInProcess()
+int ConnectionContext::pop_RequestQueue(int jsonRpcId)
 {
-	pthread_mutex_lock(&rIPMutex);
-	requestInProcess = true;
-	pthread_mutex_unlock(&rIPMutex);
-}
+	list<RPCMsg*>::reverse_iterator request;
+	int senderId = -1;
 
+	pthread_mutex_lock(&rQMutex);
+	request = requestQueue.rbegin();
+	while(request != requestQueue.rend() )
+	{
+		if((*request)->getJsonRpcId() == jsonRpcId)
+		{
+			senderId = (*request)->getSender();
+			delete *request;
+			requestQueue.erase(--(request.base()));
+			return senderId;
+		}
+	}
+	pthread_mutex_unlock(&rQMutex);
+	return senderId;
 
-void ConnectionContext::setRequestNotInProcess()
-{
-	pthread_mutex_lock(&rIPMutex);
-	requestInProcess = false;
-	pthread_mutex_unlock(&rIPMutex);
 }
