@@ -291,14 +291,14 @@ bool RSD::executeFunction(Value &method, Value &params, Value &result)
 bool RSD::showAllRegisteredPlugins(Value &params, Value &result)
 {
 	Value* tempValue = NULL;
-	Document dom;
+	Document* dom = new Document();
 	pthread_mutex_lock(&pLmutex);
 	list<Plugin*>::iterator plugin = plugins.begin();
 	result.SetArray();
 	while(plugin != plugins.end())
 	{
-		tempValue = new Value((*plugin)->getName()->c_str(), dom.GetAllocator());
-		result.PushBack(*tempValue, dom.GetAllocator());
+		tempValue = new Value((*plugin)->getName()->c_str(), dom->GetAllocator());
+		result.PushBack(*tempValue, dom->GetAllocator());
 		delete tempValue;
 		++plugin;
 	}
@@ -312,7 +312,7 @@ bool RSD::showAllKnownFunctions(Value &params, Value &result)
 	Value* pluginName = NULL;
 	Value* tempValue = NULL;
 	Value tempArray;
-	Document dom;
+	Document* dom = new Document();
 	list<string*>* methods = NULL;
 	list<string*>::iterator method;
 
@@ -322,19 +322,19 @@ bool RSD::showAllKnownFunctions(Value &params, Value &result)
 
 	while(plugin != plugins.end())
 	{
-		pluginName = new Value((*plugin)->getName()->c_str(), dom.GetAllocator());
+		pluginName = new Value((*plugin)->getName()->c_str(), dom->GetAllocator());
 		methods = (*plugin)->getMethods();
 		method = methods->begin();
 		tempArray.SetArray();
 
 		while(method != methods->end())
 		{
-			tempValue = new Value((*method)->c_str(), dom.GetAllocator());
-			tempArray.PushBack(*tempValue, dom.GetAllocator());
+			tempValue = new Value((*method)->c_str(), dom->GetAllocator());
+			tempArray.PushBack(*tempValue, dom->GetAllocator());
 			delete tempValue;
 			++method;
 		}
-		result.AddMember(*pluginName, tempArray, dom.GetAllocator());
+		result.AddMember(*pluginName, tempArray, dom->GetAllocator());
 		delete pluginName;
 		++plugin;
 	}
