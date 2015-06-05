@@ -27,7 +27,7 @@
  * connections within a separated accept-thread. It also manages all accepted connections
  * in a list of UdsRegWorkers.
  */
-class UdsRegServer : public AcceptThread{
+class RegServer : public AcceptThread{
 
 	public:
 
@@ -35,12 +35,12 @@ class UdsRegServer : public AcceptThread{
 		 * Constructor.
 		 * \param udsFile Path to unix domain socket file, which will be used for all registration processes.
 		 */
-		UdsRegServer(const char* udsFile);
+		RegServer(const char* udsFile);
 
 		/**
 		 * Destructor.
 		 */
-		virtual ~UdsRegServer();
+		virtual ~RegServer();
 
 		/**
 		 * Removes all RegWorker from the intern list and also deallocates them.
@@ -67,6 +67,7 @@ class UdsRegServer : public AcceptThread{
 
 		/*! Unix domain socket for registering plugins.*/
 		int connection_socket;
+		const char* udsFile;
 
 		/*!list of pthread ids with all the active RegWorker.*/
 		list<ComPoint*> workerList;

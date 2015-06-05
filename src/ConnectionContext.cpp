@@ -85,12 +85,14 @@ void ConnectionContext::process(RPCMsg* input)
 		if(json->isRequest(localDom))
 		{
 			id = json->getId(localDom);
+			input->setJsonRpcId(id->GetInt());
 			handleRequest(input);
 		}
 		//or is it a response ?
 		else if(json->isResponse(localDom))
 		{
 			id = json->getId(localDom);
+			input->setJsonRpcId(id->GetInt());
 			handleResponse(input);
 		}
 		//trash
@@ -209,7 +211,7 @@ void ConnectionContext::handleRequestFromClient(RPCMsg* input)
 		else
 		{
 			currentComPoint = findUdsConnection(methodNamespace);
-			requestQueue.push_back(input);
+			push_backRequestQueue(input);
 			currentComPoint->transmit(input);
 		}
 		delete[] methodNamespace;
@@ -230,7 +232,7 @@ void ConnectionContext::handleRequestFromPlugin(RPCMsg* msg)
 	char* methodNamespace = NULL;
 	try
 	{
-		requestQueue.push_back(msg);
+		push_frontRequestQueue(msg);
 		methodNamespace = getMethodNamespace();
 		currentComPoint = findUdsConnection(methodNamespace);
 		currentComPoint->transmit(msg);
@@ -265,25 +267,20 @@ void ConnectionContext::handleResponse(RPCMsg* msg)
 
 void ConnectionContext::handleResponseFromPlugin(RPCMsg* msg)
 {
-	RPCMsg* lastMsg = requestQueue.back();
-	lastSender = lastMsg->getSender();
+	int lastSender = -1;
 
 	try
 	{
+		lastSender = pop_RequestQueue(msg);
 		//back to a plugin
 		if(lastSender != CLIENT_SIDE)
 		{
 			currentComPoint =  findUdsConnection(lastSender);
-			//TODO: implement case that plugin went offline, like in handleRequest
-			delete lastMsg;
-			requestQueue.pop_back();
 			currentComPoint->transmit(msg);
 		}
 		//lastSender == CLIENT_SIDE(0) means, send response to tcp client
 		else
 		{
-			delete lastMsg;
-			requestQueue.pop_back();
 			workerInterface->transmit(msg);
 		}
 		delete msg;
@@ -598,22 +595,26 @@ void ConnectionContext::push_frontRequestQueue(RPCMsg* request)
 }
 
 
-int ConnectionContext::pop_RequestQueue(int jsonRpcId)
+int ConnectionContext::pop_RequestQueue(RPCMsg* msg)
 {
-	list<RPCMsg*>::reverse_iterator request;
+	list<RPCMsg*>::iterator request;
 	int senderId = -1;
+	int jsonRpcId = msg->getJsonRpcId();
 
 	pthread_mutex_lock(&rQMutex);
-	request = requestQueue.rbegin();
-	while(request != requestQueue.rend() )
+	request = requestQueue.begin();
+	while(request != requestQueue.end() )
 	{
 		if((*request)->getJsonRpcId() == jsonRpcId)
 		{
 			senderId = (*request)->getSender();
 			delete *request;
-			requestQueue.erase(--(request.base()));
+			request = requestQueue.erase(request);
+			pthread_mutex_unlock(&rQMutex);
 			return senderId;
 		}
+		else
+			++request;
 	}
 	pthread_mutex_unlock(&rQMutex);
 	return senderId;

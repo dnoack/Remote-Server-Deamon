@@ -296,7 +296,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		void push_frontRequestQueue(RPCMsg* request);
 		//pop the last request at queue with the corresponding json rpc id
 		//returns sender id of request
-		int pop_RequestQueue(int jsonRpcId);
+		int pop_RequestQueue(RPCMsg* msg);
 
 
 

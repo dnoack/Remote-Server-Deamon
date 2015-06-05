@@ -5,21 +5,25 @@
 
 
 
-UdsRegServer::UdsRegServer( const char* udsFile)
+RegServer::RegServer( const char* udsFile)
 {
 	accept_thread_active = false;
 	optionflag = 1;
-	address.sun_family = AF_UNIX;
+	address.sun_family = AF_LOCAL;
 	infoIn.logLevel = LOG_INPUT;
 	infoIn.logName = "IPC IN:";
 	infoOut.logLevel = LOG_OUTPUT;
 	infoOut.logName = "IPC OUT:";
 	info.logLevel = LOG_INFO;
 	info.logName = "ComPoint for Registry:";
-
+	this->udsFile = udsFile;
 
 	strncpy(address.sun_path, udsFile, strlen(udsFile));
 	addrlen = sizeof(address);
+
+	if( unlink(udsFile) != 0 )
+		printf("%s", strerror(errno));
+		//throw Error(-200, "Error while unlinking udsFile", strerror(errno));
 
 	connection_socket = socket(AF_UNIX, SOCK_STREAM, 0);
 	if(connection_socket < 0)
@@ -28,9 +32,7 @@ UdsRegServer::UdsRegServer( const char* udsFile)
 	if( pthread_mutex_init(&wLmutex, NULL) != 0)
 		throw Error (-207 , "Could not init wLmutex", strerror(errno));
 
-	unlink(udsFile);
-	//if( unlink(udsFile) != 0 )
-		//throw Error(-200, "Error while unlinking udsFile", strerror(errno));
+
 
 	if( setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag)) != 0 )
 		throw Error(-201, "Error while setting socket option", strerror(errno));
@@ -40,8 +42,10 @@ UdsRegServer::UdsRegServer( const char* udsFile)
 }
 
 
-UdsRegServer::~UdsRegServer()
+RegServer::~RegServer()
 {
+	accept_thread_active = false;
+	close(connection_socket);
 	pthread_t accepter = getAccepter();
 	if(accepter != 0)
 		pthread_cancel(accepter);
@@ -49,13 +53,13 @@ UdsRegServer::~UdsRegServer()
 	WaitForAcceptThreadToExit();
 
 	deleteWorkerList();
-	close(connection_socket);
+
 	pthread_mutex_destroy(&wLmutex);
 }
 
 
 
-void UdsRegServer::thread_accept()
+void RegServer::thread_accept()
 {
 	int new_socket = 0;
 
@@ -76,7 +80,7 @@ void UdsRegServer::thread_accept()
 
 
 
-void UdsRegServer::pushWorkerList(int new_socket)
+void RegServer::pushWorkerList(int new_socket)
 {
 	Registration* registry = new Registration();
 	ComPoint* comPoint = NULL;
@@ -88,7 +92,7 @@ void UdsRegServer::pushWorkerList(int new_socket)
 }
 
 
-void UdsRegServer::checkForDeletableWorker()
+void RegServer::checkForDeletableWorker()
 {
 	pthread_mutex_lock(&wLmutex);
 	Registration* registry = NULL;
@@ -110,7 +114,7 @@ void UdsRegServer::checkForDeletableWorker()
 }
 
 
-void UdsRegServer::deleteWorkerList()
+void RegServer::deleteWorkerList()
 {
 	pthread_mutex_lock(&wLmutex);
 	list<ComPoint*>::iterator i = workerList.begin();
@@ -126,7 +130,7 @@ void UdsRegServer::deleteWorkerList()
 
 
 
-void UdsRegServer::start()
+void RegServer::start()
 {
 	try
 	{

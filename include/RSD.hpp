@@ -203,7 +203,7 @@ class RSD : public AcceptThread, public LogUnit{
 		/*! As long as this is true, the server will run.*/
 		bool rsdActive;
 		/*! Instance of the Registration server for registering new plugins to RSD.*/
-		UdsRegServer* regServer;
+		RegServer* regServer;
 		/*! Contains the name of text file where paths and names of plugins are noted.*/
 		const char* pluginFile;
 

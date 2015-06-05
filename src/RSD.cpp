@@ -45,7 +45,7 @@ RSD::RSD()
 	sigaddset(&sigmask, SIGUSR2);
 	pthread_sigmask(SIG_BLOCK, &sigmask, &origmask);
 
-	regServer = new UdsRegServer(REGISTRY_PATH);
+	regServer = new RegServer(REGISTRY_PATH);
 
 	ConnectionContext::init();
 	LogUnit::setGlobalLogLevel(0);
@@ -66,8 +66,10 @@ RSD::RSD()
 
 RSD::~RSD()
 {
-	pthread_t accepter = getAccepter();
 	accept_thread_active = false;
+	close(connection_socket);
+	pthread_t accepter = getAccepter();
+
 	if(accepter != 0)
 		pthread_cancel(accepter);
 
@@ -75,7 +77,7 @@ RSD::~RSD()
 
 	delete regServer;
 	deleteAllPlugins();
-	close(connection_socket);
+
 
 	ConnectionContext::destroy();
 	funcMap.clear();
