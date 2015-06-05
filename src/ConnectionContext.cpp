@@ -230,11 +230,13 @@ void ConnectionContext::handleRequestFromClient(RPCMsg* input)
 void ConnectionContext::handleRequestFromPlugin(RPCMsg* msg)
 {
 	char* methodNamespace = NULL;
+	Value id;
+
 	try
 	{
-		push_frontRequestQueue(msg);
 		methodNamespace = getMethodNamespace();
 		currentComPoint = findUdsConnection(methodNamespace);
+		push_frontRequestQueue(msg);
 		currentComPoint->transmit(msg);
 		delete[] methodNamespace;
 	}
@@ -242,7 +244,10 @@ void ConnectionContext::handleRequestFromPlugin(RPCMsg* msg)
 	{
 		if(e.getErrorCode() != -301)
 			delete[] methodNamespace;
-		throw;
+
+		id.SetInt(msg->getJsonRpcId());
+		error = json->generateResponseError(id, e.getErrorCode(), e.get());
+		workerInterface->transmit(error, strlen(error));
 	}
 }
 
@@ -339,10 +344,14 @@ void ConnectionContext::handleIncorrectPluginResponse(RPCMsg* msg, Error &error)
 	try
 	{
 		error.append(msg->getContent());
-		id.SetInt(0);
+		if(msg->getJsonRpcId() > 0)
+			id.SetInt(msg->getJsonRpcId());
+		else
+			id.SetInt(0);
 		//get sender from old msg and create a new valid error response
 		errorResponseMsg = json->generateResponseError(id, error.getErrorCode(), error.get());
 		errorResponse = new RPCMsg(msg->getSender(), errorResponseMsg);
+		errorResponse->setJsonRpcId(id.GetInt());
 		handleResponseFromPlugin(errorResponse);
 	}
 	catch(Error &e)
@@ -430,8 +439,6 @@ void ConnectionContext::checkUdsConnections()
 			delete *plugin;
 			plugin = plugins.erase(plugin);
 			dlog(logInfo,  "UdsComworker deleted from context %d. Verbleibend: %lu " , contextNumber, plugins.size());
-			//TODO: check request stack, create error response , pop stack, set requestNOTinprocess
-			workerInterface->transmit("Connection to AardvarkPlugin Aborted!\n", 39);
 		}
 		else
 			++plugin;
