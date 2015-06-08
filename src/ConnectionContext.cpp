@@ -48,6 +48,7 @@ ConnectionContext::~ConnectionContext()
 	if(workerInterface != NULL)
 		delete workerInterface;
 	delete json;
+	deleteAllUdsConnections();
 	pthread_mutex_lock(&cCounterMutex);
 	--contextCounter;
 	pthread_mutex_unlock(&cCounterMutex);
