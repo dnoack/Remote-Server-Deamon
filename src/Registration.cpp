@@ -41,7 +41,7 @@ void Registration::process(RPCMsg* msg)
 				id = json->getId(localDom);
 				response = handleAnnounceMsg(msg);
 				state = ANNOUNCED;
-				workerInterface->transmit(response,  strlen(response));
+				comPoint->transmit(response,  strlen(response));
 				startTimer(REGISTRATION_TIMEOUT);
 				break;
 
@@ -53,7 +53,7 @@ void Registration::process(RPCMsg* msg)
 				{
 					response = createRegisterACKMsg();
 					state = REGISTERED;
-					workerInterface->transmit(response, strlen(response));
+					comPoint->transmit(response, strlen(response));
 					startTimer(REGISTRATION_TIMEOUT);
 				}
 				break;
@@ -85,7 +85,7 @@ void Registration::process(RPCMsg* msg)
 		error = json->generateResponseError(*id, e.getErrorCode(), e.get());
 		state = NOT_ACTIVE;
 		cleanup();
-		workerInterface->transmit(error, strlen(error));
+		comPoint->transmit(error, strlen(error));
 
 	}
 

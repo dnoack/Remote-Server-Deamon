@@ -34,7 +34,6 @@ def receiveFromRSD(s):
 	return data[HEADER_FIELD_LENGTH:header+HEADER_FIELD_LENGTH]
 
 
-
 for i in range (1):
   header = []
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -8,7 +8,7 @@
 #include "RPCMsg.hpp"
 #include "Plugin.hpp"
 #include "ProcessInterface.hpp"
-#include "WorkerInterface.hpp"
+
 
 using namespace std;
 

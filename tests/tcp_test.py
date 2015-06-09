@@ -161,7 +161,6 @@ for i in range (1):
   print 'Received', repr(data)
   
   print "Request aardvark devices over i2c"
-  time.sleep(1)
   msg  =  ("{\"jsonrpc\": \"2.0\", \"method\": \"i2c.getI2cDevices\", \"params\" : { \"device\": 0 }, \"id\" : 888}")
   sendToRSD(s, msg)
   data = receiveFromRSD(s)

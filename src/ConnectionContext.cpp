@@ -17,7 +17,7 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	id = NULL;
 	nullId.SetInt(0);
 	currentComPoint = NULL;
-	workerInterface = NULL;
+	comPoint = NULL;
 	lastSender = -1;
 	logInfo.logName = "CC:";
 	infoIn.logLevel = LOG_INPUT;
@@ -45,8 +45,8 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 
 ConnectionContext::~ConnectionContext()
 {
-	if(workerInterface != NULL)
-		delete workerInterface;
+	if(comPoint != NULL)
+		delete comPoint;
 	delete json;
 	deleteAllUdsConnections();
 	pthread_mutex_lock(&cCounterMutex);
@@ -115,7 +115,7 @@ void ConnectionContext::process(RPCMsg* input)
 				nullId.SetInt(id->GetInt());
 
 			error = json->generateResponseError(nullId, e.getErrorCode(), e.get());
-			workerInterface->transmit(error, strlen(error));
+			comPoint->transmit(error, strlen(error));
 		}
 		else
 		{
@@ -185,7 +185,7 @@ void ConnectionContext::handleRSDCommand(RPCMsg* msg)
 		result = json->generateResponse(*id, resultValue);
 
 		//send the generated msg back to client
-		workerInterface->transmit(result, strlen(result));
+		comPoint->transmit(result, strlen(result));
 	}
 	catch(Error &e)
 	{
@@ -211,7 +211,7 @@ void ConnectionContext::handleRequestFromClient(RPCMsg* input)
 		//Msg for a Plugin
 		else
 		{
-			currentComPoint = findUdsConnection(methodNamespace);
+			currentComPoint = findComPoint(methodNamespace);
 			push_backRequestQueue(input);
 			currentComPoint->transmit(input);
 		}
@@ -236,7 +236,7 @@ void ConnectionContext::handleRequestFromPlugin(RPCMsg* msg)
 	try
 	{
 		methodNamespace = getMethodNamespace();
-		currentComPoint = findUdsConnection(methodNamespace);
+		currentComPoint = findComPoint(methodNamespace);
 		push_frontRequestQueue(msg);
 		currentComPoint->transmit(msg);
 		delete[] methodNamespace;
@@ -248,7 +248,7 @@ void ConnectionContext::handleRequestFromPlugin(RPCMsg* msg)
 
 		id.SetInt(msg->getJsonRpcId());
 		error = json->generateResponseError(id, e.getErrorCode(), e.get());
-		workerInterface->transmit(error, strlen(error));
+		comPoint->transmit(error, strlen(error));
 	}
 }
 
@@ -281,13 +281,13 @@ void ConnectionContext::handleResponseFromPlugin(RPCMsg* msg)
 		//back to a plugin
 		if(lastSender != CLIENT_SIDE)
 		{
-			currentComPoint =  findUdsConnection(lastSender);
+			currentComPoint =  findComPoint(lastSender);
 			currentComPoint->transmit(msg);
 		}
 		//lastSender == CLIENT_SIDE(0) means, send response to tcp client
 		else
 		{
-			workerInterface->transmit(msg);
+			comPoint->transmit(msg);
 		}
 		delete msg;
 	}
@@ -405,12 +405,12 @@ bool ConnectionContext::isDeletable()
 {
 	list<Plugin*>::iterator plugin;
 
-	if(workerInterface != NULL && workerInterface->isDeletable())
+	if(comPoint != NULL && comPoint->isDeletable())
 	{
 		//close workerInterface
 		deletable = true;
-		delete workerInterface;
-		workerInterface = NULL;
+		delete comPoint;
+		comPoint = NULL;
 
 		//close all UdsConnections
 		plugin = plugins.begin();
@@ -447,7 +447,7 @@ void ConnectionContext::checkUdsConnections()
 }
 
 
-WorkerInterface<RPCMsg>* ConnectionContext::createNewUdsConncetion(Plugin* plugin)
+ComPoint* ConnectionContext::createNewComPoint(Plugin* plugin)
 {
 	const char* identificationMsg = NULL;
 	ComPoint* comPoint = NULL;
@@ -477,11 +477,11 @@ WorkerInterface<RPCMsg>* ConnectionContext::createNewUdsConncetion(Plugin* plugi
 }
 
 
-WorkerInterface<RPCMsg>* ConnectionContext::findUdsConnection(char* pluginName)
+ComPoint* ConnectionContext::findComPoint(char* pluginName)
 {
 	Plugin* currentPlugin = NULL;
 	bool connectionFound = false;
-	WorkerInterface<RPCMsg>* workerInterface = NULL;
+	ComPoint* tempComPoint = NULL;
 
 	list<Plugin*>::iterator plugin = plugins.begin();
 
@@ -493,7 +493,7 @@ WorkerInterface<RPCMsg>* ConnectionContext::findUdsConnection(char* pluginName)
 			if((*plugin)->getName()->compare(pluginName) == 0)
 			{
 				connectionFound = true;
-				workerInterface = (*plugin)->getComPoint();
+				tempComPoint = (*plugin)->getComPoint();
 			}
 			else
 				++plugin;
@@ -501,22 +501,22 @@ WorkerInterface<RPCMsg>* ConnectionContext::findUdsConnection(char* pluginName)
 		if(!connectionFound)
 		{
 			currentPlugin = RSD::getPlugin(pluginName);
-			workerInterface = createNewUdsConncetion(currentPlugin);
+			tempComPoint = createNewComPoint(currentPlugin);
 		}
 	}
 	catch(Error &e)
 	{
 		throw;
 	}
-	return workerInterface;
+	return tempComPoint;
 }
 
 
-WorkerInterface<RPCMsg>* ConnectionContext::findUdsConnection(int pluginNumber)
+ComPoint* ConnectionContext::findComPoint(int pluginNumber)
 {
 	Plugin* currentPlugin = NULL;
 	bool clientFound = false;
-	WorkerInterface<RPCMsg>* workerInterface = NULL;
+	ComPoint* comPoint = NULL;
 
 	list<Plugin*>::iterator plugin = plugins.begin();
 
@@ -528,7 +528,7 @@ WorkerInterface<RPCMsg>* ConnectionContext::findUdsConnection(int pluginNumber)
 			if((*plugin)->getPluginNumber() == pluginNumber)
 			{
 				clientFound = true;
-				workerInterface = (*plugin)->getComPoint();
+				comPoint = (*plugin)->getComPoint();
 			}
 			else
 				++plugin;
@@ -536,14 +536,14 @@ WorkerInterface<RPCMsg>* ConnectionContext::findUdsConnection(int pluginNumber)
 		if(!clientFound)
 		{
 			currentPlugin = RSD::getPlugin(pluginNumber);
-			workerInterface = createNewUdsConncetion(currentPlugin);
+			comPoint = createNewComPoint(currentPlugin);
 		}
 	}
 	catch(Error &e)
 	{
 		throw;
 	}
-	return workerInterface;
+	return comPoint;
 }
 
 

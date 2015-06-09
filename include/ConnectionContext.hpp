@@ -58,7 +58,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * \return On success a valid pointer to a UdsComClient is returned. On fail
 		 * the function will return NULL.
 		 */
-		WorkerInterface<RPCMsg>* findUdsConnection(char* pluginName);
+		ComPoint* findComPoint(char* pluginName);
 
 		/**
 		 * Search the list of existing UdsComClients for a existing connection
@@ -67,7 +67,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * \return On success a valid pointer to a UdsComClient is returned. On fail
 		 * the function will return NULL.
 		 */
-		virtual WorkerInterface<RPCMsg>* findUdsConnection(int pluginNumber);
+		ComPoint* findComPoint(int pluginNumber);
 
 
 		/**
@@ -174,7 +174,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		/*! Contains just 0, this Nullvalue is needed if we got a parse error.*/
 		Value nullId;
 		/*! Contains the current UdsComClient, which will be used in the process of handling the current message.*/
-		WorkerInterface<RPCMsg>* currentComPoint;
+		ComPoint* currentComPoint;
 		/*! Used for getting the sender of the last request (from requests-stack) and working with it in several functions.*/
 		int lastSender;
 		/*! Contains the unique contextNumber of this ConnectionContext.*/
@@ -213,7 +213,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * \param plugin An instance of plugin which contains information about the plugin we wish to connect to.
 		 */
 		//TODO: change doxy
-		WorkerInterface<RPCMsg>* createNewUdsConncetion(Plugin* plugin);
+		ComPoint* createNewComPoint(Plugin* plugin);
 
 
 		/**
