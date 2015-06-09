@@ -184,6 +184,9 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		LogInformation infoIn;
 		LogInformation infoOut;
 		LogInformation info;
+		LogInformation infoInTCP;
+		LogInformation infoOutTCP;
+		LogInformation infoTCP;
 
 
 

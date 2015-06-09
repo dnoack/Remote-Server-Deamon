@@ -26,6 +26,15 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	infoOut.logName = "IPC OUT:";
 	logInfo.logLevel = LOG_INFO;
 	info.logName = "ComPoint for RPC:";
+
+
+	infoInTCP.logLevel = LOG_INPUT;
+	infoInTCP.logName = "TCP IN:";
+	infoOutTCP.logLevel = LOG_OUTPUT;
+	infoOutTCP.logName = "TCP OUT:";
+	infoOutTCP.logLevel = LOG_INFO;
+	infoTCP.logName = "TCP ComPoint:";
+
 	contextNumber = getNewContextNumber();
 	//TODO: if no number is free, tcpworker has to send an error and close the connection
 	json = new JsonRPC();
@@ -36,7 +45,8 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 
 	//the tcp connection of a connection context hast always ID = 0
 	//ComPoint will do a vice versa register to this compoint and set the workerInterface
-	 new ComPoint(tcpSocket, this, 0, true);
+	comPoint =  new ComPoint(tcpSocket, this, 0, true);
+	comPoint->configureLogInfo(&infoInTCP, &infoOutTCP, &info);
 
 	dlog(logInfo, "New ConnectionContext: %d",  contextNumber);
 }
