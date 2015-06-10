@@ -45,7 +45,7 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 
 	//the tcp connection of a connection context hast always ID = 0
 	//ComPoint will do a vice versa register to this compoint and set the workerInterface
-	comPoint =  new ComPoint(tcpSocket, this, 0, true);
+	comPoint =  new ComPoint(tcpSocket, this, 0);
 	comPoint->configureLogInfo(&infoInTCP, &infoOutTCP, &info);
 
 	dlog(logInfo, "New ConnectionContext: %d",  contextNumber);
@@ -82,8 +82,9 @@ void ConnectionContext::destroy()
 }
 
 
-void ConnectionContext::process(RPCMsg* input)
+OutgoingMsg* ConnectionContext::process(RPCMsg* input)
 {
+	OutgoingMsg* output = NULL;
 	try
 	{
 		id = NULL;
@@ -97,14 +98,14 @@ void ConnectionContext::process(RPCMsg* input)
 		{
 			id = json->getId(localDom);
 			input->setJsonRpcId(id->GetInt());
-			handleRequest(input);
+			output = handleRequest(input);
 		}
 		//or is it a response ?
 		else if(json->isResponse(localDom))
 		{
 			id = json->getId(localDom);
 			input->setJsonRpcId(id->GetInt());
-			handleResponse(input);
+			output = handleResponse(input);
 		}
 		//trash
 		else
@@ -135,17 +136,18 @@ void ConnectionContext::process(RPCMsg* input)
 	}
 	delete localDom;
 	dlog(logInfo, "Stacksize: %d", requestQueue.size());
+	return output;
 }
 
 
-void ConnectionContext::handleRequest(RPCMsg* msg)
+OutgoingMsg* ConnectionContext::handleRequest(RPCMsg* msg)
 {
 	try
 	{
 		if(msg->getSender() == CLIENT_SIDE)
-			handleRequestFromClient(msg);
+			return handleRequestFromClient(msg);
 		else
-			handleRequestFromPlugin(msg);
+			return handleRequestFromPlugin(msg);
 	}
 	catch(Error &e)
 	{
@@ -179,8 +181,9 @@ char* ConnectionContext::getMethodNamespace()
 }
 
 
-void ConnectionContext::handleRSDCommand(RPCMsg* msg)
+OutgoingMsg* ConnectionContext::handleRSDCommand(RPCMsg* msg)
 {
+	OutgoingMsg* output = NULL;
 	try
 	{
 		Value* method = json->getMethod(localDom);
@@ -189,122 +192,127 @@ void ConnectionContext::handleRSDCommand(RPCMsg* msg)
 		Value resultValue;
 		const char* result = NULL;
 
+
 		RSD::executeFunction(*method, *params, resultValue);
-
-		//generate json rsponse msg via jsonRPC with resultValue !
 		result = json->generateResponse(*id, resultValue);
-
-		//send the generated msg back to client
-		comPoint->transmit(result, strlen(result));
+		output = new OutgoingMsg(result, msg->getSender());
 	}
 	catch(Error &e)
 	{
 		throw;
 	}
+	return output;
 }
 
 
-void ConnectionContext::handleRequestFromClient(RPCMsg* input)
+OutgoingMsg* ConnectionContext::handleRequestFromClient(RPCMsg* input)
 {
 	char* methodNamespace = NULL;
+	OutgoingMsg* output = NULL;
 
 	try
 	{
 		methodNamespace = getMethodNamespace();
 
-		//Msg for RSD
+		//Request for RSD, execute function, delete input
 		if(strncmp(methodNamespace, "RSD", strlen(methodNamespace))== 0 )
 		{
-			handleRSDCommand(input);
+			delete[] methodNamespace;
+			output = handleRSDCommand(input);
 			delete input;
 		}
-		//Msg for a Plugin
+		//Request for plugin, push request to Queue
 		else
 		{
 			currentComPoint = findComPoint(methodNamespace);
+			delete[] methodNamespace;
+			if(currentComPoint == NULL)
+				throw Error(-301, "Plugin not found.");
+
+			output = new OutgoingMsg(input->getContent(), currentComPoint->getUniqueID() , currentComPoint);
 			push_backRequestQueue(input);
-			currentComPoint->transmit(input);
 		}
-		delete[] methodNamespace;
 	}
 	catch (Error &e)
 	{
-		if(e.getErrorCode() != -301)
-		{
-			delete[] methodNamespace;
-		}
 		throw;
 	}
+	return output;
 }
 
 
-void ConnectionContext::handleRequestFromPlugin(RPCMsg* msg)
+OutgoingMsg* ConnectionContext::handleRequestFromPlugin(RPCMsg* input)
 {
 	char* methodNamespace = NULL;
+	OutgoingMsg* output = NULL;
 	Value id;
 
 	try
 	{
 		methodNamespace = getMethodNamespace();
 		currentComPoint = findComPoint(methodNamespace);
-		push_frontRequestQueue(msg);
-		currentComPoint->transmit(msg);
-		delete[] methodNamespace;
-	}
-	catch(Error &e)
-	{
-		if(e.getErrorCode() != -301)
+		if(currentComPoint == NULL)
+		{
 			delete[] methodNamespace;
-
-		id.SetInt(msg->getJsonRpcId());
-		error = json->generateResponseError(id, e.getErrorCode(), e.get());
-		comPoint->transmit(error, strlen(error));
-	}
-}
-
-
-void ConnectionContext::handleResponse(RPCMsg* msg)
-{
-	try
-	{
-		if(msg->getSender() == CLIENT_SIDE)
-			throw Error(-302, "Response from Clientside is not allowed.");
-
-		else
-			handleResponseFromPlugin(msg);
+			throw Error(-301, "Plugin not found.");
+		}
+		output = new OutgoingMsg(input->getContent(), currentComPoint->getUniqueID() , currentComPoint);
+		push_frontRequestQueue(input);
 	}
 	catch(Error &e)
 	{
 		throw;
 	}
+	return output;
+}
+
+
+OutgoingMsg* ConnectionContext::handleResponse(RPCMsg* input)
+{
+	OutgoingMsg* output = NULL;
+
+	try
+	{
+		if(input->getSender() == CLIENT_SIDE)
+			throw Error(-302, "Response from Clientside is not allowed.");
+
+		else
+			output = handleResponseFromPlugin(input);
+	}
+	catch(Error &e)
+	{
+		throw;
+	}
+	return output;
 }
 
 
 
-void ConnectionContext::handleResponseFromPlugin(RPCMsg* msg)
+OutgoingMsg* ConnectionContext::handleResponseFromPlugin(RPCMsg* input)
 {
+	OutgoingMsg* output = NULL;
 	int lastSender = -1;
 
 	try
 	{
-		lastSender = pop_RequestQueue(msg);
-		//back to a plugin
-		if(lastSender != CLIENT_SIDE)
-		{
-			currentComPoint =  findComPoint(lastSender);
-			currentComPoint->transmit(msg);
-		}
+		//search for last request starting at the front of the Queue and comparing json rpc id
+		lastSender = pop_RequestQueue(input);
 		//lastSender == CLIENT_SIDE(0) means, send response to tcp client
+		if(lastSender == CLIENT_SIDE)
+			output = new OutgoingMsg(input->getContent(), lastSender);
+		//back to a plugin
 		else
 		{
-			comPoint->transmit(msg);
+			currentComPoint =  findComPoint(lastSender);
+			output = new OutgoingMsg(input->getContent(), currentComPoint->getUniqueID() , currentComPoint);
 		}
-		delete msg;
+		delete input;
 	}
 	catch(Error &e)
 	{
 		throw;
 	}
+	return output;
 }
 
 

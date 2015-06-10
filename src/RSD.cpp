@@ -192,9 +192,9 @@ Plugin* RSD::getPlugin(const char* name)
 	pthread_mutex_unlock(&pLmutex);
 
 	if(!found)
-		throw Error(-33011, "Plugin not found.");
-	else
-		return result;
+		result = NULL;
+
+	return result;
 }
 
 
@@ -220,9 +220,9 @@ Plugin* RSD::getPlugin(int pluginNumber)
 	pthread_mutex_unlock(&pLmutex);
 
 	if(!found)
-		throw Error(-33011, "Plugin not found.");
-	else
-		return result;
+		result = NULL;
+
+	return result;
 }
 
 

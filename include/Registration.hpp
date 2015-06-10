@@ -6,6 +6,7 @@
 
 #include "JsonRPC.hpp"
 #include "RPCMsg.hpp"
+#include "OutgoingMsg.hpp"
 #include "Plugin.hpp"
 #include "ProcessInterface.hpp"
 
@@ -49,7 +50,7 @@ class Registration : public ProcessInterface
 		 * socket (udsWorker).
 		 * \param msg A instance of RsdMsg which contains a json rpc request/notification containing information about the plugin.
 		 */
-		void process(RPCMsg* msg);
+		OutgoingMsg* process(RPCMsg* msg);
 
 
 		/**
@@ -144,7 +145,7 @@ class Registration : public ProcessInterface
 		 * \param msg Containing a json rpc request with field method = "announce".
 		 * \return A valid json rpc response message where the result = "announceACK".
 		 */
-		const char* handleAnnounceMsg(RPCMsg* msg);
+		OutgoingMsg* handleAnnounceMsg(RPCMsg* msg);
 
 		//TODO: create announceACK, currently handled by handleAnnounceMsg
 
@@ -156,18 +157,18 @@ class Registration : public ProcessInterface
 		 * \params msg Containing a json rpc request with field method = "register".
 		 * \return Returns True if everything was fine.
 		 */
-		bool handleRegisterMsg(RPCMsg* msg);
+		bool handleRegisterMsg(RPCMsg* input);
 
 		/*
 		 * Creates a json rpc response message with result field ="registerACK"
 		 * \return The json prc response message.
 		 */
-		const char* createRegisterACKMsg();
+		OutgoingMsg* createRegisterACKMsg(RPCMsg* input);
 
 		/**
 		*  TODO: Not implemented yet.
 		*/
-		const char* handleActiveMsg(RPCMsg* msg);
+		OutgoingMsg* handleActiveMsg(RPCMsg* input);
 };
 
 #endif /* INCLUDE_REGISTRATION_HPP_ */

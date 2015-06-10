@@ -27,21 +27,23 @@ Registration::~Registration()
 }
 
 
-void Registration::process(RPCMsg* msg)
+OutgoingMsg* Registration::process(RPCMsg* input)
 {
+	OutgoingMsg* output = NULL;
+	id = NULL;
+
 	try
 	{
 		localDom = new Document();
-		json->parse(localDom, msg->getContent());
+		json->parse(localDom, input->getContent());
 
 		switch(state)
 		{
 			case NOT_ACTIVE:
 				//check for announce msg, create a plugin object in RSD central list
 				id = json->getId(localDom);
-				response = handleAnnounceMsg(msg);
+				output = handleAnnounceMsg(input);
 				state = ANNOUNCED;
-				comPoint->transmit(response,  strlen(response));
 				startTimer(REGISTRATION_TIMEOUT);
 				break;
 
@@ -49,11 +51,10 @@ void Registration::process(RPCMsg* msg)
 				cancelTimer();
 				id = json->getId(localDom);
 				//check for register msg, add all method names from msg to plugin object in central RSD list
-				if(handleRegisterMsg(msg))
+				if(handleRegisterMsg(input))
 				{
-					response = createRegisterACKMsg();
+					output = createRegisterACKMsg(input);
 					state = REGISTERED;
-					comPoint->transmit(response, strlen(response));
 					startTimer(REGISTRATION_TIMEOUT);
 				}
 				break;
@@ -64,7 +65,7 @@ void Registration::process(RPCMsg* msg)
 						RSD::addPlugin(plugin);
 						plugin = NULL;
 					#endif
-				delete msg;
+				delete input;
 				state = ACTIVE;
 				break;
 			case ACTIVE:
@@ -75,28 +76,27 @@ void Registration::process(RPCMsg* msg)
 	catch(Error &e)
 	{
 		cancelTimer();
+		cleanup();
+		delete localDom;
+		delete input;
+		state = NOT_ACTIVE;
 
-		//parse error
-		if(e.getErrorCode() == -32700)
+		if(id == NULL)
 			id = &nullId;
 
-		delete localDom;
-		delete msg;
 		error = json->generateResponseError(*id, e.getErrorCode(), e.get());
-		state = NOT_ACTIVE;
-		cleanup();
-		comPoint->transmit(error, strlen(error));
-
+		output = new OutgoingMsg(error , -1);
 	}
-
+	return output;
 }
 
 
-const char* Registration::handleAnnounceMsg(RPCMsg* msg)
+OutgoingMsg* Registration::handleAnnounceMsg(RPCMsg* input)
 {
 	Value* currentParam = NULL;
 	const char* name = NULL;
 	const char* udsFilePath = NULL;
+	OutgoingMsg* output = NULL;
 	int number;
 
 	try
@@ -108,31 +108,27 @@ const char* Registration::handleAnnounceMsg(RPCMsg* msg)
 		currentParam = json->tryTogetParam(localDom, "pluginNumber");
 		number = currentParam->GetInt();
 
-
 		plugin = new Plugin(name, number, udsFilePath);
 		pluginName = new string(name);
 
 		result.SetString("announceACK");
 		response = json->generateResponse(*id, result);
-
+		delete input;
 
 		//check if there is already a plugin with this number registered.
 		if(RSD::getPlugin(number) != NULL)
 			throw Error(-500, "Plugin already registered.");
-
+		else
+			output = new OutgoingMsg(response, input->getSender());
 	}
 	catch(Error &e)
 	{
-		// -33011 is plugin not found, which is fine, throw all other exceptions
-		if(e.getErrorCode() != -33011)
-			throw;
+		throw;
 	}
-	delete msg;
-
-	return response;
+	return output;
 }
 
-bool Registration::handleRegisterMsg(RPCMsg* msg)
+bool Registration::handleRegisterMsg(RPCMsg* input)
 {
 	string* functionName = NULL;
 	Value* functionArray = NULL;
@@ -146,7 +142,7 @@ bool Registration::handleRegisterMsg(RPCMsg* msg)
 			functionName = new string(((*functionArray)[i]).GetString());
 			plugin->addMethod(functionName);
 		}
-		delete msg;
+
 	}
 	catch(Error &e)
 	{
@@ -173,18 +169,20 @@ void Registration::cleanup()
 }
 
 
-const char* Registration::createRegisterACKMsg()
+OutgoingMsg* Registration::createRegisterACKMsg(RPCMsg* input)
 {
+	OutgoingMsg* output = NULL;
 	try
 	{
 		result.SetString("registerACK");
 		response = json->generateResponse(*id, result);
+		output = new OutgoingMsg(response, input->getSender());
 	}
 	catch(Error &e)
 	{
 		throw;
 	}
-	return response;
+	return output;
 }
 
 

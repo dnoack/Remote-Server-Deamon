@@ -12,8 +12,8 @@
 class ComPointMock : public ComPoint{
 
 	public:
-		ComPointMock(int socket, ProcessInterface* pInterface, int uniqueID, bool viceVersaRegister = true, bool startInstant = true):
-			ComPoint(socket, pInterface, uniqueID, viceVersaRegister, startInstant)
+		ComPointMock(int socket, ProcessInterface* pInterface, int uniqueID, bool startInstant = true):
+			ComPoint(socket, pInterface, uniqueID, startInstant)
 		{
 			clear();
 		}

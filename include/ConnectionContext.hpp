@@ -14,6 +14,7 @@
 #include "Error.hpp"
 #include "LogUnit.hpp"
 #include "JsonRPC.hpp"
+#include "OutgoingMsg.hpp"
 
 
 /*
@@ -74,7 +75,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * Analysis the incomming message and calls the different methods for
 		 * request/response or trash messages.
 		 */
-		virtual void process(RPCMsg* msg);
+		OutgoingMsg* process(RPCMsg* msg);
 
 		/**
 		 * Initializes the counter and corresponding mutex to limit
@@ -224,7 +225,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * corresponding methods for handling this message.
 		 * \param msg The incomming RPCMsg containing a json rpc request.
 		 */
-		void handleRequest(RPCMsg* msg);
+		OutgoingMsg* handleRequest(RPCMsg* msg);
 
 
 		/**
@@ -234,7 +235,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * a PluginError will bethrown.
 		 * \param msg The incomming RPCMsg containing a json rpc request.
 		 */
-		void handleRequestFromClient(RPCMsg* msg);
+		OutgoingMsg* handleRequestFromClient(RPCMsg* msg);
 
 
 		/**
@@ -244,7 +245,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * json rpc field "method" will be analyzed.
 		 * \param msg The incomming RPCMsg containing a json rpc request.
 		 */
-		void handleRequestFromPlugin(RPCMsg* msg);
+		OutgoingMsg* handleRequestFromPlugin(RPCMsg* msg);
 
 
 		/**
@@ -252,7 +253,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * else handleResponseFromPlugin(msg) will be called.
 		 * \param msg The incomming RPCMsg containing a json rpc response.
 		 */
-		void handleResponse(RPCMsg* msg);
+		OutgoingMsg* handleResponse(RPCMsg* msg);
 
 
 		/**
@@ -262,7 +263,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * the requestInProcess flag will be set to false, because a main request is complete.
 		 * \param msg The incomming RPCMsg containing a json rpc response.
 		 */
-		void handleResponseFromPlugin(RPCMsg* msg);
+		OutgoingMsg* handleResponseFromPlugin(RPCMsg* msg);
 
 
 		/**
@@ -287,7 +288,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * existing tcp-connection.
 		 * \param msg The incomming RPCMsg containing a json rpc request with "RSD" as method-namespace.
 		 */
-		void handleRSDCommand(RPCMsg* msg);
+		OutgoingMsg* handleRSDCommand(RPCMsg* msg);
 
 
 
