@@ -130,6 +130,8 @@ IGNORE_TEST(RSDwithMock, checkLoop)
 	mock().expectOneCall("checkForDeletableConnections");
 	rsd->stop();
 	rsd->_start();
+	//sleep 1 because we want to wait till accept thread of regServer i really created
+	sleep(1);
 	mock().checkExpectations();
 
 }
@@ -141,5 +143,7 @@ TEST(RSD, startup_and_shutdown)
 	//of the main loop to "false", so that it just runs 1 time
 	rsd->stop();
 	rsd->_start();
+	//sleep 1 because we want to wait till accept thread of regServer i really created
+	sleep(1);
 }
 

@@ -251,7 +251,7 @@ void ConnectionContext::handleRequestFromPlugin(RPCMsg* msg)
 		currentComPoint->transmit(msg);
 		delete[] methodNamespace;
 	}
-	catch (Error &e)
+	catch(Error &e)
 	{
 		if(e.getErrorCode() != -301)
 			delete[] methodNamespace;

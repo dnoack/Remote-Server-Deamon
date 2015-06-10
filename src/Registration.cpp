@@ -96,8 +96,8 @@ const char* Registration::handleAnnounceMsg(RPCMsg* msg)
 {
 	Value* currentParam = NULL;
 	const char* name = NULL;
-	int number;
 	const char* udsFilePath = NULL;
+	int number;
 
 	try
 	{

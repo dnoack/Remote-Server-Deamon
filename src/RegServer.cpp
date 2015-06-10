@@ -9,7 +9,7 @@ RegServer::RegServer( const char* udsFile)
 {
 	accept_thread_active = false;
 	optionflag = 1;
-	address.sun_family = AF_LOCAL;
+	address.sun_family = AF_UNIX;
 	infoIn.logLevel = LOG_INPUT;
 	infoIn.logName = "IPC IN:";
 	infoOut.logLevel = LOG_OUTPUT;
@@ -18,21 +18,21 @@ RegServer::RegServer( const char* udsFile)
 	info.logName = "ComPoint for Registry:";
 	this->udsFile = udsFile;
 
+	memset(address.sun_path, '\0', 108);
 	strncpy(address.sun_path, udsFile, strlen(udsFile));
 	addrlen = sizeof(address);
 
-	if( unlink(udsFile) != 0 )
-		printf("%s", strerror(errno));
-		//throw Error(-200, "Error while unlinking udsFile", strerror(errno));
 
 	connection_socket = socket(AF_UNIX, SOCK_STREAM, 0);
 	if(connection_socket < 0)
 		throw Error (-206 , "Could not create connection_socket", strerror(errno));
 
 	if( pthread_mutex_init(&wLmutex, NULL) != 0)
-		throw Error (-207 , "Could not init wLmutex", strerror(errno));
+			throw Error (-207 , "Could not init wLmutex", strerror(errno));
 
-
+	if( unlink(udsFile) != 0 )
+		printf("%s", strerror(errno));
+		//throw Error(-200, "Error while unlinking udsFile", strerror(errno));
 
 	if( setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag)) != 0 )
 		throw Error(-201, "Error while setting socket option", strerror(errno));
