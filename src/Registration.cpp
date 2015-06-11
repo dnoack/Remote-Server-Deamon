@@ -27,7 +27,7 @@ Registration::~Registration()
 }
 
 
-OutgoingMsg* Registration::process(RPCMsg* input)
+OutgoingMsg* Registration::process(IncomingMsg* input)
 {
 	OutgoingMsg* output = NULL;
 	id = NULL;
@@ -85,13 +85,13 @@ OutgoingMsg* Registration::process(RPCMsg* input)
 			id = &nullId;
 
 		error = json->generateResponseError(*id, e.getErrorCode(), e.get());
-		output = new OutgoingMsg(error , -1);
+		output = new OutgoingMsg(comPoint, error);
 	}
 	return output;
 }
 
 
-OutgoingMsg* Registration::handleAnnounceMsg(RPCMsg* input)
+OutgoingMsg* Registration::handleAnnounceMsg(IncomingMsg* input)
 {
 	Value* currentParam = NULL;
 	const char* name = NULL;
@@ -119,7 +119,7 @@ OutgoingMsg* Registration::handleAnnounceMsg(RPCMsg* input)
 		if(RSD::getPlugin(number) != NULL)
 			throw Error(-500, "Plugin already registered.");
 		else
-			output = new OutgoingMsg(response, input->getSender());
+			output = new OutgoingMsg(input->getOrigin(), response);
 	}
 	catch(Error &e)
 	{
@@ -128,7 +128,7 @@ OutgoingMsg* Registration::handleAnnounceMsg(RPCMsg* input)
 	return output;
 }
 
-bool Registration::handleRegisterMsg(RPCMsg* input)
+bool Registration::handleRegisterMsg(IncomingMsg* input)
 {
 	string* functionName = NULL;
 	Value* functionArray = NULL;
@@ -169,14 +169,15 @@ void Registration::cleanup()
 }
 
 
-OutgoingMsg* Registration::createRegisterACKMsg(RPCMsg* input)
+OutgoingMsg* Registration::createRegisterACKMsg(IncomingMsg* input)
 {
 	OutgoingMsg* output = NULL;
 	try
 	{
 		result.SetString("registerACK");
 		response = json->generateResponse(*id, result);
-		output = new OutgoingMsg(response, input->getSender());
+		output = new OutgoingMsg(input->getOrigin(), response);
+		delete input;
 	}
 	catch(Error &e)
 	{

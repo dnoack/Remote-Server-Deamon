@@ -1,9 +1,6 @@
 #ifndef INCLUDE_CONNECTIONCONTEXT_HPP_
 #define INCLUDE_CONNECTIONCONTEXT_HPP_
 
-/*! Value of sender from RPCMsgs from clientside*/
-#define CLIENT_SIDE 0
-
 
 #include <list>
 #include <pthread.h>
@@ -14,6 +11,7 @@
 #include "Error.hpp"
 #include "LogUnit.hpp"
 #include "JsonRPC.hpp"
+#include "IncomingMsg.hpp"
 #include "OutgoingMsg.hpp"
 
 
@@ -75,7 +73,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * Analysis the incomming message and calls the different methods for
 		 * request/response or trash messages.
 		 */
-		OutgoingMsg* process(RPCMsg* msg);
+		OutgoingMsg* process(IncomingMsg* msg);
 
 		/**
 		 * Initializes the counter and corresponding mutex to limit
@@ -133,7 +131,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		* \param msg The received message from a plugin (via UdsComWorker).
 		* \param error The corresponding errorstring for this incorrect message.
 		*/
-		void handleIncorrectPluginResponse(RPCMsg* msg, Error &error);
+		OutgoingMsg* handleIncorrectPluginResponse(IncomingMsg* input, Error &error);
 
 
 		/*
@@ -225,7 +223,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * corresponding methods for handling this message.
 		 * \param msg The incomming RPCMsg containing a json rpc request.
 		 */
-		OutgoingMsg* handleRequest(RPCMsg* msg);
+		OutgoingMsg* handleRequest(IncomingMsg* input);
 
 
 		/**
@@ -235,7 +233,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * a PluginError will bethrown.
 		 * \param msg The incomming RPCMsg containing a json rpc request.
 		 */
-		OutgoingMsg* handleRequestFromClient(RPCMsg* msg);
+		OutgoingMsg* handleRequestFromClient(IncomingMsg* input);
 
 
 		/**
@@ -245,7 +243,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * json rpc field "method" will be analyzed.
 		 * \param msg The incomming RPCMsg containing a json rpc request.
 		 */
-		OutgoingMsg* handleRequestFromPlugin(RPCMsg* msg);
+		OutgoingMsg* handleRequestFromPlugin(IncomingMsg* input);
 
 
 		/**
@@ -253,7 +251,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * else handleResponseFromPlugin(msg) will be called.
 		 * \param msg The incomming RPCMsg containing a json rpc response.
 		 */
-		OutgoingMsg* handleResponse(RPCMsg* msg);
+		OutgoingMsg* handleResponse(IncomingMsg* msg);
 
 
 		/**
@@ -263,7 +261,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * the requestInProcess flag will be set to false, because a main request is complete.
 		 * \param msg The incomming RPCMsg containing a json rpc response.
 		 */
-		OutgoingMsg* handleResponseFromPlugin(RPCMsg* msg);
+		OutgoingMsg* handleResponseFromPlugin(IncomingMsg* msg);
 
 
 		/**
@@ -271,7 +269,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * In case the client send such a request, a instance of PluginError will be thrown.
 		 * \param msg The incomming RPCMsg containing valid json but not a json rpc.
 		 */
-		void handleTrash(RPCMsg* msg);
+		void handleTrash(IncomingMsg* msg);
 
 
 		/**
@@ -279,7 +277,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * For sending back the errpr response message, it calls handleResponseFromPlugin().
 		 * \param msg The incomming RPCMsg containing valid json but not a json rpc.
 		 */
-		void handleTrashFromPlugin(RPCMsg* msg);
+		OutgoingMsg* handleTrashFromPlugin(IncomingMsg* msg);
 
 
 		/**
@@ -288,9 +286,9 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * existing tcp-connection.
 		 * \param msg The incomming RPCMsg containing a json rpc request with "RSD" as method-namespace.
 		 */
-		OutgoingMsg* handleRSDCommand(RPCMsg* msg);
+		OutgoingMsg* handleRSDCommand(IncomingMsg* msg);
 
-
+		RPCMsg* getCorrespondingRequest(IncomingMsg* input);
 
 		int tryToconnect(Plugin* plugin);
 
@@ -300,7 +298,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		void push_frontRequestQueue(RPCMsg* request);
 		//pop the last request at queue with the corresponding json rpc id
 		//returns sender id of request
-		int pop_RequestQueue(RPCMsg* msg);
+		void pop_RequestQueue(IncomingMsg* msg);
 
 
 

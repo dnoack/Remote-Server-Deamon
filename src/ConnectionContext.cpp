@@ -82,7 +82,7 @@ void ConnectionContext::destroy()
 }
 
 
-OutgoingMsg* ConnectionContext::process(RPCMsg* input)
+OutgoingMsg* ConnectionContext::process(IncomingMsg* input)
 {
 	OutgoingMsg* output = NULL;
 	try
@@ -100,8 +100,8 @@ OutgoingMsg* ConnectionContext::process(RPCMsg* input)
 			input->setJsonRpcId(id->GetInt());
 			output = handleRequest(input);
 		}
-		//or is it a response ?
-		else if(json->isResponse(localDom))
+		//or is it a response or error ?
+		else if(json->isResponse(localDom) || json->isError(localDom))
 		{
 			id = json->getId(localDom);
 			input->setJsonRpcId(id->GetInt());
@@ -114,25 +114,16 @@ OutgoingMsg* ConnectionContext::process(RPCMsg* input)
 			handleTrash(input);
 		}
 	}
-	catch(Error &e)
+	catch(Error &e)//parse error or other things will be catched here
 	{
 		dlog(logInfo,  "Exception: %s", e.get());
 
-		//Errors through messages from client will be thrown as json rpc error response to ComPoint
-		if(input->getSender() == CLIENT_SIDE)
-		{
-			delete input;
-			if(id != NULL)
-				nullId.SetInt(id->GetInt());
+		if(id != NULL)
+			nullId.SetInt(id->GetInt());
 
-			error = json->generateResponseError(nullId, e.getErrorCode(), e.get());
-			comPoint->transmit(error, strlen(error));
-		}
-		else
-		{
-			handleIncorrectPluginResponse(input, e);
-		}
-
+		error = json->generateResponseError(nullId, e.getErrorCode(), e.get());
+		output = new OutgoingMsg(input->getOrigin(), error);
+		delete input;
 	}
 	delete localDom;
 	dlog(logInfo, "Stacksize: %d", requestQueue.size());
@@ -140,14 +131,14 @@ OutgoingMsg* ConnectionContext::process(RPCMsg* input)
 }
 
 
-OutgoingMsg* ConnectionContext::handleRequest(RPCMsg* msg)
+OutgoingMsg* ConnectionContext::handleRequest(IncomingMsg* input)
 {
 	try
 	{
-		if(msg->getSender() == CLIENT_SIDE)
-			return handleRequestFromClient(msg);
+		if(input->isOriginTcp())
+			return handleRequestFromClient(input);
 		else
-			return handleRequestFromPlugin(msg);
+			return handleRequestFromPlugin(input);
 	}
 	catch(Error &e)
 	{
@@ -181,7 +172,7 @@ char* ConnectionContext::getMethodNamespace()
 }
 
 
-OutgoingMsg* ConnectionContext::handleRSDCommand(RPCMsg* msg)
+OutgoingMsg* ConnectionContext::handleRSDCommand(IncomingMsg* input)
 {
 	OutgoingMsg* output = NULL;
 	try
@@ -195,7 +186,7 @@ OutgoingMsg* ConnectionContext::handleRSDCommand(RPCMsg* msg)
 
 		RSD::executeFunction(*method, *params, resultValue);
 		result = json->generateResponse(*id, resultValue);
-		output = new OutgoingMsg(result, msg->getSender());
+		output = new OutgoingMsg(input->getOrigin(), result );
 	}
 	catch(Error &e)
 	{
@@ -205,7 +196,7 @@ OutgoingMsg* ConnectionContext::handleRSDCommand(RPCMsg* msg)
 }
 
 
-OutgoingMsg* ConnectionContext::handleRequestFromClient(RPCMsg* input)
+OutgoingMsg* ConnectionContext::handleRequestFromClient(IncomingMsg* input)
 {
 	char* methodNamespace = NULL;
 	OutgoingMsg* output = NULL;
@@ -229,7 +220,7 @@ OutgoingMsg* ConnectionContext::handleRequestFromClient(RPCMsg* input)
 			if(currentComPoint == NULL)
 				throw Error(-301, "Plugin not found.");
 
-			output = new OutgoingMsg(input->getContent(), currentComPoint->getUniqueID() , currentComPoint);
+			output = new OutgoingMsg( currentComPoint, input->getContent());
 			push_backRequestQueue(input);
 		}
 	}
@@ -241,7 +232,7 @@ OutgoingMsg* ConnectionContext::handleRequestFromClient(RPCMsg* input)
 }
 
 
-OutgoingMsg* ConnectionContext::handleRequestFromPlugin(RPCMsg* input)
+OutgoingMsg* ConnectionContext::handleRequestFromPlugin(IncomingMsg* input)
 {
 	char* methodNamespace = NULL;
 	OutgoingMsg* output = NULL;
@@ -256,7 +247,7 @@ OutgoingMsg* ConnectionContext::handleRequestFromPlugin(RPCMsg* input)
 			delete[] methodNamespace;
 			throw Error(-301, "Plugin not found.");
 		}
-		output = new OutgoingMsg(input->getContent(), currentComPoint->getUniqueID() , currentComPoint);
+		output = new OutgoingMsg(currentComPoint, input->getContent());
 		push_frontRequestQueue(input);
 	}
 	catch(Error &e)
@@ -267,13 +258,13 @@ OutgoingMsg* ConnectionContext::handleRequestFromPlugin(RPCMsg* input)
 }
 
 
-OutgoingMsg* ConnectionContext::handleResponse(RPCMsg* input)
+OutgoingMsg* ConnectionContext::handleResponse(IncomingMsg* input)
 {
 	OutgoingMsg* output = NULL;
 
 	try
 	{
-		if(input->getSender() == CLIENT_SIDE)
+		if(input->isOriginTcp())
 			throw Error(-302, "Response from Clientside is not allowed.");
 
 		else
@@ -287,24 +278,23 @@ OutgoingMsg* ConnectionContext::handleResponse(RPCMsg* input)
 }
 
 
-
-OutgoingMsg* ConnectionContext::handleResponseFromPlugin(RPCMsg* input)
+OutgoingMsg* ConnectionContext::handleResponseFromPlugin(IncomingMsg* input)
 {
 	OutgoingMsg* output = NULL;
-	int lastSender = -1;
+	RPCMsg* request = NULL;
 
 	try
 	{
 		//search for last request starting at the front of the Queue and comparing json rpc id
-		lastSender = pop_RequestQueue(input);
-		//lastSender == CLIENT_SIDE(0) means, send response to tcp client
-		if(lastSender == CLIENT_SIDE)
-			output = new OutgoingMsg(input->getContent(), lastSender);
-		//back to a plugin
+		request = getCorrespondingRequest(input);
+		if(request != NULL)
+		{
+			output = new OutgoingMsg(request->getComPoint(), input->getContent());
+			pop_RequestQueue(input);
+		}
 		else
 		{
-			currentComPoint =  findComPoint(lastSender);
-			output = new OutgoingMsg(input->getContent(), currentComPoint->getUniqueID() , currentComPoint);
+			//TODO: where is the request gone ?
 		}
 		delete input;
 	}
@@ -316,16 +306,16 @@ OutgoingMsg* ConnectionContext::handleResponseFromPlugin(RPCMsg* input)
 }
 
 
-void ConnectionContext::handleTrash(RPCMsg* msg)
+void ConnectionContext::handleTrash(IncomingMsg* input)
 {
 	try
 	{
-		if(msg->getSender() == CLIENT_SIDE)
+		if(input->isOriginTcp())
 		{
 			throw Error(-303, "Json Msg has to be a json rpc 2.0 message.");
 		}
 		else
-			handleTrashFromPlugin(msg);
+			handleTrashFromPlugin(input);
 	}
 	catch(Error &e)
 	{
@@ -334,50 +324,54 @@ void ConnectionContext::handleTrash(RPCMsg* msg)
 }
 
 
-void ConnectionContext::handleTrashFromPlugin(RPCMsg* msg)
+OutgoingMsg* ConnectionContext::handleTrashFromPlugin(IncomingMsg* input)
 {
-	RPCMsg* errorResponse = NULL;
+	IncomingMsg* errorResponse = NULL;
 	const char* errorResponseMsg = NULL;
+	OutgoingMsg* output = NULL;
 	Value id;
 	try
 	{
 		//get sender from old msg and create a new valid error response
 		errorResponseMsg = json->generateResponseError(id, -304, "Json-Rpc was neither a request nor response.");
-		errorResponse = new RPCMsg(msg->getSender(), errorResponseMsg);
-		delete msg;
-		handleResponseFromPlugin(errorResponse);
+		errorResponse = new IncomingMsg(input->getOrigin(), errorResponseMsg);
+		delete input;
+		output = handleResponseFromPlugin(errorResponse);
 	}
 	catch(Error &e)
 	{
 		throw;
 	}
+	return output;
 }
 
 
-void ConnectionContext::handleIncorrectPluginResponse(RPCMsg* msg, Error &error)
+OutgoingMsg* ConnectionContext::handleIncorrectPluginResponse(IncomingMsg* input, Error &error)
 {
 
-	RPCMsg* errorResponse = NULL;
+	IncomingMsg* errorResponse = NULL;
 	const char* errorResponseMsg = NULL;
+	OutgoingMsg* output = NULL;
 	Value id;
 	try
 	{
-		error.append(msg->getContent());
-		if(msg->getJsonRpcId() > 0)
-			id.SetInt(msg->getJsonRpcId());
+		error.append(input->getContent());
+		if(input->getJsonRpcId() > 0)
+			id.SetInt(input->getJsonRpcId());
 		else
 			id.SetInt(0);
 		//get sender from old msg and create a new valid error response
 		errorResponseMsg = json->generateResponseError(id, error.getErrorCode(), error.get());
-		errorResponse = new RPCMsg(msg->getSender(), errorResponseMsg);
+		errorResponse = new IncomingMsg(input->getOrigin(), errorResponseMsg);
 		errorResponse->setJsonRpcId(id.GetInt());
-		handleResponseFromPlugin(errorResponse);
+		delete input;
+		output = handleResponseFromPlugin(errorResponse);
 	}
 	catch(Error &e)
 	{
 		throw;
 	}
-
+	return output;
 }
 
 
@@ -475,7 +469,7 @@ ComPoint* ConnectionContext::createNewComPoint(Plugin* plugin)
 	try
 	{
 		newSocket = tryToconnect(plugin);
-		comPoint = new ComPoint(newSocket, this, plugin->getPluginNumber(), false);
+		comPoint = new ComPoint(newSocket, this, plugin->getPluginNumber());
 		comPoint->configureLogInfo(&infoIn, &infoOut, &info);
 		localPlugin = new Plugin(plugin);
 		localPlugin->setComPoint(comPoint);
@@ -519,6 +513,8 @@ ComPoint* ConnectionContext::findComPoint(char* pluginName)
 		if(!connectionFound)
 		{
 			currentPlugin = RSD::getPlugin(pluginName);
+			if(currentPlugin == NULL)
+				throw Error (-301, "Plugin not found.");
 			tempComPoint = createNewComPoint(currentPlugin);
 		}
 	}
@@ -527,41 +523,6 @@ ComPoint* ConnectionContext::findComPoint(char* pluginName)
 		throw;
 	}
 	return tempComPoint;
-}
-
-
-ComPoint* ConnectionContext::findComPoint(int pluginNumber)
-{
-	Plugin* currentPlugin = NULL;
-	bool clientFound = false;
-	ComPoint* comPoint = NULL;
-
-	list<Plugin*>::iterator plugin = plugins.begin();
-
-	try
-	{
-		while(plugin != plugins.end() && !clientFound)
-		{
-
-			if((*plugin)->getPluginNumber() == pluginNumber)
-			{
-				clientFound = true;
-				comPoint = (*plugin)->getComPoint();
-			}
-			else
-				++plugin;
-		}
-		if(!clientFound)
-		{
-			currentPlugin = RSD::getPlugin(pluginNumber);
-			comPoint = createNewComPoint(currentPlugin);
-		}
-	}
-	catch(Error &e)
-	{
-		throw;
-	}
-	return comPoint;
 }
 
 
@@ -588,6 +549,30 @@ int ConnectionContext::tryToconnect(Plugin* plugin)
 	}
 
 	return newSocket;
+}
+
+
+RPCMsg* ConnectionContext::getCorrespondingRequest(IncomingMsg* input)
+{
+	list<RPCMsg*>::iterator request;
+	RPCMsg* result = NULL;
+	int jsonRpcId = input->getJsonRpcId();
+
+	pthread_mutex_lock(&rQMutex);
+	request = requestQueue.begin();
+	while(request != requestQueue.end() )
+	{
+		if((*request)->getJsonRpcId() == jsonRpcId)
+		{
+			result = *request;
+			pthread_mutex_unlock(&rQMutex);
+			return result;
+		}
+		else
+			++request;
+	}
+	pthread_mutex_unlock(&rQMutex);
+	return result;
 }
 
 
@@ -621,11 +606,10 @@ void ConnectionContext::push_frontRequestQueue(RPCMsg* request)
 }
 
 
-int ConnectionContext::pop_RequestQueue(RPCMsg* msg)
+void ConnectionContext::pop_RequestQueue(IncomingMsg* input)
 {
 	list<RPCMsg*>::iterator request;
-	int senderId = -1;
-	int jsonRpcId = msg->getJsonRpcId();
+	int jsonRpcId = input->getJsonRpcId();
 
 	pthread_mutex_lock(&rQMutex);
 	request = requestQueue.begin();
@@ -633,16 +617,13 @@ int ConnectionContext::pop_RequestQueue(RPCMsg* msg)
 	{
 		if((*request)->getJsonRpcId() == jsonRpcId)
 		{
-			senderId = (*request)->getSender();
 			delete *request;
 			request = requestQueue.erase(request);
 			pthread_mutex_unlock(&rQMutex);
-			return senderId;
+			return;
 		}
 		else
 			++request;
 	}
 	pthread_mutex_unlock(&rQMutex);
-	return senderId;
-
 }

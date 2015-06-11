@@ -2,10 +2,10 @@
 #ifndef INCLUDE_REGISTRATION_HPP_
 #define INCLUDE_REGISTRATION_HPP_
 
+#include <IncomingMsg.hpp>
 #include <unistd.h>
 
 #include "JsonRPC.hpp"
-#include "RPCMsg.hpp"
 #include "OutgoingMsg.hpp"
 #include "Plugin.hpp"
 #include "ProcessInterface.hpp"
@@ -50,7 +50,7 @@ class Registration : public ProcessInterface
 		 * socket (udsWorker).
 		 * \param msg A instance of RsdMsg which contains a json rpc request/notification containing information about the plugin.
 		 */
-		OutgoingMsg* process(RPCMsg* msg);
+		OutgoingMsg* process(IncomingMsg* msg);
 
 
 		/**
@@ -145,7 +145,7 @@ class Registration : public ProcessInterface
 		 * \param msg Containing a json rpc request with field method = "announce".
 		 * \return A valid json rpc response message where the result = "announceACK".
 		 */
-		OutgoingMsg* handleAnnounceMsg(RPCMsg* msg);
+		OutgoingMsg* handleAnnounceMsg(IncomingMsg* msg);
 
 		//TODO: create announceACK, currently handled by handleAnnounceMsg
 
@@ -157,18 +157,18 @@ class Registration : public ProcessInterface
 		 * \params msg Containing a json rpc request with field method = "register".
 		 * \return Returns True if everything was fine.
 		 */
-		bool handleRegisterMsg(RPCMsg* input);
+		bool handleRegisterMsg(IncomingMsg* input);
 
 		/*
 		 * Creates a json rpc response message with result field ="registerACK"
 		 * \return The json prc response message.
 		 */
-		OutgoingMsg* createRegisterACKMsg(RPCMsg* input);
+		OutgoingMsg* createRegisterACKMsg(IncomingMsg* input);
 
 		/**
 		*  TODO: Not implemented yet.
 		*/
-		OutgoingMsg* handleActiveMsg(RPCMsg* input);
+		OutgoingMsg* handleActiveMsg(IncomingMsg* input);
 };
 
 #endif /* INCLUDE_REGISTRATION_HPP_ */

@@ -132,17 +132,14 @@ bool RSD::addPlugin(Plugin* newPlugin)
 	bool result = false;
 	char* name = (char*)(newPlugin->getName()->c_str());
 
-	try
-	{
-		getPlugin(name);
-	}
-	catch(Error &e)
+	if(getPlugin(name) == NULL)
 	{
 		pthread_mutex_lock(&pLmutex);
 		plugins.push_back(newPlugin);
 		result = true;
 		pthread_mutex_unlock(&pLmutex);
 	}
+
 	return result;
 }
 

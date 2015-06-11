@@ -4,7 +4,6 @@
 //include my classes here
 #include "Registration.hpp"
 #include "ComPointMock.hpp"
-#include "SocketTestHelper.hpp"
 #include "RPCMsg.hpp"
 
 //include testharness here
@@ -13,9 +12,7 @@
 
 
 
-static ComPointMock* comPoint = NULL;
 static Registration* reg = NULL;
-static SocketTestHelper* helper = NULL;
 
 
 static string announceMsg = "{\"jsonrpc\": \"2.0\", \"params\": { \"pluginName\": \"UnitTest\", \"udsFilePath\": \"/tmp/unitTest.uds\", \"pluginNumber\": 99 }, \"method\": \"announce\", \"id\": 123}";
@@ -30,15 +27,11 @@ TEST_GROUP(Registration)
 	void setup()
 	{
 		reg = new Registration();
-		helper = new SocketTestHelper(AF_UNIX, SOCK_STREAM, "/tmp/test_com.uds");
-		comPoint = new ComPointMock(helper->getServerSocket(), reg, 0);
 	}
 
 	void teardown()
 	{
 		delete reg;
-		delete comPoint;
-		delete helper;
 	}
 };
 
@@ -50,28 +43,32 @@ TEST_GROUP(Registration)
 TEST(Registration, registerProcess_retry_aferFail_OK)
 {
 
-	RPCMsg* testMsg = new RPCMsg(0, new string(announceMsg));
-	reg->processMsg(testMsg);
-	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"announceACK\",\"id\":123}", comPoint->getBuffer());
-	comPoint->clear();
+	IncomingMsg* testMsg = new IncomingMsg(0, new string(announceMsg));
+	OutgoingMsg* output = reg->processMsg(testMsg);
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"announceACK\",\"id\":123}", output->getContent()->c_str());
+	delete output;
 
 
-	testMsg = new RPCMsg(0, new string(incorrectMsg));
-	reg->processMsg(testMsg);
-	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Server error\",\"data\":\"Error while parsing json rpc.\"},\"id\":0}", comPoint->getBuffer());
-	comPoint->clear();
+	testMsg = new IncomingMsg(0, new string(incorrectMsg));
+	output = reg->processMsg(testMsg);
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Server error\",\"data\":\"Error while parsing json rpc.\"},\"id\":0}", output->getContent()->c_str());
+	delete output;
 
-	testMsg = new RPCMsg(0, new string(announceMsg));
-	reg->processMsg(testMsg);
-	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"announceACK\",\"id\":123}", comPoint->getBuffer());
-	comPoint->clear();
 
-	testMsg = new RPCMsg(0, new string(registerMsg));
-	reg->processMsg(testMsg);
-	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"registerACK\",\"id\":124}", comPoint->getBuffer());
+	testMsg = new IncomingMsg(0, new string(announceMsg));
+	output = reg->processMsg(testMsg);
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"announceACK\",\"id\":123}", output->getContent()->c_str());
+	delete output;
 
-	testMsg = new RPCMsg(0, new string(activeMsg));
-	reg->processMsg(testMsg);
+
+	testMsg = new IncomingMsg(0, new string(registerMsg));
+	output = reg->processMsg(testMsg);
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"registerACK\",\"id\":124}", output->getContent()->c_str());
+	delete output;
+
+	testMsg = new IncomingMsg(0, new string(activeMsg));
+	output = reg->processMsg(testMsg);
+	delete output;
 
 }
 
@@ -79,35 +76,42 @@ TEST(Registration, registerProcess_retry_aferFail_OK)
 
 TEST(Registration, registerMsg_FAIL)
 {
-	RPCMsg* testMsg = new RPCMsg(0, new string(registerMsg));
-	reg->processMsg(testMsg);
-	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32022,\"message\":\"Server error\",\"data\":\"Missing parameter.\"},\"id\":124}", comPoint->getBuffer());
+	IncomingMsg* testMsg = new IncomingMsg(0, new string(registerMsg));
+	OutgoingMsg* output = reg->processMsg(testMsg);
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32022,\"message\":\"Server error\",\"data\":\"Missing parameter.\"},\"id\":124}", output->getContent()->c_str());
+	delete output;
 	sleep(4);
 }
 
 
 TEST(Registration, announceMsg)
 {
-	RPCMsg* testMsg = new RPCMsg(0, new string(announceMsg));
-	reg->processMsg(testMsg);
-	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"announceACK\",\"id\":123}", comPoint->getBuffer());
+	IncomingMsg* testMsg = new IncomingMsg(0, new string(announceMsg));
+	OutgoingMsg* output = reg->processMsg(testMsg);
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"announceACK\",\"id\":123}", output->getContent()->c_str());
+	delete output;
 	sleep(4);
 }
 
 
 TEST(Registration, registerProcess_complete_OK)
 {
-	RPCMsg* testMsg = new RPCMsg(0, new string(announceMsg));
-	reg->processMsg(testMsg);
-	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"announceACK\",\"id\":123}", comPoint->getBuffer());
-	comPoint->clear();
+	IncomingMsg* testMsg = new IncomingMsg(0, new string(announceMsg));
+	OutgoingMsg* output = reg->processMsg(testMsg);
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"announceACK\",\"id\":123}", output->getContent()->c_str());
+	delete output;
 
-	testMsg = new RPCMsg(0, new string(registerMsg));
-	reg->processMsg(testMsg);
-	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"registerACK\",\"id\":124}", comPoint->getBuffer());
 
-	testMsg = new RPCMsg(0, new string(activeMsg));
-	reg->processMsg(testMsg);
+	testMsg = new IncomingMsg(0, new string(registerMsg));
+	output = reg->processMsg(testMsg);
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"registerACK\",\"id\":124}", output->getContent()->c_str());
+	delete output;
+
+
+	testMsg = new IncomingMsg(0, new string(activeMsg));
+	output = reg->processMsg(testMsg);
+
+
 }
 
 
