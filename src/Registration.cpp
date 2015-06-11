@@ -22,7 +22,10 @@ Registration::~Registration()
 {
 	delete json;
 	if(timerThread != 0)
+	{
 		pthread_cancel(timerThread);
+		pthread_join(timerThread, NULL);
+	}
 	cleanup();
 }
 
@@ -69,6 +72,7 @@ OutgoingMsg* Registration::process(IncomingMsg* input)
 				state = ACTIVE;
 				break;
 			case ACTIVE:
+				//TODO: check for unregister -> RSD::deletePlugin
 				break;
 		}
 		delete localDom;

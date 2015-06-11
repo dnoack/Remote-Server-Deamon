@@ -3,12 +3,11 @@
 
 //include my classes here
 #include "Registration.hpp"
-#include "ComPointMock.hpp"
 #include "RPCMsg.hpp"
 
 //include testharness here
 #include "TestHarness.h"
-#include "MockSupport.h"
+
 
 
 
@@ -34,8 +33,6 @@ TEST_GROUP(Registration)
 		delete reg;
 	}
 };
-
-
 
 
 
@@ -80,7 +77,6 @@ TEST(Registration, registerMsg_FAIL)
 	OutgoingMsg* output = reg->processMsg(testMsg);
 	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32022,\"message\":\"Server error\",\"data\":\"Missing parameter.\"},\"id\":124}", output->getContent()->c_str());
 	delete output;
-	sleep(4);
 }
 
 
@@ -90,7 +86,6 @@ TEST(Registration, announceMsg)
 	OutgoingMsg* output = reg->processMsg(testMsg);
 	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"result\":\"announceACK\",\"id\":123}", output->getContent()->c_str());
 	delete output;
-	sleep(4);
 }
 
 

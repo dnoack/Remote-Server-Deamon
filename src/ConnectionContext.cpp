@@ -513,9 +513,8 @@ ComPoint* ConnectionContext::findComPoint(char* pluginName)
 		if(!connectionFound)
 		{
 			currentPlugin = RSD::getPlugin(pluginName);
-			if(currentPlugin == NULL)
-				throw Error (-301, "Plugin not found.");
-			tempComPoint = createNewComPoint(currentPlugin);
+			if(currentPlugin != NULL)
+				tempComPoint = createNewComPoint(currentPlugin);
 		}
 	}
 	catch(Error &e)

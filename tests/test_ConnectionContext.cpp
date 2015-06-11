@@ -8,137 +8,65 @@
 
 #include "ConnectionContext.hpp"
 #include "Error.hpp"
-#include "RPCMsg.hpp"
+#include "IncomingMsg.hpp"
+#include "OutgoingMsg.hpp"
 
 
 #include "TestHarness.h"
-#include "MockSupport.h"
-#include "MockNamedValue.h"
+
 
 static ConnectionContext* context = NULL;
+OutgoingMsg* output = NULL;
 
-
-/*
-class RPCMsgComparator : public MockNamedValueComparator
-{
-	public:
-
-
-		virtual bool isEqual(const void* msg1, const void* msg2)
-		{
-			return msg1 == msg2;
-		}
-
-		virtual SimpleString valueToString(const void* msg)
-		{
-			RPCMsg* object = (RPCMsg*)msg;
-			return StringFrom(object->print());
-		}
-
-};*/
-
-
-
-class ConnectionContextMock  : public ConnectionContext
-{
-	public:
-
-		ConnectionContextMock(int socket) : ConnectionContext(socket)
-		{
-
-		}
-
-		virtual void processMsg(RPCMsg* msg)
-		{
-			mock().actualCall("processMsg").withParameterOfType("RPCMsg","msg", msg);
-		}
-
-		virtual UdsComWorker* findUdsConnection(int pluginNumber)
-		{
-			mock().actualCall("findUdsConnection").withParameter("pluginNumber", pluginNumber);
-			return NULL;
-		}
-};
 
 
 TEST_GROUP(CONNECTION_CONTEXT)
 {
 	void setup()
 	{
-
+		context = new ConnectionContext(0);
 	}
 
 	void teardown()
 	{
-		mock().clear();
+		delete context;
+		if(output != NULL)
+			delete output;
+		output = NULL;
 	}
 };
 
 
-
-
-TEST(CONNECTION_CONTEXT, processMsg_OK)
+TEST(CONNECTION_CONTEXT, plugin_not_found)
 {
-
-	context = new ConnectionContext(2);
-	RPCMsg* testMsg = new RPCMsg(0, "{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"Aaardvark.aa_close\", \"id\": 9}");
-
-	CHECK_THROWS(Error, context->processMsg(testMsg));
-
-	delete context;
-
+	IncomingMsg* testMsg = new IncomingMsg(0, "{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"Aaardvark.aa_close\", \"id\": 9}");
+	output = context->processMsg(testMsg);
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-301,\"message\":\"Server error\",\"data\":\"Plugin not found.\"},\"id\":9}", output->getContent()->c_str());
 }
 
 
 TEST(CONNECTION_CONTEXT, processMsg_noNamespaceFail)
 {
-
-
-	context = new ConnectionContext(2);
-	RPCMsg* testMsg = new RPCMsg(0, "{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"aa_close\", \"id\": 9}");
-
-	CHECK_THROWS(Error, context->processMsg(testMsg));
-
-	delete context;
-
+	IncomingMsg* testMsg = new IncomingMsg(0, "{\"jsonrpc\": \"2.0\", \"params\": { \"handle\": 1 } , \"method\": \"aa_close\", \"id\": 9}");
+	output = context->processMsg(testMsg);
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-301,\"message\":\"Server error\",\"data\":\"Methodname has no namespace.\"},\"id\":9}", output->getContent()->c_str());
 }
 
 
 TEST(CONNECTION_CONTEXT, processMsg_parseFAIL)
 {
-
-	context = new ConnectionContext(2);
-	RPCMsg* testMsg = new RPCMsg(0, "test1");
-
-	CHECK_THROWS(Error, context->processMsg(testMsg));
-
-	delete context;
-
+	IncomingMsg* testMsg = new IncomingMsg(0, "test1");
+	output = context->processMsg(testMsg);
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Server error\",\"data\":\"Error while parsing json rpc.\"},\"id\":0}", output->getContent()->c_str());
 }
 
 
 
-TEST(CONNECTION_CONTEXT, isDeletable)
+
+TEST(CONNECTION_CONTEXT, memoryTest)
 {
-
-
-	context = new ConnectionContext(2);
-
-	sleep(1);
-
-	if(context->isDeletable() == true)
-		FAIL("Context should not be deletable.\n");
-
-	delete context;
-}
-
-
-
-TEST(CONNECTION_CONTEXT, start_and_close)
-{
-
-	context = new ConnectionContext(2);
-	delete context;
+	if(context->isDeletable() != true)
+		FAIL("Context should  be deletable.\n");
 }
 
 

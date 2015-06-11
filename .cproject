@@ -84,6 +84,9 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.182396016" name="test_ConnectionContext.cpp" rcbsApplicability="disable" resourcePath="tests/test_ConnectionContext.cpp" toolsToInvoke="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1367327515.1720289489">
+						<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1367327515.1720289489" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1367327515"/>
+					</fileInfo>
 					<sourceEntries>
 						<entry excluding="include/mocks|tests" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
@@ -160,8 +163,11 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.781441629.485903446" name="test_ConnectionContext.cpp" rcbsApplicability="disable" resourcePath="tests/test_ConnectionContext.cpp" toolsToInvoke="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1719705101.2025700699">
+						<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1719705101.2025700699" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1719705101"/>
+					</fileInfo>
 					<sourceEntries>
-						<entry excluding="tests/test_ConnectionContext.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -202,6 +208,7 @@
 			<resource resourceType="PROJECT" workspacePath="/Remote-Server-Deamon"/>
 		</configuration>
 		<configuration configurationName="Testing RSD"/>
+		<configuration configurationName="Testing"/>
 		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/Remote-Server-Daemon"/>
 		</configuration>
