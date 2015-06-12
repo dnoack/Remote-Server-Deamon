@@ -81,15 +81,17 @@ OutgoingMsg* Registration::process(IncomingMsg* input)
 	{
 		cancelTimer();
 		cleanup();
-		delete localDom;
-		delete input;
 		state = NOT_ACTIVE;
 
 		if(id == NULL)
 			id = &nullId;
 
-		error = json->generateResponseError(*id, e.getErrorCode(), e.get());
+		Error* higherError  = new Error(-501, "Error during Registration: %s", e.get());
+		error = json->generateResponseError(*id, higherError->getErrorCode(), higherError->get());
 		output = new OutgoingMsg(comPoint, error);
+		delete higherError;
+		delete localDom;
+		delete input;
 	}
 	return output;
 }

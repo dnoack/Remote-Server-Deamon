@@ -48,7 +48,7 @@ TEST(Registration, registerProcess_retry_aferFail_OK)
 
 	testMsg = new IncomingMsg(0, new string(incorrectMsg));
 	output = reg->processMsg(testMsg);
-	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Server error\",\"data\":\"Error while parsing json rpc.\"},\"id\":0}", output->getContent()->c_str());
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-501,\"message\":\"Server error\",\"data\":\"Error during Registration: Error while parsing json rpc.\"},\"id\":0}", output->getContent()->c_str());
 	delete output;
 
 
@@ -75,7 +75,7 @@ TEST(Registration, registerMsg_FAIL)
 {
 	IncomingMsg* testMsg = new IncomingMsg(0, new string(registerMsg));
 	OutgoingMsg* output = reg->processMsg(testMsg);
-	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32022,\"message\":\"Server error\",\"data\":\"Missing parameter.\"},\"id\":124}", output->getContent()->c_str());
+	STRCMP_EQUAL("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-501,\"message\":\"Server error\",\"data\":\"Error during Registration: Missing parameter.\"},\"id\":124}", output->getContent()->c_str());
 	delete output;
 }
 

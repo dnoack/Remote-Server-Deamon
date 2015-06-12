@@ -62,6 +62,7 @@ ConnectionContext::~ConnectionContext()
 	pthread_mutex_lock(&cCounterMutex);
 	--contextCounter;
 	pthread_mutex_unlock(&cCounterMutex);
+	deleteRequestQueue();
 	pthread_mutex_destroy(&rQMutex);
 }
 
@@ -624,5 +625,21 @@ void ConnectionContext::pop_RequestQueue(IncomingMsg* input)
 		else
 			++request;
 	}
+	pthread_mutex_unlock(&rQMutex);
+}
+
+
+void ConnectionContext::deleteRequestQueue()
+{
+	list<RPCMsg*>::iterator request;
+	pthread_mutex_lock(&rQMutex);
+
+	request = requestQueue.begin();
+	while(request != requestQueue.end())
+	{
+		delete *request;
+		request = requestQueue.erase(request);
+	}
+
 	pthread_mutex_unlock(&rQMutex);
 }

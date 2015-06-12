@@ -300,6 +300,8 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		//returns sender id of request
 		void pop_RequestQueue(IncomingMsg* msg);
 
+		void deleteRequestQueue();
+
 
 
 		/*! Mutex to protect the contextCounter variable.*/

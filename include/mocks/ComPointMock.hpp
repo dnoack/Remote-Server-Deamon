@@ -12,10 +12,10 @@
 class ComPointMock : public ComPoint{
 
 	public:
-		ComPointMock(int socket, ProcessInterface* pInterface, int uniqueID, bool startInstant = true):
-			ComPoint(socket, pInterface, uniqueID, startInstant)
+		ComPointMock(int socket, ProcessInterface* pInterface , int uniqueID, bool startInstant = true)
 		{
 			clear();
+			this->uniqueID =uniqueID;
 		}
 
 		virtual ~ComPointMock();
