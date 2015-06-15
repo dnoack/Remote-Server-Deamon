@@ -18,6 +18,17 @@ environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432/CXXFLAGS/ope
 environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432/CXXFLAGS/value=${CFLAGS}
 environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432/append=true
 environment/project/cdt.managedbuild.config.gnu.exe.debug.400429432/appendContributed=true
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/CFLAGS/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/CFLAGS/operation=replace
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/CFLAGS/value=-I../include -I"${HOME}/git/rapidjson/include/rapidjson" -I"${HOME}/git/cpputest/include/CppUTest" -I"${HOME}/git/cpputest/include/CppUTestExt"
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/CXXFLAGS/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/CXXFLAGS/operation=append
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/CXXFLAGS/value=${CFLAGS}
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/PATH/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/PATH/operation=replace
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/PATH/value=/home/dnoack/bin\:/usr/local/bin\:/usr/bin\:/bin\:/usr/bin/X11\:/usr/games
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/append=true
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/appendContributed=true
 environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.781441629/CFLAGS/delimiter=\:
 environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.781441629/CFLAGS/operation=replace
 environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.781441629/CFLAGS/value=-I"../include" -I"${HOME}/libs/rapidjson/include/rapidjson" -I"${HOME}/cpputest-3.6/include" -I"${HOME}/cpputest-3.6/include/CppUTest" -I"${HOME}/cpputest-3.6/include/CppUTestExt"
