@@ -1,5 +1,5 @@
-#ifndef INCLUDE_REGSERVER_HPP_
-#define INCLUDE_REGSERVER_HPP_
+#ifndef INCLUDE_REGSERVER_HPP
+#define INCLUDE_REGSERVER_HPP
 
 
 #include "errno.h"
@@ -22,10 +22,10 @@
 
 
 /**
- * \class UdsRegServer
- * UdsRegServer will listen on a specific unix domain socket file and accept incomming
+ * \class RegServer
+ * RegServer will listen on a specific unix domain socket file and accept incoming
  * connections within a separated accept-thread. It also manages all accepted connections
- * in a list of UdsRegWorkers.
+ * in a list of ComPoints.
  */
 class RegServer : public AcceptThread{
 
@@ -37,9 +37,7 @@ class RegServer : public AcceptThread{
 		 */
 		RegServer(const char* udsFile);
 
-		/**
-		 * Destructor.
-		 */
+		/** Destructor.*/
 		virtual ~RegServer();
 
 		/**
@@ -49,14 +47,14 @@ class RegServer : public AcceptThread{
 
 
 		/**
-		 * Creates a new thread for uds_accept. If creating this thread fails, a
-		 * PluginError exception will be thrown.
+		 * Creates a new thread for thread_accept. If creating this thread fails, a
+		 * Error exception will be thrown.
 		 */
 		void start();
 
 
 		/**
-		 * Checks the intern list for deletable RegWorker. If there is one, it will be
+		 * Checks the intern list for deletable ComPoints. If there is one, it will be
 		 * removed and deallocated from the intern list + it the corresponding plugin
 		 * will be removed from the RSD list for registered plugins.
 		 */
@@ -67,9 +65,10 @@ class RegServer : public AcceptThread{
 
 		/*! Unix domain socket for registering plugins.*/
 		int connection_socket;
+		/*! File path for the registering over IPC.*/
 		const char* udsFile;
 
-		/*!list of pthread ids with all the active RegWorker.*/
+		/*! list of pthread ids with all the active RegWorker.*/
 		list<ComPoint*> workerList;
 		/*! Mutex for protecting the intern list of UdsRegWorkers.*/
 		pthread_mutex_t wLmutex;
@@ -83,26 +82,28 @@ class RegServer : public AcceptThread{
 		/*! optionflag for connection_socket.*/
 		int optionflag;
 
-		/*!LogInformation for underlying ComPoints.*/
+		/*!LogInformation for underlying ComPoints and there incoming messages.*/
 		LogInformation infoIn;
+		/*!LogInformation for underlying ComPoints and there outgoing messages.*/
 		LogInformation infoOut;
+		/*!LogInformation for underlying ComPoints.*/
 		LogInformation info;
 
 
-		/* Accepts new incommingconnection over the unix domain registry file.
-		 * A new accepted connection results in a new UdsRegWorker, which will be added to the intern list.
+		/* Accepts new incoming connection over the unix domain registry file.
+		 * A new accepted connection results in a new ComPoint, which will be added to the intern list.
 		 * \note This function has to be started in a separated thread.
 		 */
 		virtual void thread_accept();
 
 		/*
-		 * Creates a new instance of UdsRegWorker and adds it to the intern list of UdsRegWorkers.
+		 * Creates a new instance of ComPoint and adds it to the intern list of ComPoints.
 		 * \param new_socket The socket fd which was returned by accept.
-		 * \note This function uses uLmutex to protect the intern list.
+		 * \note This function uses wLmutex to protect the intern list.
 		 */
 		 void pushWorkerList(int new_socket);
 
 };
 
 
-#endif /* INCLUDE_UDSSERVER_HPP_ */
+#endif /* INCLUDE_REGSERVER_HPP */

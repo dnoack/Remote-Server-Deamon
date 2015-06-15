@@ -18,7 +18,6 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	nullId.SetInt(0);
 	currentComPoint = NULL;
 	comPoint = NULL;
-	lastSender = -1;
 	logInfo.logName = "CC:";
 	infoIn.logLevel = LOG_INPUT;
 	infoIn.logName = "IPC IN:";
@@ -58,7 +57,7 @@ ConnectionContext::~ConnectionContext()
 	if(comPoint != NULL)
 		delete comPoint;
 	delete json;
-	deleteAllUdsConnections();
+	deleteAllIPCConnections();
 	pthread_mutex_lock(&cCounterMutex);
 	--contextCounter;
 	pthread_mutex_unlock(&cCounterMutex);
@@ -307,8 +306,9 @@ OutgoingMsg* ConnectionContext::handleResponseFromPlugin(IncomingMsg* input)
 }
 
 
-void ConnectionContext::handleTrash(IncomingMsg* input)
+OutgoingMsg* ConnectionContext::handleTrash(IncomingMsg* input)
 {
+	OutgoingMsg* output = NULL;
 	try
 	{
 		if(input->isOriginTcp())
@@ -316,28 +316,27 @@ void ConnectionContext::handleTrash(IncomingMsg* input)
 			throw Error(-303, "Json Msg has to be a json rpc 2.0 message.");
 		}
 		else
-			handleTrashFromPlugin(input);
+			output = handleTrashFromPlugin(input);
 	}
 	catch(Error &e)
 	{
 		throw;
 	}
+	return output;
 }
 
 
 OutgoingMsg* ConnectionContext::handleTrashFromPlugin(IncomingMsg* input)
 {
-	IncomingMsg* errorResponse = NULL;
-	const char* errorResponseMsg = NULL;
 	OutgoingMsg* output = NULL;
+	const char* errorResponseMsg = NULL;
 	Value id;
 	try
 	{
 		//get sender from old msg and create a new valid error response
 		errorResponseMsg = json->generateResponseError(id, -304, "Json-Rpc was neither a request nor response.");
-		errorResponse = new IncomingMsg(input->getOrigin(), errorResponseMsg);
+		output = new OutgoingMsg(input->getOrigin(), errorResponseMsg);
 		delete input;
-		output = handleResponseFromPlugin(errorResponse);
 	}
 	catch(Error &e)
 	{
@@ -439,7 +438,7 @@ bool ConnectionContext::isDeletable()
 }
 
 
-void ConnectionContext::checkUdsConnections()
+void ConnectionContext::checkIPCConnections()
 {
 	list<Plugin*>::iterator plugin;
 	ComPoint* comPoint = NULL;
@@ -576,7 +575,7 @@ RPCMsg* ConnectionContext::getCorrespondingRequest(IncomingMsg* input)
 }
 
 
-void ConnectionContext::deleteAllUdsConnections()
+void ConnectionContext::deleteAllIPCConnections()
 {
 	list<Plugin*>::iterator plugin = plugins.begin();
 

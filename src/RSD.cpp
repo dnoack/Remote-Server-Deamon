@@ -262,7 +262,7 @@ void RSD::checkForDeletableConnections()
 		//maybe we got a working tcp connection but a plugin went down
 		else
 		{
-			(*connection)->checkUdsConnections();
+			(*connection)->checkIPCConnections();
 			++connection;
 		}
 	}

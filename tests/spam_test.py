@@ -36,7 +36,7 @@ def receiveFromRSD(s):
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("127.0.0.1",1234))
 
-for i in range (4096):
+for i in range (2048):
   header = []
   
   print "unkown function"
@@ -58,7 +58,7 @@ for i in range (4096):
  
 
   print "no id"
-  msg  =  ("{\"jsonrpc\": \"2.0\", \"method\":  \"Aardvark.aa_unique_id\", \"params\" : { \"port\": 9 }")
+  msg  =  ("{\"jsonrpc\": \"2.0\", \"method\":  \"Aardvark.aa_unique_id\", \"params\" : { \"port\": 9 }}")
   sendToRSD(s, msg)
   
   # Msg for RSd 
