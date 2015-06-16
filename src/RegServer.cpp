@@ -79,7 +79,6 @@ void RegServer::thread_accept()
 }
 
 
-
 void RegServer::pushWorkerList(int new_socket)
 {
 	Registration* registry = new Registration();

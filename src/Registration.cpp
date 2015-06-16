@@ -1,4 +1,3 @@
-
 #include "RSD.hpp"
 #include "Registration.hpp"
 
@@ -6,17 +5,14 @@
 Registration::Registration()
 {
 	localDom = NULL;
-	request = 0;
-	response = 0;
 	plugin = NULL;
 	pluginName = NULL;
 	timerThread = 0;
 	id = NULL;
-	nullId.SetInt(0);
-	error = NULL;
 	state = NOT_ACTIVE;
 	json = new JsonRPC();
 }
+
 
 Registration::~Registration()
 {
@@ -32,7 +28,9 @@ Registration::~Registration()
 
 OutgoingMsg* Registration::process(IncomingMsg* input)
 {
+	const char* error = NULL;
 	OutgoingMsg* output = NULL;
+	Value nullId(0);
 	id = NULL;
 
 	try
@@ -102,6 +100,7 @@ OutgoingMsg* Registration::handleAnnounceMsg(IncomingMsg* input)
 	Value* currentParam = NULL;
 	const char* name = NULL;
 	const char* udsFilePath = NULL;
+	const char* response = NULL;
 	OutgoingMsg* output = NULL;
 	int number;
 
@@ -133,6 +132,7 @@ OutgoingMsg* Registration::handleAnnounceMsg(IncomingMsg* input)
 	}
 	return output;
 }
+
 
 bool Registration::handleRegisterMsg(IncomingMsg* input)
 {
@@ -178,6 +178,8 @@ void Registration::cleanup()
 OutgoingMsg* Registration::createRegisterACKMsg(IncomingMsg* input)
 {
 	OutgoingMsg* output = NULL;
+	const char* response = NULL;
+
 	try
 	{
 		result.SetString("registerACK");
@@ -230,5 +232,4 @@ void* Registration::timer(void* timerParams)
 
 	return NULL;
 }
-
 

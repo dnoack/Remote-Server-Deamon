@@ -20,11 +20,10 @@ using namespace std;
 /**
  * \class Registration
  * The Registration class is the main unit during a registration process between server and plugin.
- * Everytime a message is received by the corresponding instance ofUdsRegWorker, the method processMsg()
+ * Everytime a message is received by the corresponding instance of IPC ComPoint, the method process()
  * will be called. The registration process is snapped by a internal state machine (see description of
- * REG_STATE enum for details).
- *
- *
+ * REG_STATE enum for details). A successful registration will result in a new instance of Plugin + its
+ * insertion to the static list of Plugin in RSD.
  */
 class Registration : public ProcessInterface
 {
@@ -43,24 +42,22 @@ class Registration : public ProcessInterface
 
 
 		/**
-		 * Main method for processing a registration msg. It will parse the msg, check if it is a
+		 * Main method for processing a registration message. It will parse the message, check if it is a
 		 * announce, register, or active message and call the corresponding methods. While sending a
 		 * anounceACK or registerACK, a timer of REGISTRATION_TIMOUT will be started. If something goes wrong during
 		 * the registration process, the state will be set to NOT_ACTIVE and a error response is send via unix domain
-		 * socket (udsWorker).
-		 * \param msg A instance of RsdMsg which contains a json rpc request/notification containing information about the plugin.
+		 * socket (ComPoint).
+		 * \param input Contains a json rpc request/notification containing information about the plugin.
+		 * \return If necessary it returns a message with a json rpc response, NULL otherwise.
+		 * \throws Error If something during the registration went wrong (like a timeout between two messages).
 		 */
-		OutgoingMsg* process(IncomingMsg* msg);
+		OutgoingMsg* process(IncomingMsg* input);
 
 
-		/**
-		 * \return string* containing the name of the registered plugin.
-		 */
+		/** \return string* containing the name of the registered plugin. */
 		string* getPluginName(){ return this->pluginName;}
 
-		/**
-		 * Deallocated pluginName and plugin if they whereallocated.
-		 */
+		/** Deallocated pluginName and plugin if they whereallocated. */
 		void cleanup();
 
 
@@ -80,7 +77,7 @@ class Registration : public ProcessInterface
 		};
 
 		/*
-		 * Timeouttimer function which can be started in a separeted thread due to it's static property.
+		 * Timeouttimer function which can be started in a separated thread due to it's static property.
 		 * If the timeout is reached, it will call cleanup().
 		 * \param timerParams A valid instance of _timeout struct containing a pointer to a valid instance of Registration.
 		 */
@@ -107,22 +104,14 @@ class Registration : public ProcessInterface
 		Plugin* plugin;
 		/*! Contains the corresponding pluginname, this is later used for deleting the right plugin within RSD plugins list.*/
 		string* pluginName;
-		/*! Contains the actual json-rpc request.*/
-		string* request;
-		/*! Contains the actual json-rpc response.*/
-		const char* response;
 		/*! Contains the id from the recent json-rpc or 0 for parsing errors.*/
 		Value* id;
 		/*! Containing the result field of a json-rpc result message*/
 		Value result;
-		/*! Containing the 0 id, for the case we got a parsing error or something like this where the id is unkown.*/
-		Value nullId;
 		/*! pthread id of the timeout timerthread. This can be 0 if there is no active timeout timer.*/
 		pthread_t timerThread;
 		/*! Instance of structure with information for the timeout timer.*/
 		_timeout timerParams;
-		/*! After an exception was thrown, this variable can be user to generate json-rpc error responses.*/
-		const char* error;
 
 
 		/*!

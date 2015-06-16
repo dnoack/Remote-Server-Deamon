@@ -41,7 +41,7 @@ class RegServer : public AcceptThread{
 		virtual ~RegServer();
 
 		/**
-		 * Removes all RegWorker from the intern list and also deallocates them.
+		 * Removes all ComPoints from the intern list and also deallocates them.
 		 */
 		void deleteWorkerList();
 

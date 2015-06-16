@@ -1,12 +1,16 @@
 #ifndef INCLUDE_RSD_HPP_
 #define INCLUDE_RSD_HPP_
 
-
+/*! Path where the RegServer will wait for plugins to register.*/
 #define REGISTRY_PATH "/tmp/RsdRegister.uds"
+/*! TCP port where the server will listen for connecting clients.*/
 #define TCP_PORT 1234
+/*! Maximum number of clients that can be connected over tcp at the same time.*/
 #define MAX_CLIENTS 20
-#define MAIN_SLEEP_TIME 3 //sleep time for main loop
+/*! Sleep time within the main loop.*/
+#define MAIN_SLEEP_TIME 3
 #include "Error.hpp"
+/*! Overwrites rapdijson macro to throw exceptions instead of using assertion.*/
 #define RAPIDJSON_ASSERT(x)    if((x) == 0 ){throw Error("Rapidjson assertion.", __FILE__, __LINE__);}
 
 
@@ -21,7 +25,7 @@
 #include <unistd.h>
 #include <pthread.h>
 
-
+//rapidjson includes
 #include "document.h"
 #include "writer.h"
 
@@ -32,15 +36,6 @@
 #include "Plugin.hpp"
 #include "LogUnit.hpp"
 
-
-/* This path/file will be used for registering new Plugins to the server.*/
-#define REGISTRY_PATH "/tmp/RsdRegister.uds"
-/*! The tcp port used by the server to accept new connections.*/
-#define TCP_PORT 1234
-/*! max number of allowed clients, this will limit the number of connectionContext instances.*/
-#define MAX_CLIENTS 20
-/*! Sleep time of main server loop.*/
-#define MAIN_SLEEP_TIME 3
 
 using namespace rapidjson;
 class RSD;
@@ -64,7 +59,7 @@ struct cmp_keys
 /**
  * \class RSD (Remote Server Deamon)
  * \brief RSD is the main class for starting Remote Server Daemon, it starts the
- * registration server an the server for accepting incomming new connections from client side.
+ * registration server an the server for accepting incoming new connections from TCP client side.
  * It got a list of all registered plugins and their functions and also a list of all open connection
  * in the form of ConnectionContext objects. There are also Json-RPC functions from RSD itself.
  * \author David Noack
@@ -90,10 +85,10 @@ class RSD : public AcceptThread, public LogUnit{
 		void stop(){rsdActive = false;}
 
 		/**
-		 * Checks whether the TCP- or the UDS- connections of all known objects of connectionContext
-		 * are deletable. If there are some deletable connection objects (TcpWorker or UdsComClient),
+		 * Checks whether the TCP- or the IPC- connections of all known objects of connectionContext
+		 * are deletable. If there are some deletable connection objects (ComPoints),
 		 * it will delete them.
-		 * \note \note This function uses connectionContextListMutex for access to connectionContextList.
+		 * \note This function uses ccListMutex for access to connectionContextList.
 		 */
 		void checkForDeletableConnections();
 
@@ -126,6 +121,8 @@ class RSD : public AcceptThread, public LogUnit{
 		 * Searches the list of all registered plugins for a plugin by the
 		 * given plugin-number and return a pointer to it.
 		 * \param pluginNumber Unique plugin number of the plugin you are looking for.
+		 * \return On success this functions return a valid pointer to a Plugin object.
+		 * On fail, it returns NULL.
 		 * \note This function uses pLmutex for access to plugins (list).
 		 */
 		static Plugin* getPlugin(int pluginNumber);

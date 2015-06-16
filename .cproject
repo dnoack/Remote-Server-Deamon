@@ -84,11 +84,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.182396016" name="test_ConnectionContext.cpp" rcbsApplicability="disable" resourcePath="tests/test_ConnectionContext.cpp" toolsToInvoke="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1367327515.1720289489">
-						<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1367327515.1720289489" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1367327515">
-							<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1076266765" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
-						</tool>
-					</fileInfo>
 					<sourceEntries>
 						<entry excluding="include/mocks|tests" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
@@ -199,7 +194,7 @@
 									<listOptionValue builtIn="false" value="/home/dave2/git/rapidjson/include/rapidjson"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.815713124" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 ${CXXFLAGS}" valueType="string"/>
-								<option id="gnu.cpp.compiler.option.preprocessor.def.2040294712" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.2040294712" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false"/>
 								<option id="gnu.cpp.compiler.option.dialect.std.656460470" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.debugging.other.287348277" name="Other debugging flags" superClass="gnu.cpp.compiler.option.debugging.other" value="" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.2062187310" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -253,11 +248,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888.tests/test_ConnectionContext.cpp" name="test_ConnectionContext.cpp" rcbsApplicability="disable" resourcePath="tests/test_ConnectionContext.cpp" toolsToInvoke="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1304764818">
-						<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1304764818" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.279440139">
-							<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.564279365" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
-						</tool>
-					</fileInfo>
 					<sourceEntries>
 						<entry excluding="include/mocks|tests" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
