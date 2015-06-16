@@ -113,7 +113,7 @@ OutgoingMsg* Registration::handleAnnounceMsg(IncomingMsg* input)
 		currentParam = json->tryTogetParam(localDom, "pluginNumber");
 		number = currentParam->GetInt();
 
-		plugin = new Plugin(name, number, udsFilePath);
+		plugin = new PluginInfo(name, number, udsFilePath);
 		pluginName = new string(name);
 
 		result.SetString("announceACK");

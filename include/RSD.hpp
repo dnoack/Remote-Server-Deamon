@@ -33,7 +33,7 @@
 #include "RegServer.hpp"
 #include "AcceptThread.hpp"
 #include "ConnectionContext.hpp"
-#include "Plugin.hpp"
+#include <PluginInfo.hpp>
 #include "LogUnit.hpp"
 
 
@@ -98,7 +98,7 @@ class RSD : public AcceptThread, public LogUnit{
 		 * \param Pointer to a already allocated object of Plugin.
 		 * \note This function uses pLmutex for access to plugins (list).
 		 */
-		static bool addPlugin(Plugin* newPlugin);
+		static bool addPlugin(PluginInfo* newPlugin);
 
 		/**
 		 * Deletes a plugin from the list of all registered plugins.
@@ -115,7 +115,7 @@ class RSD : public AcceptThread, public LogUnit{
 		 * On fail, it returns NULL.
 		 * \note This function uses pLmutex for access to plugins (list).
 		 */
-		static Plugin* getPlugin(const char* name);
+		static PluginInfo* getPlugin(const char* name);
 
 		/**
 		 * Searches the list of all registered plugins for a plugin by the
@@ -125,7 +125,7 @@ class RSD : public AcceptThread, public LogUnit{
 		 * On fail, it returns NULL.
 		 * \note This function uses pLmutex for access to plugins (list).
 		 */
-		static Plugin* getPlugin(int pluginNumber);
+		static PluginInfo* getPlugin(int pluginNumber);
 
 		/**
 		 * Deallocates all plugins from the intern list of plugins.
@@ -154,7 +154,7 @@ class RSD : public AcceptThread, public LogUnit{
 		/*! Size of server address configuration.*/
 	     socklen_t addrlen;
 		/*! A list of all registered plugins.*/
-		static list<Plugin*> plugins;
+		static list<PluginInfo*> plugins;
 		/*! Mutex access plugins list.*/
 		static pthread_mutex_t pLmutex;
 		/*! List to all active ConnectionContext.*/

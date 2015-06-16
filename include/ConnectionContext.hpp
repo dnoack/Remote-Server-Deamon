@@ -3,9 +3,9 @@
 
 #include <list>
 #include <pthread.h>
+#include <PluginInfo.hpp>
 #include <limits>
 
-#include "Plugin.hpp"
 #include "Error.hpp"
 #include "LogUnit.hpp"
 #include "JsonRPC.hpp"
@@ -136,7 +136,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * This list can contain active connection and non active connections, but
 		 * the non active will be automatically deleted after a short time through RSD.
 		*/
-		list<Plugin*> plugins;
+		list<PluginInfo*> plugins;
 
 		/*! This list acts queue for requests. The main request
 		 * from a client will always pushed back into this stack. Through the process of receiving
@@ -206,7 +206,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * \return A Connected and read for work instance of an IPC ComPoint.
 		 * \throws Error If something goes wrong, like ComPoint could not connect.
 		 */
-		ComPoint* createNewComPoint(Plugin* plugin);
+		ComPoint* createNewComPoint(PluginInfo* plugin);
 
 
 		/**
@@ -314,7 +314,7 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 * \return On success it will return a valid socket fd.
 		 * \throws Error If something went wrong.
 		 */
-		int tryToconnect(Plugin* plugin);
+		int tryToconnect(PluginInfo* plugin);
 
 
 		/**

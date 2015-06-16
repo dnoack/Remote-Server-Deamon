@@ -3,11 +3,11 @@
 #define INCLUDE_REGISTRATION_HPP_
 
 #include <IncomingMsg.hpp>
+#include <PluginInfo.hpp>
 #include <unistd.h>
 
 #include "JsonRPC.hpp"
 #include "OutgoingMsg.hpp"
-#include "Plugin.hpp"
 #include "ProcessInterface.hpp"
 
 
@@ -101,7 +101,7 @@ class Registration : public ProcessInterface
 		Document* localDom;
 
 		/*! Int the process of registration, this will be our new plugin, which will be added to RSD plugins list.*/
-		Plugin* plugin;
+		PluginInfo* plugin;
 		/*! Contains the corresponding pluginname, this is later used for deleting the right plugin within RSD plugins list.*/
 		string* pluginName;
 		/*! Contains the id from the recent json-rpc or 0 for parsing errors.*/

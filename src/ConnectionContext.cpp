@@ -415,7 +415,7 @@ short ConnectionContext::getNewContextNumber()
 
 bool ConnectionContext::isDeletable()
 {
-	list<Plugin*>::iterator plugin;
+	list<PluginInfo*>::iterator plugin;
 
 	if(comPoint != NULL && comPoint->isDeletable())
 	{
@@ -440,7 +440,7 @@ bool ConnectionContext::isDeletable()
 
 void ConnectionContext::checkIPCConnections()
 {
-	list<Plugin*>::iterator plugin;
+	list<PluginInfo*>::iterator plugin;
 	ComPoint* comPoint = NULL;
 
 	plugin = plugins.begin();
@@ -459,11 +459,11 @@ void ConnectionContext::checkIPCConnections()
 }
 
 
-ComPoint* ConnectionContext::createNewComPoint(Plugin* plugin)
+ComPoint* ConnectionContext::createNewComPoint(PluginInfo* plugin)
 {
 	const char* identificationMsg = NULL;
 	ComPoint* comPoint = NULL;
-	Plugin* localPlugin = NULL;
+	PluginInfo* localPlugin = NULL;
 	int newSocket = 0;
 
 	try
@@ -471,7 +471,7 @@ ComPoint* ConnectionContext::createNewComPoint(Plugin* plugin)
 		newSocket = tryToconnect(plugin);
 		comPoint = new ComPoint(newSocket, this, plugin->getPluginNumber());
 		comPoint->configureLogInfo(&infoIn, &infoOut, &info);
-		localPlugin = new Plugin(plugin);
+		localPlugin = new PluginInfo(plugin);
 		localPlugin->setComPoint(comPoint);
 		plugins.push_back(localPlugin);
 
@@ -491,11 +491,11 @@ ComPoint* ConnectionContext::createNewComPoint(Plugin* plugin)
 
 ComPoint* ConnectionContext::findComPoint(char* pluginName)
 {
-	Plugin* currentPlugin = NULL;
+	PluginInfo* currentPlugin = NULL;
 	bool connectionFound = false;
 	ComPoint* tempComPoint = NULL;
 
-	list<Plugin*>::iterator plugin = plugins.begin();
+	list<PluginInfo*>::iterator plugin = plugins.begin();
 
 	try
 	{
@@ -526,7 +526,7 @@ ComPoint* ConnectionContext::findComPoint(char* pluginName)
 
 
 
-int ConnectionContext::tryToconnect(Plugin* plugin)
+int ConnectionContext::tryToconnect(PluginInfo* plugin)
 {
 	string* tempUdsPath = NULL;
 	int newSocket = 0;
@@ -577,7 +577,7 @@ RPCMsg* ConnectionContext::getCorrespondingRequest(IncomingMsg* input)
 
 void ConnectionContext::deleteAllIPCConnections()
 {
-	list<Plugin*>::iterator plugin = plugins.begin();
+	list<PluginInfo*>::iterator plugin = plugins.begin();
 
 	while(plugin != plugins.end())
 	{

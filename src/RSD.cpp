@@ -7,7 +7,7 @@
 #include <string>
 
 
-list<Plugin*> RSD::plugins;
+list<PluginInfo*> RSD::plugins;
 pthread_mutex_t RSD::pLmutex;
 
 list<ConnectionContext*> RSD::ccList;
@@ -127,7 +127,7 @@ void RSD::thread_accept()
 }
 
 
-bool RSD::addPlugin(Plugin* newPlugin)
+bool RSD::addPlugin(PluginInfo* newPlugin)
 {
 	bool result = false;
 	char* name = (char*)(newPlugin->getName()->c_str());
@@ -150,7 +150,7 @@ bool RSD::deletePlugin(string* name)
 	string* currentName = NULL;
 
 	pthread_mutex_lock(&pLmutex);
-	list<Plugin*>::iterator i = plugins.begin();
+	list<PluginInfo*>::iterator i = plugins.begin();
 	while(i != plugins.end() && found == false)
 	{
 		currentName = (*i)->getName();
@@ -167,14 +167,14 @@ bool RSD::deletePlugin(string* name)
 }
 
 
-Plugin* RSD::getPlugin(const char* name)
+PluginInfo* RSD::getPlugin(const char* name)
 {
 	bool found = false;
-	Plugin* result = NULL;
+	PluginInfo* result = NULL;
 	string* currentName = NULL;
 
 	pthread_mutex_lock(&pLmutex);
-	list<Plugin*>::iterator i = plugins.begin();
+	list<PluginInfo*>::iterator i = plugins.begin();
 
 	while(i != plugins.end() && found == false)
 	{
@@ -195,15 +195,15 @@ Plugin* RSD::getPlugin(const char* name)
 }
 
 
-Plugin* RSD::getPlugin(int pluginNumber)
+PluginInfo* RSD::getPlugin(int pluginNumber)
 {
 	bool found = false;
-	Plugin* result = NULL;
+	PluginInfo* result = NULL;
 	int currentNumber = -1;
 
 	pthread_mutex_lock(&pLmutex);
 
-	list<Plugin*>::iterator i = plugins.begin();
+	list<PluginInfo*>::iterator i = plugins.begin();
 	while(i != plugins.end() && found == false)
 	{
 		currentNumber = (*i)->getPluginNumber();
@@ -226,7 +226,7 @@ Plugin* RSD::getPlugin(int pluginNumber)
 void RSD::deleteAllPlugins()
 {
 	pthread_mutex_lock(&pLmutex);
-	list<Plugin*>::iterator i = plugins.begin();
+	list<PluginInfo*>::iterator i = plugins.begin();
 
 	while(i != plugins.end())
 	{
@@ -292,7 +292,7 @@ bool RSD::showAllRegisteredPlugins(Value &params, Value &result)
 	Value* tempValue = NULL;
 	Document* dom = new Document();
 	pthread_mutex_lock(&pLmutex);
-	list<Plugin*>::iterator plugin = plugins.begin();
+	list<PluginInfo*>::iterator plugin = plugins.begin();
 	result.SetArray();
 	while(plugin != plugins.end())
 	{
@@ -316,7 +316,7 @@ bool RSD::showAllKnownFunctions(Value &params, Value &result)
 	list<string*>::iterator method;
 
 	pthread_mutex_lock(&pLmutex);
-	list<Plugin*>::iterator plugin = plugins.begin();
+	list<PluginInfo*>::iterator plugin = plugins.begin();
 	result.SetObject();
 
 	while(plugin != plugins.end())
