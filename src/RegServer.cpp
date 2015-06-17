@@ -10,11 +10,11 @@ RegServer::RegServer( const char* udsFile)
 	accept_thread_active = false;
 	optionflag = 1;
 	address.sun_family = AF_UNIX;
-	infoIn.logLevel = LOG_INPUT;
+	infoIn.logLevel = _LOG_INPUT;
 	infoIn.logName = "IPC IN:";
-	infoOut.logLevel = LOG_OUTPUT;
+	infoOut.logLevel = _LOG_OUTPUT;
 	infoOut.logName = "IPC OUT:";
-	info.logLevel = LOG_INFO;
+	info.logLevel = _LOG_INFO;
 	info.logName = "ComPoint for Registry:";
 	this->udsFile = udsFile;
 
@@ -62,6 +62,7 @@ RegServer::~RegServer()
 void RegServer::thread_accept()
 {
 	int new_socket = 0;
+	ComPoint* comPoint = NULL;
 
 	if( listen(connection_socket, 5) != 0)
 		throw Error(-203, "Could not listen to socket", strerror(errno));
@@ -73,20 +74,21 @@ void RegServer::thread_accept()
 		new_socket = accept(connection_socket, (struct sockaddr*)&address, &addrlen);
 		if(new_socket > 0)
 		{
-			pushWorkerList(new_socket);
+			comPoint = new ComPoint(new_socket, new Registration(), -1, false);
+			comPoint->configureLogInfo(&infoIn, &infoOut, &info);
+			comPoint->setLogMethod(SYSLOG_LOG);
+			comPoint->setSyslogFacility(LOG_LOCAL0);
+			pushWorkerList(comPoint);
+			comPoint->startWorking();
 		}
 	}
 }
 
 
-void RegServer::pushWorkerList(int new_socket)
+void RegServer::pushWorkerList(ComPoint* comPoint)
 {
-	Registration* registry = new Registration();
-	ComPoint* comPoint = NULL;
-
 	pthread_mutex_lock(&wLmutex);
-		workerList.push_back(comPoint = new ComPoint(new_socket, registry, -1));
-		comPoint->configureLogInfo(&infoIn, &infoOut, &info);
+		workerList.push_back(comPoint);
 	pthread_mutex_unlock(&wLmutex);
 }
 
@@ -104,7 +106,6 @@ void RegServer::checkForDeletableWorker()
 			RSD::deletePlugin(registry->getPluginName());
 			delete  *i;
 			i = workerList.erase(i);
-			//dyn_print("UdsRegServer: UdsRegWorker was deleted.\n");
 		}
 		else
 			++i;

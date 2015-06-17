@@ -19,19 +19,19 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	currentComPoint = NULL;
 	comPoint = NULL;
 	logInfo.logName = "CC:";
-	infoIn.logLevel = LOG_INPUT;
+	infoIn.logLevel = _LOG_INPUT;
 	infoIn.logName = "IPC IN:";
-	infoOut.logLevel = LOG_OUTPUT;
+	infoOut.logLevel = _LOG_OUTPUT;
 	infoOut.logName = "IPC OUT:";
-	logInfo.logLevel = LOG_INFO;
+	logInfo.logLevel = _LOG_INFO;
 	info.logName = "ComPoint for RPC:";
 
 
-	infoInTCP.logLevel = LOG_INPUT;
+	infoInTCP.logLevel = _LOG_INPUT;
 	infoInTCP.logName = "TCP IN:";
-	infoOutTCP.logLevel = LOG_OUTPUT;
+	infoOutTCP.logLevel = _LOG_OUTPUT;
 	infoOutTCP.logName = "TCP OUT:";
-	infoOutTCP.logLevel = LOG_INFO;
+	infoOutTCP.logLevel = _LOG_INFO;
 	infoTCP.logName = "TCP ComPoint:";
 
 	contextNumber = getNewContextNumber();
@@ -44,10 +44,10 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 
 	//the tcp connection of a connection context hast always ID = 0
 	//ComPoint will do a vice versa register to this compoint and set the workerInterface
-	comPoint =  new ComPoint(tcpSocket, this, 0);
+	comPoint =  new ComPoint(tcpSocket, this, 0, false);
 	comPoint->configureLogInfo(&infoInTCP, &infoOutTCP, &info);
-
-	dlog(logInfo, "New ConnectionContext: %d",  contextNumber);
+	comPoint->setLogMethod(SYSLOG_LOG);
+	comPoint->startWorking();
 }
 
 
@@ -116,8 +116,6 @@ OutgoingMsg* ConnectionContext::process(IncomingMsg* input)
 	}
 	catch(Error &e)//parse error or other things will be catched here
 	{
-		dlog(logInfo,  "Exception: %s", e.get());
-
 		if(id != NULL)
 			nullId.SetInt(id->GetInt());
 
@@ -126,7 +124,6 @@ OutgoingMsg* ConnectionContext::process(IncomingMsg* input)
 		delete input;
 	}
 	delete localDom;
-	dlog(logInfo, "Stacksize: %d", requestQueue.size());
 	return output;
 }
 
@@ -430,8 +427,6 @@ bool ConnectionContext::isDeletable()
 		{
 			delete *plugin;
 			plugin = plugins.erase(plugin);
-
-			dlog(logInfo, "IPC ComPoint deleted from context %d. Verbleibend: %lu ", contextNumber, plugins.size());
 		}
 	}
 	return deletable;
@@ -451,7 +446,6 @@ void ConnectionContext::checkIPCConnections()
 		{
 			delete *plugin;
 			plugin = plugins.erase(plugin);
-			dlog(logInfo,  "UdsComworker deleted from context %d. Verbleibend: %lu " , contextNumber, plugins.size());
 		}
 		else
 			++plugin;
@@ -469,8 +463,11 @@ ComPoint* ConnectionContext::createNewComPoint(PluginInfo* plugin)
 	try
 	{
 		newSocket = tryToconnect(plugin);
-		comPoint = new ComPoint(newSocket, this, plugin->getPluginNumber());
+		comPoint = new ComPoint(newSocket, this, plugin->getPluginNumber(), false);
 		comPoint->configureLogInfo(&infoIn, &infoOut, &info);
+		comPoint->setLogMethod(SYSLOG_LOG);
+		comPoint->startWorking();
+
 		localPlugin = new PluginInfo(plugin);
 		localPlugin->setComPoint(comPoint);
 		plugins.push_back(localPlugin);
@@ -543,7 +540,6 @@ int ConnectionContext::tryToconnect(PluginInfo* plugin)
 
 	if( connect(newSocket, (struct sockaddr*)&address, addrlen) < 0)
 	{
-		dlog(logInfo, "Plugin not found, errno: %s ", strerror(errno));
 		throw Error("Could not connect to plugin.");
 	}
 

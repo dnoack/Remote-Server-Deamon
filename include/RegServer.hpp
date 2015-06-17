@@ -101,7 +101,7 @@ class RegServer : public AcceptThread{
 		 * \param new_socket The socket fd which was returned by accept.
 		 * \note This function uses wLmutex to protect the intern list.
 		 */
-		 void pushWorkerList(int new_socket);
+		 void pushWorkerList(ComPoint* comPoint);
 
 };
 

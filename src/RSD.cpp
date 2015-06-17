@@ -20,7 +20,7 @@ afptr RSD::funcMapPointer;
 
 RSD::RSD()
 {
-	logInfo.logLevel = LOG_INFO;
+	logInfo.logLevel = _LOG_INFO;
 	logInfo.logName = "RSD: ";
 	pluginFile = "plugins.txt";
 	connection_socket = 0;
@@ -30,30 +30,47 @@ RSD::RSD()
 	addrlen = sizeof(address);
 	optionflag = 1;
 
-	try{
-
-	if( pthread_mutex_init(&pLmutex, NULL) != 0)
-		throw Error (-200 , "Could not init pLMutex", strerror(errno));
-	if( pthread_mutex_init(&ccListMutex, NULL) != 0)
-		throw Error (-201 , "Could not init connectionContextListMutex", strerror(errno));
-
-	rsdActive = true;
-
 	sigemptyset(&origmask);
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGUSR1);
 	sigaddset(&sigmask, SIGUSR2);
 	pthread_sigmask(SIG_BLOCK, &sigmask, &origmask);
 
-	regServer = new RegServer(REGISTRY_PATH);
+	setLogMethod(SYSLOG_LOG);
+	setSyslogFacility(LOG_LOCAL0);
 
-	ConnectionContext::init();
-	LogUnit::setGlobalLogLevel(0);
+	try
+	{
 
-	funcMapPointer = &RSD::showAllRegisteredPlugins;
-	funcMap.insert(pair<const char*, afptr>("RSD.showAllRegisteredPlugins", funcMapPointer));
-	funcMapPointer = &RSD::showAllKnownFunctions;
-	funcMap.insert(pair<const char*, afptr>("RSD.showAllKownFunctions", funcMapPointer));
+		if( pthread_mutex_init(&pLmutex, NULL) != 0)
+			throw Error (-200 , "Could not init pLMutex", strerror(errno));
+		if( pthread_mutex_init(&ccListMutex, NULL) != 0)
+			throw Error (-201 , "Could not init connectionContextListMutex", strerror(errno));
+
+		connection_socket = socket(AF_INET, SOCK_STREAM, 0);
+		if(connection_socket < 0)
+			throw Error (-203, "Could not create connection socket", strerror(errno));
+
+		if( setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag)) != 0)
+			throw Error (-204, "Error while setting socket option", strerror(errno));
+
+		if( bind(connection_socket, (struct sockaddr*)&address, sizeof(address)) != 0)
+			throw Error (-205, "Error while binding connection_socket", strerror(errno));
+
+		if( listen(connection_socket, MAX_CLIENTS) != 0)
+			throw Error (-206, "Could not listen to connection_socket", strerror(errno));
+
+		rsdActive = true;
+
+		regServer = new RegServer(REGISTRY_PATH);
+
+		ConnectionContext::init();
+		LogUnit::setGlobalLogLevel(0);
+
+		funcMapPointer = &RSD::showAllRegisteredPlugins;
+		funcMap.insert(pair<const char*, afptr>("RSD.showAllRegisteredPlugins", funcMapPointer));
+		funcMapPointer = &RSD::showAllKnownFunctions;
+		funcMap.insert(pair<const char*, afptr>("RSD.showAllKownFunctions", funcMapPointer));
 
 	}
 	catch(Error &e)
@@ -94,19 +111,6 @@ void RSD::thread_accept()
 
 	try
 	{
-		connection_socket = socket(AF_INET, SOCK_STREAM, 0);
-		if(connection_socket < 0)
-			throw Error (-203, "Could not create connection socket", strerror(errno));
-
-		if( setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag)) != 0)
-			throw Error (-204, "Error while setting socket option", strerror(errno));
-
-		if( bind(connection_socket, (struct sockaddr*)&address, sizeof(address)) != 0)
-			throw Error (-205, "Error while binding connection_socket", strerror(errno));
-
-		if( listen(connection_socket, MAX_CLIENTS) != 0)
-			throw Error (-206, "Could not listen to connection_socket", strerror(errno));
-
 		accept_thread_active = true;
 
 		while(accept_thread_active)
@@ -405,10 +409,13 @@ int RSD::start(int argc, char** argv)
 
 	try
 	{
-		while(( c = getopt(argc, argv, "hf:p:l:")) != -1)
+		while(( c = getopt(argc, argv, "dhf:p:l:")) != -1)
 		{
 			switch(c)
 			{
+				case 'd':
+					daemonize();
+					break;
 				case 'h':
 					cout << "Aufruf: Remote-Server-Daemon [OPTION]...\n" ;
 					cout << "Startet Remote-Server-Daemon.\n\n\n";
@@ -468,7 +475,8 @@ int RSD::start(int argc, char** argv)
 
 void RSD::_start()
 {
-	try{
+	try
+	{
 		regServer->start();
 
 		//start accept-thread for incomming tcp connections
@@ -501,6 +509,31 @@ void RSD::_start()
 	{
 		throw;
 	}
+}
+
+
+void RSD::daemonize()
+{
+	pid_t pid;
+
+	if((pid = fork()) != 0)
+		exit(EXIT_FAILURE);
+	if(setsid() < 0)
+	{
+		printf("RSD kann nicht Sessionführer werden!\n");
+		exit(EXIT_FAILURE);
+	}
+
+	signal(SIGHUP, SIG_IGN);
+
+	if((pid = fork()) != 0)
+		exit(EXIT_FAILURE);
+
+	chdir("~/RSD");
+
+	umask(022);
+
+	//close fds ?
 }
 
 
