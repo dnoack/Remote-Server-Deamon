@@ -498,9 +498,8 @@ void RSD::_start()
 
 		do
 		{
-			//sleep(MAIN_SLEEP_TIME);
-			sleep(60);
-			rsdActive = false;
+			sleep(MAIN_SLEEP_TIME);
+
 			//check IPC registry compoints
 			regServer->checkForDeletableWorker();
 			//check TCP/workers
