@@ -118,6 +118,7 @@ TEST(CC_Msgs_from_Client, processMsg_parseFAIL)
 
 TEST(CC_Msgs_from_Client, memoryTest)
 {
+	sleep(1);
 	if(context->isDeletable() != true)
 		FAIL("Context should  be deletable.\n");
 }

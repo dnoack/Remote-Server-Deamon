@@ -7,7 +7,7 @@
 
 
 #include "RSD.hpp"
-#include "Plugin.hpp"
+#include "PluginInfo.hpp"
 
 
 #include "TestHarness.h"
@@ -75,10 +75,10 @@ TEST(RSD, deletePlugin_withMorePluginsInList)
 {
 	string* pluginName = new string("SecondPlugin");
 
-	rsd->addPlugin(new Plugin("FirstPlugin", 1, "/tmp/firstPlugin.uds"));
-	rsd->addPlugin(new Plugin("SecondPlugin", 2, "/tmp/secondPlugin.uds"));
-	rsd->addPlugin(new Plugin("ThirdPlugin", 3, "/tmp/thirdPlugin.uds"));
-	rsd->addPlugin(new Plugin("AnotherPlugin", 4, "/tmp/anotherPlugin.uds"));
+	rsd->addPlugin(new PluginInfo("FirstPlugin", 1, "/tmp/firstPlugin.uds"));
+	rsd->addPlugin(new PluginInfo("SecondPlugin", 2, "/tmp/secondPlugin.uds"));
+	rsd->addPlugin(new PluginInfo("ThirdPlugin", 3, "/tmp/thirdPlugin.uds"));
+	rsd->addPlugin(new PluginInfo("AnotherPlugin", 4, "/tmp/anotherPlugin.uds"));
 
 	CHECK(rsd->deletePlugin(pluginName));
 	delete pluginName;
@@ -88,7 +88,7 @@ TEST(RSD, deletePlugin_withMorePluginsInList)
 TEST(RSD, deletePlugin_withPluginInList)
 {
 	string* pluginName = new string("SecondPlugin");
-	rsd->addPlugin(new Plugin("SecondPlugin", 2, "/tmp/secondPlugin.uds"));
+	rsd->addPlugin(new PluginInfo("SecondPlugin", 2, "/tmp/secondPlugin.uds"));
 	CHECK(rsd->deletePlugin(pluginName));
 	delete pluginName;
 
@@ -97,7 +97,7 @@ TEST(RSD, deletePlugin_withPluginInList)
 
 TEST(RSD, getPlugin_byName)
 {
-	Plugin* testPlugin = new Plugin("FirstPlugin", 1, "/tmp/FirstPlugin.uds");
+	PluginInfo* testPlugin = new PluginInfo("FirstPlugin", 1, "/tmp/FirstPlugin.uds");
 	rsd->addPlugin(testPlugin);
 
 	CHECK_EQUAL(testPlugin, rsd->getPlugin("FirstPlugin"));
@@ -106,7 +106,7 @@ TEST(RSD, getPlugin_byName)
 
 TEST(RSD, getPlugin_byNumber)
 {
-	Plugin* testPlugin = new Plugin("FirstPlugin", 1, "/tmp/FirstPlugin.uds");
+	PluginInfo* testPlugin = new PluginInfo("FirstPlugin", 1, "/tmp/FirstPlugin.uds");
 	rsd->addPlugin(testPlugin);
 
 	CHECK_EQUAL(testPlugin, rsd->getPlugin(1));
@@ -115,13 +115,13 @@ TEST(RSD, getPlugin_byNumber)
 
 TEST(RSD, addPluginWithObject)
 {
-	rsd->addPlugin(new Plugin("FirstPlugin", 1, "/tmp/firstPlugin.uds"));
+	rsd->addPlugin(new PluginInfo("FirstPlugin", 1, "/tmp/firstPlugin.uds"));
 }
 
 
 TEST(RSD, addPlugin_byParams)
 {
-	rsd->addPlugin(new Plugin("FirstPlugin", 1, "/tmp/firstPlugin.uds"));
+	rsd->addPlugin(new PluginInfo("FirstPlugin", 1, "/tmp/firstPlugin.uds"));
 }
 
 
