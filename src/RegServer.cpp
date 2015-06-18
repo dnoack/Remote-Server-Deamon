@@ -104,6 +104,7 @@ void RegServer::checkForDeletableWorker()
 		{
 			registry = (Registration*)(*i)->getProcessInterface();
 			RSD::deletePlugin(registry->getPluginName());
+			delete registry;
 			delete  *i;
 			i = workerList.erase(i);
 		}
@@ -117,10 +118,14 @@ void RegServer::checkForDeletableWorker()
 void RegServer::deleteWorkerList()
 {
 	pthread_mutex_lock(&wLmutex);
+	Registration* registry = NULL;
 	list<ComPoint*>::iterator i = workerList.begin();
 
 	while(i != workerList.end())
 	{
+		registry = (Registration*)(*i)->getProcessInterface();
+		RSD::deletePlugin(registry->getPluginName());
+		delete registry;
 		delete *i;
 		i = workerList.erase(i);
 	}

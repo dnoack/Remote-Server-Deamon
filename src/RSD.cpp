@@ -16,6 +16,8 @@ pthread_mutex_t RSD::ccListMutex;
 map<const char*, afptr, cmp_keys> RSD::funcMap;
 afptr RSD::funcMapPointer;
 
+Document RSD::dom;
+
 
 
 RSD::RSD()
@@ -294,18 +296,19 @@ bool RSD::executeFunction(Value &method, Value &params, Value &result)
 bool RSD::showAllRegisteredPlugins(Value &params, Value &result)
 {
 	Value* tempValue = NULL;
-	Document* dom = new Document();
+	//Document* dom = new Document();
 	pthread_mutex_lock(&pLmutex);
 	list<PluginInfo*>::iterator plugin = plugins.begin();
 	result.SetArray();
 	while(plugin != plugins.end())
 	{
-		tempValue = new Value((*plugin)->getName()->c_str(), dom->GetAllocator());
-		result.PushBack(*tempValue, dom->GetAllocator());
+		tempValue = new Value((*plugin)->getName()->c_str(), dom.GetAllocator());
+		result.PushBack(*tempValue, dom.GetAllocator());
 		delete tempValue;
 		++plugin;
 	}
 	pthread_mutex_unlock(&pLmutex);
+	//delete dom;
 	return true;
 }
 
@@ -315,7 +318,7 @@ bool RSD::showAllKnownFunctions(Value &params, Value &result)
 	Value* pluginName = NULL;
 	Value* tempValue = NULL;
 	Value tempArray;
-	Document* dom = new Document();
+	//Document* dom = new Document();
 	list<string*>* methods = NULL;
 	list<string*>::iterator method;
 
@@ -325,23 +328,24 @@ bool RSD::showAllKnownFunctions(Value &params, Value &result)
 
 	while(plugin != plugins.end())
 	{
-		pluginName = new Value((*plugin)->getName()->c_str(), dom->GetAllocator());
+		pluginName = new Value((*plugin)->getName()->c_str(), dom.GetAllocator());
 		methods = (*plugin)->getMethods();
 		method = methods->begin();
 		tempArray.SetArray();
 
 		while(method != methods->end())
 		{
-			tempValue = new Value((*method)->c_str(), dom->GetAllocator());
-			tempArray.PushBack(*tempValue, dom->GetAllocator());
+			tempValue = new Value((*method)->c_str(), dom.GetAllocator());
+			tempArray.PushBack(*tempValue, dom.GetAllocator());
 			delete tempValue;
 			++method;
 		}
-		result.AddMember(*pluginName, tempArray, dom->GetAllocator());
+		result.AddMember(*pluginName, tempArray, dom.GetAllocator());
 		delete pluginName;
 		++plugin;
 	}
 	pthread_mutex_unlock(&pLmutex);
+	//delete dom;
 	return true;
 }
 
@@ -486,6 +490,7 @@ void RSD::_start()
 		while(!accept_thread_active)
 		{
 			sleep(1);
+
 		}
 
 		//start plugins
@@ -493,7 +498,9 @@ void RSD::_start()
 
 		do
 		{
-			sleep(MAIN_SLEEP_TIME);
+			//sleep(MAIN_SLEEP_TIME);
+			sleep(60);
+			rsdActive = false;
 			//check IPC registry compoints
 			regServer->checkForDeletableWorker();
 			//check TCP/workers

@@ -118,7 +118,6 @@ OutgoingMsg* Registration::handleAnnounceMsg(IncomingMsg* input)
 
 		result.SetString("announceACK");
 		response = json->generateResponse(*id, result);
-		delete input;
 
 		//check if there is already a plugin with this number registered.
 		if(RSD::getPlugin(number) != NULL)
@@ -130,6 +129,8 @@ OutgoingMsg* Registration::handleAnnounceMsg(IncomingMsg* input)
 	{
 		throw;
 	}
+
+	delete input;
 	return output;
 }
 

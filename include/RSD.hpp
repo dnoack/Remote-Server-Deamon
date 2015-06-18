@@ -146,6 +146,7 @@ class RSD : public AcceptThread, public LogUnit{
 
 	private:
 
+		static Document dom;
 		/*! Socket which accepts new connections.*/
 		int connection_socket;
 		/*! Optionflag for setting socket options to connection_socket.*/

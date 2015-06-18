@@ -176,7 +176,6 @@ OutgoingMsg* ConnectionContext::handleRSDCommand(IncomingMsg* input)
 	{
 		Value* method = json->getMethod(localDom);
 		Value* params = NULL;
-		Value* id = json->getId(localDom);
 		Value resultValue;
 		const char* result = NULL;
 
@@ -224,6 +223,7 @@ OutgoingMsg* ConnectionContext::handleRequestFromClient(IncomingMsg* input)
 	catch (Error &e)
 	{
 		throw;
+		//TODO: debug this thow; is there a allocated methodNamespace ?
 	}
 	return output;
 }
@@ -239,11 +239,10 @@ OutgoingMsg* ConnectionContext::handleRequestFromPlugin(IncomingMsg* input)
 	{
 		methodNamespace = getMethodNamespace();
 		currentComPoint = findComPoint(methodNamespace);
+		delete[] methodNamespace;
 		if(currentComPoint == NULL)
-		{
-			delete[] methodNamespace;
 			throw Error(-301, "Plugin not found.");
-		}
+
 		output = new OutgoingMsg(currentComPoint, input->getContent());
 		push_frontRequestQueue(input);
 	}
@@ -361,8 +360,8 @@ OutgoingMsg* ConnectionContext::handleIncorrectPluginResponse(IncomingMsg* input
 		errorResponseMsg = json->generateResponseError(id, error.getErrorCode(), error.get());
 		errorResponse = new IncomingMsg(input->getOrigin(), errorResponseMsg);
 		errorResponse->setJsonRpcId(id.GetInt());
-		delete input;
 		output = handleResponseFromPlugin(errorResponse);
+		delete input;
 	}
 	catch(Error &e)
 	{
