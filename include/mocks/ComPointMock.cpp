@@ -1,20 +1,15 @@
 
-#include "WorkerInterfaceMock.hpp"
+#include "ComPointMock.hpp"
 
 
-WorkerInterfaceMock::WorkerInterfaceMock()
+
+ComPointMock::~ComPointMock()
 {
 	clear();
 }
 
 
-WorkerInterfaceMock::~WorkerInterfaceMock()
-{
-	clear();
-}
-
-
-int WorkerInterfaceMock::transmit(char* data, int size)
+int ComPointMock::transmit(char* data, int size)
 {
 	if(size < MOCK_BUFFER_SIZE)
 	{
@@ -24,7 +19,7 @@ int WorkerInterfaceMock::transmit(char* data, int size)
 }
 
 
-int WorkerInterfaceMock::transmit(const char* data, int size)
+int ComPointMock::transmit(const char* data, int size)
 {
 	if(size < MOCK_BUFFER_SIZE)
 	{
@@ -33,7 +28,7 @@ int WorkerInterfaceMock::transmit(const char* data, int size)
 	return size;
 }
 
-int WorkerInterfaceMock::transmit(RsdMsg* msg)
+int ComPointMock::transmit(RPCMsg* msg)
 {
 	string* data = msg->getContent();
 	if(data->size() < MOCK_BUFFER_SIZE)

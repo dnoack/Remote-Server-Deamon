@@ -8,7 +8,6 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include tests/subdir.mk
 -include src/subdir.mk
 -include subdir.mk
 -include objects.mk
@@ -45,7 +44,7 @@ all: Remote-Server-Daemon
 Remote-Server-Daemon: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -L/home/Dave/libs/cpputest-3.6/lib ${LDFLAGS} -o "Remote-Server-Daemon" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L"/home/dave2/git/rpcUtils/Release" -o "Remote-Server-Daemon" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

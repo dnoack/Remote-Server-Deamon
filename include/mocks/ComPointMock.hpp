@@ -5,22 +5,25 @@
 #define MOCK_BUFFER_SIZE 2048
 
 
-#include "RsdMsg.hpp"
-#include "WorkerInterface.hpp"
+#include "RPCMsg.hpp"
+#include "ComPoint.hpp"
 
 
-class WorkerInterfaceMock : public WorkerInterface<RsdMsg>{
+class ComPointMock : public ComPoint{
 
 	public:
-		WorkerInterfaceMock();
+		ComPointMock(int socket, ProcessInterface* pInterface , int uniqueID, bool startInstant = true)
+		{
+			clear();
+			this->uniqueID =uniqueID;
+		}
 
-
-		virtual ~WorkerInterfaceMock();
+		virtual ~ComPointMock();
 
 
 		int transmit(char* data, int size);
 		int transmit(const char* data, int size);
-		int transmit(RsdMsg* msg);
+		int transmit(RPCMsg* msg);
 
 		char* getBuffer()
 		{
@@ -30,6 +33,12 @@ class WorkerInterfaceMock : public WorkerInterface<RsdMsg>{
 		void clear()
 		{
 			memset(buffer, '\0', MOCK_BUFFER_SIZE);
+		}
+
+		void socketToFDSET()
+		{
+			FD_ZERO(&rfds);
+			FD_SET(currentSocket, &rfds);
 		}
 
 	private:

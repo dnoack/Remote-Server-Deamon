@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lpthread -lCppUTest -lCppUTestExt
+LIBS := -lpthread -lrpcUtils
 
