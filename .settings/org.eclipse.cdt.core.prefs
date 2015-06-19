@@ -24,6 +24,9 @@ environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165
 environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/CXXFLAGS/delimiter=\:
 environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/CXXFLAGS/operation=append
 environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/CXXFLAGS/value=${CFLAGS}
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/LDFLAGS/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/LDFLAGS/operation=append
+environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/LDFLAGS/value=
 environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/PATH/delimiter=\:
 environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/PATH/operation=replace
 environment/project/cdt.managedbuild.config.gnu.exe.release.512927165.1942390165.1283137888/PATH/value=/home/dnoack/bin\:/usr/local/bin\:/usr/bin\:/bin\:/usr/bin/X11\:/usr/games

@@ -50,7 +50,7 @@
 									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="rpcUtils"/>
 								</option>
-								<option id="gnu.cpp.link.option.flags.1989474721" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1989474721" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="${LDFLAGS}" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.836681857" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/rpcUtils/Debug}&quot;"/>
 								</option>
@@ -214,7 +214,7 @@
 									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="rpcUtils"/>
 								</option>
-								<option id="gnu.cpp.link.option.flags.946971645" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.946971645" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="${LDFLAGS}" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1102507102" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/rpcUtils/Release}&quot;"/>
 								</option>
