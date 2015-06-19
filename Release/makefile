@@ -44,7 +44,7 @@ all: Remote-Server-Daemon
 Remote-Server-Daemon: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -L"/home/dave2/git/rpcUtils/Release" -o "Remote-Server-Daemon" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L"/home/dave2/git/rpcUtils/Release" ${LDFLAGS} -o "Remote-Server-Daemon" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
