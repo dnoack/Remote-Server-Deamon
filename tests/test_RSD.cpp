@@ -138,7 +138,7 @@ IGNORE_TEST(RSDwithMock, checkLoop)
 }
 
 
-TEST(RSD, startup_and_shutdown)
+IGNORE_TEST(RSD, startup_and_shutdown)
 {
 	rsd->_start();
 	sleep(1);
