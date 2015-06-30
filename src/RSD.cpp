@@ -48,20 +48,6 @@ RSD::RSD()
 		if( pthread_mutex_init(&ccListMutex, NULL) != 0)
 			throw Error (-201 , "Could not init connectionContextListMutex", strerror(errno));
 
-		connection_socket = socket(AF_INET, SOCK_STREAM, 0);
-		if(connection_socket < 0)
-			throw Error (-203, "Could not create connection socket", strerror(errno));
-
-		if( setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag)) != 0)
-			throw Error (-204, "Error while setting socket option", strerror(errno));
-
-		if( bind(connection_socket, (struct sockaddr*)&address, sizeof(address)) != 0)
-			throw Error (-205, "Error while binding connection_socket", strerror(errno));
-
-		if( listen(connection_socket, MAX_CLIENTS) != 0)
-			throw Error (-206, "Could not listen to connection_socket", strerror(errno));
-
-		rsdActive = true;
 
 		regServer = new RegServer(REGISTRY_PATH);
 
@@ -113,6 +99,21 @@ void RSD::thread_accept()
 	try
 	{
 		accept_thread_active = true;
+        
+        connection_socket = socket(AF_INET, SOCK_STREAM, 0);
+		if(connection_socket < 0)
+			throw Error (-203, "Could not create connection socket", strerror(errno));
+
+		if( setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, &optionflag, sizeof(optionflag)) != 0)
+			throw Error (-204, "Error while setting socket option", strerror(errno));
+
+		if( bind(connection_socket, (struct sockaddr*)&address, sizeof(address)) != 0)
+			throw Error (-205, "Error while binding connection_socket", strerror(errno));
+
+		if( listen(connection_socket, MAX_CLIENTS) != 0)
+			throw Error (-206, "Could not listen to connection_socket", strerror(errno));
+
+		rsdActive = true;
 
 		while(accept_thread_active)
 		{
