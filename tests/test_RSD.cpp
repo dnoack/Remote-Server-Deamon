@@ -128,10 +128,11 @@ TEST(RSD, addPlugin_byParams)
 IGNORE_TEST(RSDwithMock, checkLoop)
 {
 	mock().expectOneCall("checkForDeletableConnections");
-	rsd->stop();
+	
 	rsd->_start();
 	//sleep 1 because we want to wait till accept thread of regServer i really created
 	sleep(1);
+	rsd->stop();
 	mock().checkExpectations();
 
 }
@@ -139,11 +140,8 @@ IGNORE_TEST(RSDwithMock, checkLoop)
 
 TEST(RSD, startup_and_shutdown)
 {
-	//confusing ? stop sets the variable
-	//of the main loop to "false", so that it just runs 1 time
-	rsd->stop();
 	rsd->_start();
-	//sleep 1 because we want to wait till accept thread of regServer i really created
 	sleep(1);
+	rsd->stop();
 }
 
