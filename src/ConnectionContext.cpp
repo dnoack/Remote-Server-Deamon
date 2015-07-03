@@ -17,7 +17,7 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 	id = NULL;
 	nullId.SetInt(0);
 	currentComPoint = NULL;
-	comPoint = NULL;
+	tcpComPoint = NULL;
 	logInfo.logName = "CC:";
 	infoIn.logLevel = _LOG_INPUT;
 	infoIn.logName = "IPC IN:";
@@ -44,18 +44,18 @@ ConnectionContext::ConnectionContext(int tcpSocket)
 
 	//the tcp connection of a connection context hast always ID = 0
 	//ComPoint will do a vice versa register to this compoint and set the workerInterface
-	comPoint =  new ComPoint(tcpSocket, this, 0, false);
-	comPoint->configureLogInfo(&infoInTCP, &infoOutTCP, &info);
-	comPoint->setLogMethod(LogUnit::getGlobalLogMethod());
-	comPoint->startWorking();
+	tcpComPoint =  new ComPoint(tcpSocket, this, 0, false);
+	tcpComPoint->configureLogInfo(&infoInTCP, &infoOutTCP, &info);
+	tcpComPoint->setLogMethod(LogUnit::getGlobalLogMethod());
+	tcpComPoint->startWorking();
 }
 
 
 
 ConnectionContext::~ConnectionContext()
 {
-	if(comPoint != NULL)
-		delete comPoint;
+	if(tcpComPoint != NULL)
+		delete tcpComPoint;
 	delete json;
 	deleteAllIPCConnections();
 	pthread_mutex_lock(&cCounterMutex);
@@ -413,12 +413,12 @@ bool ConnectionContext::isDeletable()
 {
 	list<PluginInfo*>::iterator plugin;
 
-	if(comPoint != NULL && comPoint->isDeletable())
+	if(tcpComPoint != NULL && tcpComPoint->isDeletable())
 	{
 		//close workerInterface
 		deletable = true;
-		delete comPoint;
-		comPoint = NULL;
+		delete tcpComPoint;
+		tcpComPoint = NULL;
 
 		//close all UdsConnections
 		plugin = plugins.begin();

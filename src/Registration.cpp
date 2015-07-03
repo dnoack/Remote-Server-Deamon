@@ -86,7 +86,7 @@ OutgoingMsg* Registration::process(IncomingMsg* input)
 
 		Error* higherError  = new Error(-501, "Error during Registration: %s", e.get());
 		error = json->generateResponseError(*id, higherError->getErrorCode(), higherError->get());
-		output = new OutgoingMsg(comPoint, error);
+		output = new OutgoingMsg(input->getOrigin(), error);
 		delete higherError;
 		delete localDom;
 		delete input;

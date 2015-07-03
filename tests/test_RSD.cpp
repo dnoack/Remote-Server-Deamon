@@ -140,8 +140,10 @@ IGNORE_TEST(RSDwithMock, checkLoop)
 
 IGNORE_TEST(RSD, startup_and_shutdown)
 {
+
 	rsd->_start();
-	sleep(1);
+	sleep(2);
 	rsd->stop();
+
 }
 

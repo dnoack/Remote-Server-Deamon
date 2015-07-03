@@ -30,6 +30,7 @@ RSD::RSD()
 	address.sin_port = htons(TCP_PORT);
 	addrlen = sizeof(address);
 	optionflag = 1;
+	rsdActive = false;
 
 	sigemptyset(&origmask);
 	sigemptyset(&sigmask);
@@ -113,7 +114,6 @@ void RSD::thread_accept()
 		if( listen(connection_socket, MAX_CLIENTS) != 0)
 			throw Error (-206, "Could not listen to connection_socket", strerror(errno));
 
-		rsdActive = true;
 
 		while(accept_thread_active)
 		{
@@ -505,6 +505,8 @@ void RSD::_start()
 			sleep(1);
 
 		}
+
+		rsdActive = true;
 
 		//start plugins
 		startPluginsDuringStartup(pluginFile);

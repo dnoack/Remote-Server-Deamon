@@ -26,7 +26,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -g -DTESTMODE -I/home/dave2/git/rapidjson/include/rapidjson -I"/home/dave2/git/Remote-Server-Deamon/include/mocks" -I/home/dave2/git/cpputest/include -I"/home/dave2/git/rpcUtils/include" -I/home/dave2/git/cpputest/include/CppUTest -I/home/dave2/git/cpputest/include/CppUTestExt -O0 -Wall -c -fmessage-length=0 ${CXXFLAGS} -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	g++ -g -DTESTMODE -I/home/dave2/git/rapidjson/include/rapidjson -I"/home/dave2/git/Remote-Server-Daemon/include/mocks" -I/home/dave2/git/cpputest/include -I"/home/dave2/git/rpcUtils/include" -I/home/dave2/git/cpputest/include/CppUTest -I/home/dave2/git/cpputest/include/CppUTestExt -O0 -Wall -c -fmessage-length=0 ${CXXFLAGS} -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

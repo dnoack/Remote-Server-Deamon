@@ -145,6 +145,10 @@ class ConnectionContext : public ProcessInterface, public LogUnit
 		 */
 		list<RPCMsg*> requestQueue;
 
+
+		ComPoint* tcpComPoint;
+
+
 		/*! Mutex to protec the requestQueue, because different Worker Threads of different ComPoints can push and pop messages.*/
 		pthread_mutex_t rQMutex;
 
